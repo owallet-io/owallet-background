@@ -28,7 +28,6 @@
     "@ethersproject/bytes": "^5.5.0",
     "@ethersproject/keccak256": "^5.5.0",
     "@ethersproject/wallet": "^5.5.0",
-    
     "@owallet/common": "^0.9.10",
     "@owallet/cosmos": "^0.9.16",
     "@owallet/crypto": "^0.9.10",
