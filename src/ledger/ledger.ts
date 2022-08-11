@@ -1,48 +1,94 @@
-const channelDevice = new BroadcastChannel('device');
+import { LedgerInternal } from './ledger-internal';
 
-const callProxy = (method: string, args: any[] = []): Promise<any> =>
-  new Promise((resolve) => {
-    let requestId = Date.now();
-    const handler = ({ data }) => {
-      if (data.requestId !== requestId) return;
-      console.log(method, data);
-      resolve(data.response);
-      channelDevice.removeEventListener('message', handler);
-    };
-    channelDevice.addEventListener('message', handler);
-    channelDevice.postMessage({ method, args, requestId });
-  });
+let callProxy: (method: string, args?: any[]) => Promise<any>;
+let ledger: LedgerInternal = null;
+let currentMode = null;
+
+export const ledgerProxy = async (
+  method: string,
+  args: any[] = []
+): Promise<any> => {
+  let response: any;
+
+  if (!ledger && currentMode) {
+    ledger = await LedgerInternal.init(currentMode);
+  }
+
+  switch (method) {
+    case 'init':
+      try {
+        const [mode, initArgs] = args;
+        currentMode = mode;
+        ledger = await LedgerInternal.init(mode, initArgs);
+        response = true;
+      } catch (error) {
+        response = false;
+      }
+      break;
+    case 'isWebHIDSupported':
+      response = await LedgerInternal.isWebHIDSupported();
+      break;
+    default:
+      response = await ledger[method].apply(ledger, args);
+      break;
+  }
+  return response;
+};
+
+const isReactNative =
+  typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+
+if (isReactNative) {
+  callProxy = ledgerProxy;
+} else {
+  const channelDevice = new BroadcastChannel('device');
+
+  callProxy = async (method: string, args: any[] = []): Promise<any> =>
+    new Promise((resolve) => {
+      let requestId = Date.now();
+      const handler = ({ data }) => {
+        if (data.requestId !== requestId) return;
+        console.log(method, data);
+        resolve(data.response);
+        channelDevice.removeEventListener('message', handler);
+      };
+      channelDevice.addEventListener('message', handler);
+      channelDevice.postMessage({ method, args, requestId });
+    });
+}
 
 export class Ledger {
   static async init(mode: string, initArgs: any[] = []): Promise<Ledger> {
     const resultInit = await callProxy('init', [mode, initArgs]);
-    if (resultInit)
-      return new Ledger();
-    else throw new Error("Device state invalid!")
+    if (resultInit) return new Ledger();
+    else throw new Error('Device state invalid!');
   }
 
-  getVersion(): Promise<{
+  async getVersion(): Promise<{
     deviceLocked: boolean;
     major: number;
     version: string;
     testMode: boolean;
   }> {
-    return callProxy('getVersion');
+    return await callProxy('getVersion');
   }
 
-  getPublicKey(path: number[] | string): Promise<Uint8Array> {
-    return callProxy('getPublicKey', [path]);
+  async getPublicKey(path: number[] | string): Promise<Uint8Array> {
+    return await callProxy('getPublicKey', [path]);
   }
 
-  sign(path: number[] | string, message: Uint8Array): Promise<Uint8Array> {
-    return callProxy('sign', [path, message]);
+  async sign(
+    path: number[] | string,
+    message: Uint8Array
+  ): Promise<Uint8Array> {
+    return await callProxy('sign', [path, message]);
   }
 
-  close(): Promise<void> {
-    return callProxy('close');
+  async close(): Promise<void> {
+    return await callProxy('close');
   }
 
-  static isWebHIDSupported(): Promise<boolean> {
-    return callProxy('isWebHIDSupported');
+  static async isWebHIDSupported(): Promise<boolean> {
+    return await callProxy('isWebHIDSupported');
   }
 }
