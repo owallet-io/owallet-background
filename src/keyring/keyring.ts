@@ -654,6 +654,8 @@ export class KeyRing {
     const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
 
     if (this.type === 'mnemonic') {
+      console.log('mnemonic coinType');
+
       const coinTypeModified = bip44HDPath.coinType ?? coinType;
       const path = `m/44'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
       const cachedKey = this.cached.get(path);
