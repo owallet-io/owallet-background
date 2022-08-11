@@ -5,6 +5,7 @@ import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
 import { signatureImport } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { fromString } from 'bip32-path';
+import { OWalletError } from '@owallet/router';
 
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 
@@ -13,14 +14,6 @@ export enum LedgerInitErrorOn {
   App,
   Unknown
 }
-
-export const LedgerWebUSBIniter: TransportIniter = async () => {
-  return await TransportWebUSB.create();
-};
-
-export const LedgerWebHIDIniter: TransportIniter = async () => {
-  return await TransportWebHID.create();
-};
 
 export class LedgerInitError extends Error {
   constructor(public readonly errorOn: LedgerInitErrorOn, message?: string) {
@@ -31,15 +24,26 @@ export class LedgerInitError extends Error {
   }
 }
 
+export type TransportMode = 'webusb' | 'webhid' | 'ble';
+
 export class LedgerInternal {
   constructor(private readonly cosmosApp: CosmosApp) {}
 
+  static transportIniters: Record<TransportMode, TransportIniter> = {
+    webusb: TransportWebUSB.create,
+    webhid: TransportWebHID.create,
+    // implemented in ReactNative
+    ble: () => Promise.resolve(null)
+  };
+
   static async init(
-    mode: 'webusb' | 'webhid',
+    mode: TransportMode,
     initArgs: any[] = []
   ): Promise<LedgerInternal> {
-    const transportIniter =
-      mode === 'webusb' ? LedgerWebUSBIniter : LedgerWebHIDIniter;
+    const transportIniter = LedgerInternal.transportIniters[mode];
+    if (!transportIniter) {
+      throw new OWalletError('ledger', 112, `Unknown mode: ${mode}`);
+    }
 
     const transport = await transportIniter(...initArgs);
     try {
