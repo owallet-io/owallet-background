@@ -217,8 +217,8 @@ export class KeyRing {
 
     return this.keyStore.coinTypeForChain
       ? this.keyStore.coinTypeForChain[
-      ChainIdHelper.parse(chainId).identifier
-      ] ?? defaultCoinType
+          ChainIdHelper.parse(chainId).identifier
+        ] ?? defaultCoinType
       : defaultCoinType;
   }
 
@@ -464,7 +464,7 @@ export class KeyRing {
     return (
       this.keyStore.coinTypeForChain &&
       this.keyStore.coinTypeForChain[
-      ChainIdHelper.parse(chainId).identifier
+        ChainIdHelper.parse(chainId).identifier
       ] !== undefined
     );
   }
@@ -477,7 +477,7 @@ export class KeyRing {
     if (
       this.keyStore.coinTypeForChain &&
       this.keyStore.coinTypeForChain[
-      ChainIdHelper.parse(chainId).identifier
+        ChainIdHelper.parse(chainId).identifier
       ] !== undefined
     ) {
       throw new Error('Coin type already set');
@@ -488,7 +488,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -654,7 +654,8 @@ export class KeyRing {
     const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
 
     if (this.type === 'mnemonic') {
-      const path = `m/44'/${coinType}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
+      const coinTypeModified = bip44HDPath.coinType ?? coinType;
+      const path = `m/44'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
       const cachedKey = this.cached.get(path);
       if (cachedKey) {
         return new PrivKeySecp256k1(cachedKey);
@@ -940,9 +941,9 @@ export class KeyRing {
         version === SignTypedDataVersion.V1
           ? this._typedSignatureHash(typedMessage as TypedDataV1)
           : this.eip712Hash(
-            typedMessage as TypedMessage<T>,
-            version as SignTypedDataVersion.V3 | SignTypedDataVersion.V4
-          );
+              typedMessage as TypedMessage<T>,
+              version as SignTypedDataVersion.V3 | SignTypedDataVersion.V4
+            );
       console.log(
         '🚀 ~ file: keyring.ts ~ line 868 ~ KeyRing ~ messageHash',
         messageHash
@@ -951,7 +952,7 @@ export class KeyRing {
       console.log('🚀 ~ file: keyring.ts ~ line 876 ~ KeyRing ~ sig', sig);
       return sig;
     } catch (error) {
-      console.log("Error on sign typed data: ", error);
+      console.log('Error on sign typed data: ', error);
     }
   }
 
@@ -1147,7 +1148,7 @@ export class KeyRing {
         );
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map((item) =>
+      const typeValuePairs = value.map(item =>
         this.encodeField(types, name, parsedType, item, version)
       );
       return [
@@ -1340,12 +1341,12 @@ export class KeyRing {
           'Key ring is locked or not initialized'
         );
       }
-      console.log("HERE")
+      console.log('HERE');
 
       // Get public key first
       const publicKey = await this.ledgerKeeper.getPublicKey(env, bip44HDPath);
 
-      console.log(publicKey, 'pubkey hre')
+      console.log(publicKey, 'pubkey hre');
 
       const keyStore = await KeyRing.CreateLedgerKeyStore(
         this.rng,
@@ -1357,13 +1358,13 @@ export class KeyRing {
         bip44HDPath
       );
 
-      console.log(keyStore, 'keystore here')
+      console.log(keyStore, 'keystore here');
 
       this.multiKeyStore.push(keyStore);
 
       await this.save();
 
-      console.log(this.getMultiKeyStoreInfo,'multi here')
+      console.log(this.getMultiKeyStoreInfo, 'multi here');
       return {
         multiKeyStoreInfo: this.getMultiKeyStoreInfo()
       };
@@ -1411,7 +1412,7 @@ export class KeyRing {
         bip44HDPath: keyStore.bip44HDPath,
         selected: this.keyStore
           ? KeyRing.getKeyStoreId(keyStore) ===
-          KeyRing.getKeyStoreId(this.keyStore)
+            KeyRing.getKeyStoreId(this.keyStore)
           : false
       });
     }

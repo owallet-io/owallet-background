@@ -3,6 +3,7 @@ export type CoinTypeForChain = {
 };
 
 export type BIP44HDPath = {
+  coinType?: number;
   account: number;
   change: number;
   addressIndex: number;
@@ -21,7 +22,7 @@ export interface ScryptParams {
 }
 
 export interface ExportKeyRingData {
-  type: "mnemonic" | "privateKey";
+  type: 'mnemonic' | 'privateKey';
   // If the type is private key, the key is encoded as hex.
   key: string;
   coinTypeForChain: CoinTypeForChain;
@@ -34,7 +35,7 @@ export interface ExportKeyRingData {
 export enum SignTypedDataVersion {
   V1 = 'V1',
   V3 = 'V3',
-  V4 = 'V4',
+  V4 = 'V4'
 }
 
 export interface MessageTypeProperty {
@@ -77,7 +78,7 @@ export interface ECDSASignature {
 }
 
 export interface SignEthereumTypedDataObject {
-  typedMessage: TypedMessage<MessageTypes>,
-  version: SignTypedDataVersion,
-  defaultCoinType: number,
+  typedMessage: TypedMessage<MessageTypes>;
+  version: SignTypedDataVersion;
+  defaultCoinType: number;
 }
