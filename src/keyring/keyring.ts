@@ -236,9 +236,10 @@ export class KeyRing {
     status: KeyRingStatus;
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
-    if (this.status !== KeyRingStatus.EMPTY) {
-      throw new Error('Key ring is not loaded or not empty');
-    }
+    // Affect if remove this check ?
+    // if (this.status !== KeyRingStatus.EMPTY) {
+    //   throw new Error('Key ring is not loaded or not empty');
+    // }
 
     this.mnemonic = mnemonic;
     this.keyStore = await KeyRing.CreateMnemonicKeyStore(
@@ -270,9 +271,9 @@ export class KeyRing {
     status: KeyRingStatus;
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
-    if (this.status !== KeyRingStatus.EMPTY) {
-      throw new Error('Key ring is not loaded or not empty');
-    }
+    // if (this.status !== KeyRingStatus.EMPTY) {
+    //   throw new Error('Key ring is not loaded or not empty');
+    // }
 
     this.privateKey = privateKey;
     this.keyStore = await KeyRing.CreatePrivateKeyStore(
@@ -304,9 +305,9 @@ export class KeyRing {
     status: KeyRingStatus;
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
-    if (this.status !== KeyRingStatus.EMPTY) {
-      throw new Error('Key ring is not loaded or not empty');
-    }
+    // if (this.status !== KeyRingStatus.EMPTY) {
+    //   throw new Error('Key ring is not loaded or not empty');
+    // }
 
     // Get public key first
     this.ledgerPublicKey = await this.ledgerKeeper.getPublicKey(
@@ -1271,7 +1272,7 @@ export class KeyRing {
   ): Promise<{
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
-    if (this.status !== KeyRingStatus.UNLOCKED || this.password == '') {
+    if (this.password == '') {
       throw new OWalletError(
         'keyring',
         141,
@@ -1303,7 +1304,7 @@ export class KeyRing {
   ): Promise<{
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
-    if (this.status !== KeyRingStatus.UNLOCKED || this.password == '') {
+    if (this.password == '') {
       throw new OWalletError(
         'keyring',
         141,
@@ -1336,7 +1337,7 @@ export class KeyRing {
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
     try {
-      if (this.status !== KeyRingStatus.UNLOCKED || this.password == '') {
+      if (this.password == '') {
         throw new OWalletError(
           'keyring',
           141,
@@ -1379,7 +1380,7 @@ export class KeyRing {
   public async changeKeyStoreFromMultiKeyStore(index: number): Promise<{
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
-    if (this.status !== KeyRingStatus.UNLOCKED || this.password == '') {
+    if (this.password == '') {
       throw new OWalletError(
         'keyring',
         141,
