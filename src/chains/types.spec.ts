@@ -505,7 +505,6 @@ describe('Test chain info schema', () => {
         chainId: 'test-1',
         networkType: 'cosmos',
         chainName: 'Test',
-        networkType: "cosmos",
         stakeCurrency: {
           coinDenom: 'TEST',
           coinMinimalDenom: 'utest',
