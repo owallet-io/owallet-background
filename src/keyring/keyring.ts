@@ -236,9 +236,10 @@ export class KeyRing {
     status: KeyRingStatus;
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
-    if (this.status !== KeyRingStatus.EMPTY) {
-      throw new Error('Key ring is not loaded or not empty');
-    }
+    // Affect if remove this check ?
+    // if (this.status !== KeyRingStatus.EMPTY) {
+    //   throw new Error('Key ring is not loaded or not empty');
+    // }
 
     this.mnemonic = mnemonic;
     this.keyStore = await KeyRing.CreateMnemonicKeyStore(
@@ -270,9 +271,9 @@ export class KeyRing {
     status: KeyRingStatus;
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
-    if (this.status !== KeyRingStatus.EMPTY) {
-      throw new Error('Key ring is not loaded or not empty');
-    }
+    // if (this.status !== KeyRingStatus.EMPTY) {
+    //   throw new Error('Key ring is not loaded or not empty');
+    // }
 
     this.privateKey = privateKey;
     this.keyStore = await KeyRing.CreatePrivateKeyStore(
@@ -304,9 +305,9 @@ export class KeyRing {
     status: KeyRingStatus;
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
-    if (this.status !== KeyRingStatus.EMPTY) {
-      throw new Error('Key ring is not loaded or not empty');
-    }
+    // if (this.status !== KeyRingStatus.EMPTY) {
+    //   throw new Error('Key ring is not loaded or not empty');
+    // }
 
     // Get public key first
     this.ledgerPublicKey = await this.ledgerKeeper.getPublicKey(
