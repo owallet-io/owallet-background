@@ -345,8 +345,6 @@ export class KeyRingService {
       throw new Error('Signer mismatched');
     }
 
-    
-
     const newSignDocBytes = (await this.interactionService.waitApprove(
       env,
       '/sign',
@@ -423,11 +421,7 @@ export class KeyRingService {
     chainId: string,
     data: SignEthereumTypedDataObject
   ): Promise<ECDSASignature> {
-    console.log(
-      'in request sign ethereum typed data: ',
-      chainId,
-      data
-    );
+    console.log('in request sign ethereum typed data: ', chainId, data);
 
     try {
       const rawTxHex = await this.keyRing.signEthereumTypedData({
@@ -564,7 +558,7 @@ export class KeyRingService {
 
     const approveData = (await this.interactionService.waitApprove(
       env,
-      '/sign-ethereum',
+      '/sign',
       'request-sign-ethereum',
       {
         env,
