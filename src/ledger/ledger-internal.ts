@@ -30,8 +30,8 @@ export class LedgerInternal {
   constructor(private readonly cosmosApp: CosmosApp) {}
 
   static transportIniters: Record<TransportMode, TransportIniter> = {
-    webusb: TransportWebUSB.create,
-    webhid: TransportWebHID.create,
+    webusb: TransportWebUSB.create.bind(TransportWebUSB),
+    webhid: TransportWebHID.create.bind(TransportWebHID),
     // implemented in ReactNative
     ble: () => Promise.resolve(null)
   };
