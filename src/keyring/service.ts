@@ -423,11 +423,7 @@ export class KeyRingService {
     chainId: string,
     data: SignEthereumTypedDataObject
   ): Promise<ECDSASignature> {
-    console.log(
-      'in request sign ethereum typed data: ',
-      chainId,
-      data
-    );
+    console.log('in request sign ethereum typed data: ', chainId, data);
 
     try {
       const rawTxHex = await this.keyRing.signEthereumTypedData({
@@ -681,6 +677,10 @@ export class KeyRingService {
         {}
       );
     }
+  }
+
+  public async changeChain() {
+    this.interactionService.dispatchEvent(WEBPAGE_PORT, 'keystore-changed', {});
   }
 
   public checkPassword(password: string): boolean {

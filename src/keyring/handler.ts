@@ -26,7 +26,8 @@ import {
   RequestSignEthereumTypedDataMsg,
   RequestSignProxyReEncryptionDataMsg,
   RequestSignProxyDecryptionDataMsg,
-  RequestPublicKeyMsg
+  RequestPublicKeyMsg,
+  ChangeChainMsg
 } from './messages';
 import { KeyRingService } from './service';
 import { Bech32Address, cosmos } from '@owallet/cosmos';
@@ -139,6 +140,8 @@ export const getHandler: (service: KeyRingService) => Handler = (
           env,
           msg as ExportKeyRingDatasMsg
         );
+      case ChangeChainMsg:
+        return handleChangeChainMsg(service)(env, msg as ChangeKeyRingMsg);
       default:
         throw new Error('Unknown msg type');
     }
@@ -243,8 +246,13 @@ const handleAddLedgerKeyMsg: (
   service: KeyRingService
 ) => InternalHandler<AddLedgerKeyMsg> = (service) => {
   return async (env, msg) => {
-    const result = await service.addLedgerKey(env, msg.kdf, msg.meta, msg.bip44HDPath);
-    console.log(result, 'result ???')
+    const result = await service.addLedgerKey(
+      env,
+      msg.kdf,
+      msg.meta,
+      msg.bip44HDPath
+    );
+    console.log(result, 'result ???');
     return result;
   };
 };
@@ -380,9 +388,13 @@ const handleRequestSignEthereumTypedData: (
   service: KeyRingService
 ) => InternalHandler<RequestSignEthereumTypedDataMsg> = (service) => {
   return async (env, msg) => {
-    console.log("REACH HANDLE IN SIGN TYPED DATA")
-    const response = await service.requestSignEthereumTypedData(env, msg.chainId, msg.data?.[0])
-    console.log(response, "RESPONSE AFTER HANDLE SIGN TYPED DATA")
+    console.log('REACH HANDLE IN SIGN TYPED DATA');
+    const response = await service.requestSignEthereumTypedData(
+      env,
+      msg.chainId,
+      msg.data?.[0]
+    );
+    console.log(response, 'RESPONSE AFTER HANDLE SIGN TYPED DATA');
     return { result: JSON.stringify(response) };
   };
 };
@@ -471,6 +483,14 @@ const handleChangeKeyRingMsg: (
 ) => InternalHandler<ChangeKeyRingMsg> = (service) => {
   return async (_, msg) => {
     return await service.changeKeyStoreFromMultiKeyStore(msg.index);
+  };
+};
+
+const handleChangeChainMsg: (
+  service: KeyRingService
+) => InternalHandler<ChangeChainMsg> = (service) => {
+  return async (_, msg) => {
+    return await service.changeChain();
   };
 };
 

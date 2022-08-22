@@ -636,9 +636,8 @@ export class RequestSignEthereumMsg extends Message<{
 
   constructor(
     public readonly chainId: string,
-    public readonly data: object // public readonly signOptions: OWalletSignOptions = {} // public readonly signer: string, // public readonly signDoc: { //   bodyBytes?: Uint8Array | null; //   authInfoBytes?: Uint8Array | null; //   chainId?: string | null; //   accountNumber?: string | null;
-  ) // }
-  {
+    public readonly data: object // public readonly signOptions: OWalletSignOptions = {} // public readonly signer: string, // public readonly signDoc: { //   bodyBytes?: Uint8Array | null; //   authInfoBytes?: Uint8Array | null; //   chainId?: string | null; //   accountNumber?: string | null; // }
+  ) {
     super();
   }
 
@@ -938,6 +937,34 @@ export class ChangeKeyRingMsg extends Message<{
 
   type(): string {
     return ChangeKeyRingMsg.type();
+  }
+}
+
+export class ChangeChainMsg extends Message<{}> {
+  public static type() {
+    return 'change-chain';
+  }
+
+  constructor(public readonly index: number) {
+    super();
+  }
+  
+  validateBasic(): void {
+    if (this.index < 0) {
+      throw new OWalletError('keyring', 200, 'Index is negative');
+    }
+
+    if (!Number.isInteger(this.index)) {
+      throw new OWalletError('keyring', 201, 'Invalid index');
+    }
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return ChangeChainMsg.type();
   }
 }
 
