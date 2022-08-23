@@ -940,22 +940,22 @@ export class ChangeKeyRingMsg extends Message<{
   }
 }
 
-export class ChangeChainMsg extends Message<{}> {
+export class ChangeChainMsg extends Message<{
+  chainInfos?: object;
+}> {
   public static type() {
     return 'change-chain';
   }
 
-  constructor(public readonly index: number) {
+  constructor(
+    public readonly chainInfos: object
+  ) {
     super();
   }
-  
-  validateBasic(): void {
-    if (this.index < 0) {
-      throw new OWalletError('keyring', 200, 'Index is negative');
-    }
 
-    if (!Number.isInteger(this.index)) {
-      throw new OWalletError('keyring', 201, 'Invalid index');
+  validateBasic(): void {
+    if (!this.chainInfos) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
     }
   }
 

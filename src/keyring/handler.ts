@@ -141,7 +141,7 @@ export const getHandler: (service: KeyRingService) => Handler = (
           msg as ExportKeyRingDatasMsg
         );
       case ChangeChainMsg:
-        return handleChangeChainMsg(service)(env, msg as ChangeKeyRingMsg);
+        return handleChangeChainMsg(service)(env, msg as ChangeChainMsg);
       default:
         throw new Error('Unknown msg type');
     }
@@ -490,7 +490,8 @@ const handleChangeChainMsg: (
   service: KeyRingService
 ) => InternalHandler<ChangeChainMsg> = (service) => {
   return async (_, msg) => {
-    return await service.changeChain();
+    console.log('handleChangeChainMsg handler keyring', msg);
+    return await service.changeChain(msg.chainInfos);
   };
 };
 
