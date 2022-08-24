@@ -677,6 +677,13 @@ export class KeyRingService {
     }
   }
 
+  public async changeChain(chainInfos: object = {}) {
+    console.log('changeChain stores core', chainInfos);
+    this.interactionService.dispatchEvent(WEBPAGE_PORT, 'keystore-changed', {
+      ...chainInfos
+    });
+  }
+
   public checkPassword(password: string): boolean {
     return this.keyRing.checkPassword(password);
   }

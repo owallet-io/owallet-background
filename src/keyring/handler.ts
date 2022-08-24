@@ -26,7 +26,8 @@ import {
   RequestSignEthereumTypedDataMsg,
   RequestSignProxyReEncryptionDataMsg,
   RequestSignProxyDecryptionDataMsg,
-  RequestPublicKeyMsg
+  RequestPublicKeyMsg,
+  ChangeChainMsg
 } from './messages';
 import { KeyRingService } from './service';
 import { Bech32Address, cosmos } from '@owallet/cosmos';
@@ -139,6 +140,8 @@ export const getHandler: (service: KeyRingService) => Handler = (
           env,
           msg as ExportKeyRingDatasMsg
         );
+      case ChangeChainMsg:
+        return handleChangeChainMsg(service)(env, msg as ChangeChainMsg);
       default:
         throw new Error('Unknown msg type');
     }
@@ -480,6 +483,15 @@ const handleChangeKeyRingMsg: (
 ) => InternalHandler<ChangeKeyRingMsg> = service => {
   return async (_, msg) => {
     return await service.changeKeyStoreFromMultiKeyStore(msg.index);
+  };
+};
+
+const handleChangeChainMsg: (
+  service: KeyRingService
+) => InternalHandler<ChangeChainMsg> = (service) => {
+  return async (_, msg) => {
+    console.log('handleChangeChainMsg handler keyring', msg);
+    return await service.changeChain(msg.chainInfos);
   };
 };
 
