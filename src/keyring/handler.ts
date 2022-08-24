@@ -487,8 +487,8 @@ const handleChangeKeyRingMsg: (
 };
 
 const handleChangeChainMsg: (
-  service: KeyRingService
-) => InternalHandler<ChangeChainMsg> = (service) => {
+  service: any
+) => InternalHandler<ChangeChainMsg> = service => {
   return async (_, msg) => {
     console.log('handleChangeChainMsg handler keyring', msg);
     return await service.changeChain(msg.chainInfos);

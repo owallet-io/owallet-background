@@ -947,9 +947,7 @@ export class ChangeChainMsg extends Message<{
     return 'change-chain';
   }
 
-  constructor(
-    public readonly chainInfos: object
-  ) {
+  constructor(public readonly chainInfos: object) {
     super();
   }
 
