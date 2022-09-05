@@ -421,7 +421,7 @@ export class KeyRingService {
     chainId: string,
     data: SignEthereumTypedDataObject
   ): Promise<ECDSASignature> {
-    console.log('in request sign ethereum typed data: ', chainId, data);
+    console.log('in request sign ethereum typed data: ', chainId);
 
     try {
       const rawTxHex = await this.keyRing.signEthereumTypedData({
@@ -551,10 +551,6 @@ export class KeyRingService {
       '🚀 ~ file: service.ts ~ line 389 ~ KeyRingService ~ estimatedGasPrice',
       estimatedGasPrice
     );
-    console.log(
-      '🚀 ~ file: service.ts ~ line 392 ~ KeyRingService ~ estimatedGasLimit',
-      estimatedGasLimit
-    );
 
     const approveData = (await this.interactionService.waitApprove(
       env,
@@ -678,7 +674,6 @@ export class KeyRingService {
   }
 
   public async changeChain(chainInfos: object = {}): Promise<void | any> {
-    console.log('changeChain stores core', chainInfos);
     this.interactionService.dispatchEvent(WEBPAGE_PORT, 'keystore-changed', {
       ...chainInfos
     });
