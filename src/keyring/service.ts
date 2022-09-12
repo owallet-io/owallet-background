@@ -388,8 +388,6 @@ export class KeyRingService {
     const coinType = await this.chainsService.getChainCoinType(chainId);
     const rpc = (await this.chainsService.getChainInfo(chainId)).rest;
 
-    console.log(data, 'DATA IN HEREEEEEEEEEEEEEEEEEEEEEEEE');
-
     // TODO: add UI here so users can change gas, memo & fee
     const newData = await this.estimateFeeAndWaitApprove(
       env,
@@ -397,6 +395,7 @@ export class KeyRingService {
       rpc,
       data
     );
+    console.log(newData, 'NEW DATA IN HEREEEEEEEEEEEEEEEEEEEEEEEE');
 
     try {
       const rawTxHex = await this.keyRing.signAndBroadcastEthereum(

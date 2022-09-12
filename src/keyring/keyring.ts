@@ -12,6 +12,7 @@ import {
   publicToAddress,
   toBuffer
 } from 'ethereumjs-util';
+
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
 import { intToHex, isHexString, stripHexPrefix } from 'ethjs-util';
 import { KVStore } from '@owallet/common';
@@ -794,9 +795,12 @@ export class KeyRing {
         ...message,
         gas: (message as any)?.gasLimit,
         gasPrice: (message as any)?.gasPrice,
-        nonce
+        nonce,
+        chainId
       };
 
+      delete finalMessage?.from;
+      delete finalMessage?.type;
       console.log(
         '🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage',
         finalMessage
