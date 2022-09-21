@@ -51,12 +51,11 @@ export async function request(
       }
     }
   );
-  console.log("🚀 ~ file: service.ts ~ line 48 ~ params", params)
-  console.log("🚀 ~ file: service.ts ~ line 48 ~ method", method)
-  console.log("🚀 ~ file: service.ts ~ line 55 ~ response", response)
+  console.log('🚀 ~ file: service.ts ~ line 48 ~ params', params);
+  console.log('🚀 ~ file: service.ts ~ line 48 ~ method', method);
+  console.log('🚀 ~ file: service.ts ~ line 55 ~ response', response);
   if (response.data.result) return response.data.result;
-  if (response.data.error)
-    throw new Error(JSON.stringify(response.data.error));
+  if (response.data.error) throw new Error(JSON.stringify(response.data.error));
   throw new Error(
     `Unexpected error from the network: ${JSON.stringify(response.data)}`
   );
@@ -73,7 +72,7 @@ export class BackgroundTxService {
     public readonly permissionService: PermissionService,
     @inject(TYPES.Notification)
     protected readonly notification: Notification
-  ) { }
+  ) {}
 
   async sendTx(
     chainId: string,
@@ -100,24 +99,24 @@ export class BackgroundTxService {
 
     const params = isProtoTx
       ? {
-        tx_bytes: Buffer.from(tx as any).toString('base64'),
-        mode: (() => {
-          switch (mode) {
-            case 'async':
-              return 'BROADCAST_MODE_ASYNC';
-            case 'block':
-              return 'BROADCAST_MODE_BLOCK';
-            case 'sync':
-              return 'BROADCAST_MODE_SYNC';
-            default:
-              return 'BROADCAST_MODE_UNSPECIFIED';
-          }
-        })()
-      }
+          tx_bytes: Buffer.from(tx as any).toString('base64'),
+          mode: (() => {
+            switch (mode) {
+              case 'async':
+                return 'BROADCAST_MODE_ASYNC';
+              case 'block':
+                return 'BROADCAST_MODE_BLOCK';
+              case 'sync':
+                return 'BROADCAST_MODE_SYNC';
+              default:
+                return 'BROADCAST_MODE_UNSPECIFIED';
+            }
+          })()
+        }
       : {
-        tx,
-        mode: mode
-      };
+          tx,
+          mode: mode
+        };
 
     try {
       const result = await restInstance.post(
@@ -134,7 +133,7 @@ export class BackgroundTxService {
       const txHash = Buffer.from(txResponse.txhash, 'hex');
 
       const txTracer = new TendermintTxTracer(chainInfo.rpc, '/websocket');
-      txTracer.traceTx(txHash).then((tx) => {
+      txTracer.traceTx(txHash).then(tx => {
         txTracer.close();
         BackgroundTxService.processTxResultNotification(this.notification, tx);
       });
@@ -142,6 +141,7 @@ export class BackgroundTxService {
       return txHash;
     } catch (e: any) {
       console.log(e);
+      alert(e.message);
       BackgroundTxService.processTxErrorNotification(this.notification, e);
       throw e;
     }
@@ -160,8 +160,8 @@ export class BackgroundTxService {
 
   async request(chainId: string, method: string, params: any[]): Promise<any> {
     let chainInfo: ChainInfoWithEmbed;
-    console.log('method in request: ', method)
-    
+    console.log('method in request: ', method);
+
     switch (method) {
       case 'eth_accounts':
       case 'eth_requestAccounts':
