@@ -27,7 +27,7 @@ export class ChainsService {
     protected readonly chainUpdaterKeeper: ChainUpdaterService,
     @inject(delay(() => InteractionService))
     protected readonly interactionKeeper: InteractionService
-  ) { }
+  ) {}
 
   readonly getChainInfos: () => Promise<ChainInfoWithEmbed[]> =
     Debouncer.promise(async () => {
@@ -35,7 +35,7 @@ export class ChainsService {
         return this.cachedChainInfos;
       }
 
-      const chainInfos = this.embedChainInfos.map((chainInfo) => {
+      const chainInfos = this.embedChainInfos.map(chainInfo => {
         return {
           ...chainInfo,
           embeded: true
@@ -53,7 +53,7 @@ export class ChainsService {
       const savedChainInfos: ChainInfoWithEmbed[] = (
         (await this.kvStore.get<ChainInfo[]>('chain-infos')) ?? []
       )
-        .filter((chainInfo) => {
+        .filter(chainInfo => {
           // Filter the overlaped chain info with the embeded chain infos.
           return !embedChainInfoIdentifierMap.get(
             ChainIdHelper.parse(chainInfo.chainId).identifier
@@ -70,7 +70,7 @@ export class ChainsService {
 
       // Set the updated property of the chain.
       result = await Promise.all(
-        result.map(async (chainInfo) => {
+        result.map(async chainInfo => {
           const updated: ChainInfo =
             await this.chainUpdaterKeeper.putUpdatedPropertyToChainInfo(
               chainInfo
@@ -92,18 +92,21 @@ export class ChainsService {
     this.cachedChainInfos = undefined;
   }
 
-  async getChainInfo(chainId: string, networkType?: string): Promise<ChainInfoWithEmbed> {
-
+  async getChainInfo(
+    chainId: string,
+    networkType?: string
+  ): Promise<ChainInfoWithEmbed> {
     var chainInfo: ChainInfoWithEmbed;
     if (networkType) {
-      chainInfo = (await this.getChainInfos()).find((chainInfo) => {
+      chainInfo = (await this.getChainInfos()).find(chainInfo => {
         return (
           ChainIdHelper.parse(chainInfo.chainId).identifier ===
-          ChainIdHelper.parse(chainId).identifier && chainInfo.networkType === networkType
+            ChainIdHelper.parse(chainId).identifier &&
+          chainInfo.networkType === networkType
         );
       });
     } else {
-      chainInfo = (await this.getChainInfos()).find((chainInfo) => {
+      chainInfo = (await this.getChainInfos()).find(chainInfo => {
         return (
           ChainIdHelper.parse(chainInfo.chainId).identifier ===
           ChainIdHelper.parse(chainId).identifier
@@ -129,7 +132,7 @@ export class ChainsService {
 
   async hasChainInfo(chainId: string): Promise<boolean> {
     return (
-      (await this.getChainInfos()).find((chainInfo) => {
+      (await this.getChainInfos()).find(chainInfo => {
         return (
           ChainIdHelper.parse(chainInfo.chainId).identifier ===
           ChainIdHelper.parse(chainId).identifier
@@ -147,15 +150,15 @@ export class ChainsService {
       stripUnknown: true
     });
 
-    await this.interactionKeeper.waitApprove(
-      env,
-      '/suggest-chain',
-      SuggestChainInfoMsg.type(),
-      {
-        ...chainInfo,
-        origin
-      }
-    );
+    // await this.interactionKeeper.waitApprove(
+    //   env,
+    //   '/suggest-chain',
+    //   SuggestChainInfoMsg.type(),
+    //   {
+    //     ...chainInfo,
+    //     origin
+    //   }
+    // );
 
     await this.addChainInfo(chainInfo);
   }
@@ -187,7 +190,7 @@ export class ChainsService {
     const savedChainInfos =
       (await this.kvStore.get<ChainInfo[]>('chain-infos')) ?? [];
 
-    const resultChainInfo = savedChainInfos.filter((chainInfo) => {
+    const resultChainInfo = savedChainInfos.filter(chainInfo => {
       return (
         ChainIdHelper.parse(chainInfo.chainId).identifier !==
         ChainIdHelper.parse(chainId).identifier
