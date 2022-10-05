@@ -760,7 +760,7 @@ export class RequestPublicKeyMsg extends Message<{
   }
 }
 
-export class RequestSignProxyDecryptionDataMsg extends Message<{
+export class RequestSignDecryptDataMsg extends Message<{
   readonly result: string; // raw tx signature to broadcast
 }> {
   public static type() {
@@ -797,15 +797,15 @@ export class RequestSignProxyDecryptionDataMsg extends Message<{
   }
 
   type(): string {
-    return RequestSignProxyDecryptionDataMsg.type();
+    return RequestSignDecryptDataMsg.type();
   }
 }
 
-export class RequestSignProxyReEncryptionDataMsg extends Message<{
+export class RequestSignReEncryptDataMsg extends Message<{
   readonly result: string; // raw tx signature to broadcast
 }> {
   public static type() {
-    return 'request-sign-proxy-re-encryption-data';
+    return 'request-sign-re-encrypt-data';
   }
 
   constructor(
@@ -838,7 +838,7 @@ export class RequestSignProxyReEncryptionDataMsg extends Message<{
   }
 
   type(): string {
-    return RequestSignProxyReEncryptionDataMsg.type();
+    return RequestSignReEncryptDataMsg.type();
   }
 }
 
