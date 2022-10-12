@@ -24,8 +24,8 @@ import {
   RequestVerifyADR36AminoSignDoc,
   RequestSignEthereumMsg,
   RequestSignEthereumTypedDataMsg,
-  RequestSignProxyReEncryptionDataMsg,
-  RequestSignProxyDecryptionDataMsg,
+  RequestSignReEncryptDataMsg,
+  RequestSignDecryptDataMsg,
   RequestPublicKeyMsg,
   ChangeChainMsg
 } from './messages';
@@ -105,16 +105,16 @@ export const getHandler: (service: KeyRingService) => Handler = (
         );
       case RequestPublicKeyMsg:
         return handleRequestPublicKey(service)(env, msg as RequestPublicKeyMsg);
-      case RequestSignProxyDecryptionDataMsg:
-        return handleRequestSignProxyDecryptionData(service)(
+      case RequestSignDecryptDataMsg:
+        return handleRequestSignDecryptionData(service)(
           env,
-          msg as RequestSignProxyDecryptionDataMsg
+          msg as RequestSignDecryptDataMsg
         );
       // thang4
-      case RequestSignProxyReEncryptionDataMsg:
-        return handleRequestSignProxyReEncryptionData(service)(
+      case RequestSignReEncryptDataMsg:
+        return handleRequestSignReEncryptData(service)(
           env,
-          msg as RequestSignProxyReEncryptionDataMsg
+          msg as RequestSignReEncryptDataMsg
         );
       case GetMultiKeyStoreInfoMsg:
         return handleGetMultiKeyStoreInfoMsg(service)(
@@ -409,11 +409,11 @@ const handleRequestPublicKey: (
   };
 };
 
-const handleRequestSignProxyDecryptionData: (
+const handleRequestSignDecryptionData: (
   service: KeyRingService
-) => InternalHandler<RequestSignProxyDecryptionDataMsg> = (service) => {
+) => InternalHandler<RequestSignDecryptDataMsg> = (service) => {
   return async (env, msg) => {
-    const response = await service.requestSignProxyDecryptionData(
+    const response = await service.requestSignDecryptData(
       env,
       msg.chainId,
       msg.data
@@ -424,11 +424,11 @@ const handleRequestSignProxyDecryptionData: (
 };
 
 // thang5
-const handleRequestSignProxyReEncryptionData: (
+const handleRequestSignReEncryptData: (
   service: KeyRingService
-) => InternalHandler<RequestSignProxyReEncryptionDataMsg> = (service) => {
+) => InternalHandler<RequestSignReEncryptDataMsg> = (service) => {
   return async (env, msg) => {
-    const response = await service.requestSignProxyReEncryptionData(
+    const response = await service.requestSignReEncryptData(
       env,
       msg.chainId,
       msg.data

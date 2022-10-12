@@ -5,6 +5,7 @@ import {
   PubKeySecp256k1,
   RNG
 } from '@owallet/crypto';
+import eccrypto from 'eccrypto';
 import {
   bufferToHex,
   ecsign,
@@ -851,29 +852,33 @@ export class KeyRing {
     }
   }
 
-  public async signProxyDecryptionData(
+  public async signDecryptData(
     chainId: string,
     message: object
   ): Promise<object> {
-    if (this.status !== KeyRingStatus.UNLOCKED) {
-      throw new Error('Key ring is not unlocked');
+    try {
+      const privKey = this.loadPrivKey(60);
+      const privKeyBuffer = Buffer.from(privKey.toBytes());
+      let encryptedData = message[0];
+      encryptedData = {
+        ciphertext: Buffer.from(encryptedData.ciphertext, 'hex'),
+        ephemPublicKey: Buffer.from(encryptedData.ephemPublicKey, 'hex'),
+        iv: Buffer.from(encryptedData.iv, 'hex'),
+        mac: Buffer.from(encryptedData.mac, 'hex')
+      };
+      const data = await eccrypto.decrypt(privKeyBuffer, encryptedData);
+      return {
+        data
+      };
+    } catch (error) {
+      return {
+        error: error.message
+      };
     }
-
-    if (!this.keyStore) {
-      throw new Error('Key Store is empty');
-    }
-
-    const privKey = this.loadPrivKey(60);
-    const ethWallet = new Wallet(privKey.toBytes());
-    const privKeyHex = ethWallet.privateKey.slice(2);
-    const decryptedData = PRE.decryptData(privKeyHex, message[0]);
-    return {
-      decryptedData
-    };
   }
 
   // thang7
-  public async signProxyReEncryptionData(
+  public async signReEncryptData(
     chainId: string,
     message: object
   ): Promise<object> {
@@ -884,15 +889,43 @@ export class KeyRing {
     if (!this.keyStore) {
       throw new Error('Key Store is empty');
     }
+    try {
+      const privKey = this.loadPrivKey(60);
+      const privKeyBuffer = Buffer.from(privKey.toBytes());
+      const response = await Promise.all(
+        message[0].map(async (data) => {
+          const encryptedData = {
+            ciphertext: Buffer.from(data.ciphertext, 'hex'),
+            ephemPublicKey: Buffer.from(data.ephemPublicKey, 'hex'),
+            iv: Buffer.from(data.iv, 'hex'),
+            mac: Buffer.from(data.mac, 'hex')
+          };
+          const decryptedData = await eccrypto.decrypt(
+            privKeyBuffer,
+            encryptedData
+          );
+          const reEncryptedData = await eccrypto.encrypt(
+            Buffer.from(data.publicKey, 'hex'),
+            Buffer.from(decryptedData.toString(), 'utf-8')
+          );
+          const address = Buffer.from(
+            publicToAddress(Buffer.from(data.publicKey, 'hex'), true)
+          ).toString('hex');
+          return {
+            ...reEncryptedData,
+            address
+          };
+        })
+      );
 
-    const privKey = this.loadPrivKey(60);
-    const ethWallet = new Wallet(privKey.toBytes());
-    const privKeyHex = ethWallet.privateKey.slice(2);
-    const rk = PRE.generateReEncrytionKey(privKeyHex, message[0]);
-
-    return {
-      rk
-    };
+      return {
+        data: response
+      };
+    } catch (error) {
+      return {
+        error: error.message
+      };
+    }
   }
 
   public async getPublicKey(chainId: string): Promise<string> {
