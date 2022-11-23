@@ -95,6 +95,7 @@ export class BackgroundTxService {
       message: 'Wait a second'
     });
 
+    // here
     const isProtoTx = Buffer.isBuffer(tx) || tx instanceof Uint8Array;
 
     const params = isProtoTx
