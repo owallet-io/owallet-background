@@ -41,6 +41,7 @@ import Common from '@ethereumjs/common';
 import { TransactionOptions, Transaction } from 'ethereumjs-tx';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
+import { checkNetworkTypeByChainId } from './utils';
 
 export enum KeyRingStatus {
   NOTLOADED,
@@ -705,8 +706,10 @@ export class KeyRing {
     }
     // get here
     // Sign with Evmos/Ethereum
-    const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
-    if (coinType === 60) {
+    // const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
+    // Need to check network type by chain id instead coin type
+    const networkType = checkNetworkTypeByChainId(chainId);
+    if (networkType === 'evm') {
       return this.signEthereum(chainId, defaultCoinType, message);
     }
 
@@ -767,7 +770,10 @@ export class KeyRing {
     }
 
     const cType = this.computeKeyStoreCoinType(chainId, coinType);
-    if (cType !== 60) {
+    // Need to check network type by chain id instead coin type
+    const networkType = checkNetworkTypeByChainId(chainId);
+    if (networkType !== 'evm') {
+      // if (cType !== 60) {
       throw new Error(
         'Invalid coin type passed in to Ethereum signing (expected 60)'
       );
@@ -836,7 +842,10 @@ export class KeyRing {
       throw new Error('Ethereum signing with Ledger is not yet supported');
     } else {
       const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
-      if (coinType !== 60) {
+      // Need to check network type by chain id instead coin type
+      const networkType = checkNetworkTypeByChainId(chainId);
+      // if (coinType !== 60) {
+      if (networkType !== 'evm') {
         throw new Error(
           'Invalid coin type passed in to Ethereum signing (expected 60)'
         );
@@ -936,7 +945,10 @@ export class KeyRing {
       }
 
       const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
-      if (coinType !== 60) {
+      // Need to check network type by chain id instead of coin type
+      const networkType = checkNetworkTypeByChainId(chainId);
+      // if (coinType !== 60) {
+      if (networkType !== 'evm') {
         throw new Error(
           'Invalid coin type passed in to Ethereum signing (expected 60)'
         );
