@@ -37,10 +37,10 @@ export const LIST_NETWORK_BY_CHAIN_ID = {
 };
 
 export const LIST_CHAIN_ID_BY_NETWORK = {
-  'kawaii_6886-1': 'evm',
   '0x1ae6': 'evm',
   '0x01': 'evm',
   '0x38': 'evm',
+  'kawaii_6886-1': 'cosmos',
   Oraichain: 'cosmos',
   'Oraichain-testnet': 'cosmos',
   'oraibridge-subnet-2': 'cosmos',
