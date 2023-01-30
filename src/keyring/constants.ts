@@ -25,7 +25,7 @@ export const TYPED_MESSAGE_SCHEMA = {
 };
 
 export const LIST_NETWORK_BY_CHAIN_ID = {
-  evm: ['kawaii_6886-1', '0x1ae6', '0x01', '0x38'],
+  evm: ['0x1ae6', '0x01', '0x38'],
   cosmos: [
     'Oraichain',
     'Oraichain-testnet',
