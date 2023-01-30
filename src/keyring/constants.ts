@@ -32,7 +32,8 @@ export const LIST_NETWORK_BY_CHAIN_ID = {
     'oraibridge-subnet-2',
     'cosmoshub-4',
     'osmosis-1',
-    'juno-1'
+    'juno-1',
+    'kawaii_6886-1'
   ]
 };
 
