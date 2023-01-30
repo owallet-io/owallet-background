@@ -710,6 +710,7 @@ export class KeyRing {
     // Need to check network type by chain id instead coin type
     const networkType = checkNetworkTypeByChainId(chainId);
     if (networkType === 'evm') {
+      // if (coinType === 60) {
       return this.signEthereum(chainId, defaultCoinType, message);
     }
 
