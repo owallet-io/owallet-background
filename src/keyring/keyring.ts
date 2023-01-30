@@ -624,7 +624,7 @@ export class KeyRing {
     } else {
       const privKey = this.loadPrivKey(coinType);
       const pubKey = privKey.getPubKey();
-      if (chainId) {
+      if (chainId && chainId !== '') {
         const networkType = checkNetworkTypeByChainId(chainId);
         if (networkType === 'evm') {
           // For Ethereum Key-Gen Only:
