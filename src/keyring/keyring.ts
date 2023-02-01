@@ -945,6 +945,9 @@ export class KeyRing {
     const privKey = this.loadPrivKey(getCoinTypeByChainId(chainId));
     const ethWallet = new Wallet(privKey.toBytes());
     const pubKeyHex = ethWallet.publicKey.slice(2);
+    // Could use privKey to get pubKey hex like this
+    // Buffer.from(privKey.getPubKey().toBytes()).toString('hex')
+
     return pubKeyHex;
   }
 
