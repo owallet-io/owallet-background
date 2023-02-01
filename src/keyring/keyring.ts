@@ -41,6 +41,7 @@ import Common from '@ethereumjs/common';
 import { TransactionOptions, Transaction } from 'ethereumjs-tx';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
+import { checkNetworkTypeByChainId } from './utils';
 
 export enum KeyRingStatus {
   NOTLOADED,
@@ -197,7 +198,10 @@ export class KeyRing {
   }
 
   public getKey(chainId: string, defaultCoinType: number): Key {
-    return this.loadKey(this.computeKeyStoreCoinType(chainId, defaultCoinType));
+    return this.loadKey(
+      this.computeKeyStoreCoinType(chainId, defaultCoinType),
+      chainId
+    );
   }
 
   public getKeyStoreMeta(key: string): string {
@@ -595,7 +599,7 @@ export class KeyRing {
     return this.getMultiKeyStoreInfo();
   }
 
-  private loadKey(coinType: number): Key {
+  private loadKey(coinType: number, chainId?: string | number): Key {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -620,6 +624,30 @@ export class KeyRing {
     } else {
       const privKey = this.loadPrivKey(coinType);
       const pubKey = privKey.getPubKey();
+      if (chainId && chainId !== '') {
+        const networkType = checkNetworkTypeByChainId(chainId);
+        if (networkType === 'evm') {
+          // For Ethereum Key-Gen Only:
+          const wallet = new Wallet(privKey.toBytes());
+          const ethereumAddress = ETH.decoder(wallet.address);
+
+          return {
+            algo: 'ethsecp256k1',
+            pubKey: pubKey.toBytes(),
+            address: ethereumAddress,
+            isNanoLedger: false
+          };
+        }
+
+        if (networkType === 'cosmos') {
+          return {
+            algo: 'secp256k1',
+            pubKey: pubKey.toBytes(),
+            address: pubKey.getAddress(),
+            isNanoLedger: false
+          };
+        }
+      }
 
       if (coinType === 60) {
         // For Ethereum Key-Gen Only:
@@ -705,8 +733,11 @@ export class KeyRing {
     }
     // get here
     // Sign with Evmos/Ethereum
-    const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
-    if (coinType === 60) {
+    // const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
+    // Need to check network type by chain id instead coin type
+    const networkType = checkNetworkTypeByChainId(chainId);
+    if (networkType === 'evm') {
+      // if (coinType === 60) {
       return this.signEthereum(chainId, defaultCoinType, message);
     }
 
@@ -767,7 +798,10 @@ export class KeyRing {
     }
 
     const cType = this.computeKeyStoreCoinType(chainId, coinType);
-    if (cType !== 60) {
+    // Need to check network type by chain id instead coin type
+    const networkType = checkNetworkTypeByChainId(chainId);
+    if (networkType !== 'evm') {
+      // if (cType !== 60) {
       throw new Error(
         'Invalid coin type passed in to Ethereum signing (expected 60)'
       );
@@ -836,7 +870,10 @@ export class KeyRing {
       throw new Error('Ethereum signing with Ledger is not yet supported');
     } else {
       const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
-      if (coinType !== 60) {
+      // Need to check network type by chain id instead coin type
+      const networkType = checkNetworkTypeByChainId(chainId);
+      // if (coinType !== 60) {
+      if (networkType !== 'evm') {
         throw new Error(
           'Invalid coin type passed in to Ethereum signing (expected 60)'
         );
@@ -936,7 +973,10 @@ export class KeyRing {
       }
 
       const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
-      if (coinType !== 60) {
+      // Need to check network type by chain id instead of coin type
+      const networkType = checkNetworkTypeByChainId(chainId);
+      // if (coinType !== 60) {
+      if (networkType !== 'evm') {
         throw new Error(
           'Invalid coin type passed in to Ethereum signing (expected 60)'
         );
