@@ -41,7 +41,7 @@ import Common from '@ethereumjs/common';
 import { TransactionOptions, Transaction } from 'ethereumjs-tx';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
-import { checkNetworkTypeByChainId } from './utils';
+import { checkNetworkTypeByChainId, getCoinTypeByChainId } from './utils';
 
 export enum KeyRingStatus {
   NOTLOADED,
@@ -684,8 +684,6 @@ export class KeyRing {
     const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
 
     if (this.type === 'mnemonic') {
-      console.log('mnemonic coinType');
-
       const coinTypeModified = bip44HDPath.coinType ?? coinType;
       const path = `m/44'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
       const cachedKey = this.cached.get(path);
@@ -904,7 +902,7 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    const privKey = this.loadPrivKey(60);
+    const privKey = this.loadPrivKey(getCoinTypeByChainId(chainId));
     const ethWallet = new Wallet(privKey.toBytes());
     const privKeyHex = ethWallet.privateKey.slice(2);
     const decryptedData = PRE.decryptData(privKeyHex, message[0]);
@@ -913,7 +911,6 @@ export class KeyRing {
     };
   }
 
-  // thang7
   public async signProxyReEncryptionData(
     chainId: string,
     message: object
@@ -926,7 +923,7 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    const privKey = this.loadPrivKey(60);
+    const privKey = this.loadPrivKey(getCoinTypeByChainId(chainId));
     const ethWallet = new Wallet(privKey.toBytes());
     const privKeyHex = ethWallet.privateKey.slice(2);
     const rk = PRE.generateReEncrytionKey(privKeyHex, message[0]);
@@ -945,9 +942,11 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    const privKey = this.loadPrivKey(60);
+    const privKey = this.loadPrivKey(getCoinTypeByChainId(chainId));
     const ethWallet = new Wallet(privKey.toBytes());
     const pubKeyHex = ethWallet.publicKey.slice(2);
+    // Could use privKey to get pubKey hex like this
+    // Buffer.from(privKey.getPubKey().toBytes()).toString('hex')
 
     return pubKeyHex;
   }
