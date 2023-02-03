@@ -96,12 +96,24 @@ export class ChainsService {
 
     var chainInfo: ChainInfoWithEmbed;
     if (networkType) {
-      chainInfo = (await this.getChainInfos()).find((chainInfo) => {
-        return (
-          ChainIdHelper.parse(chainInfo.chainId).identifier ===
-          ChainIdHelper.parse(chainId).identifier && chainInfo.networkType === networkType
-        );
-      });
+      if (networkType === 'evm') {
+         // need to check if network type is evm, then we will convert chain id to number from hex
+        chainInfo = (await this.getChainInfos()).find(chainInfo => {
+          return (
+            ChainIdHelper.parse(Number(chainInfo.chainId)).identifier ===
+              ChainIdHelper.parse(Number(chainId)).identifier &&
+            chainInfo.networkType === networkType
+          );
+        });
+      } else {
+        chainInfo = (await this.getChainInfos()).find(chainInfo => {
+          return (
+            ChainIdHelper.parse(chainInfo.chainId).identifier ===
+              ChainIdHelper.parse(chainId).identifier &&
+            chainInfo.networkType === networkType
+          );
+        });
+      }
     } else {
       chainInfo = (await this.getChainInfos()).find((chainInfo) => {
         return (
