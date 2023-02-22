@@ -2,7 +2,8 @@ import { Router } from '@owallet/router';
 import {
   GetChainInfosMsg,
   SuggestChainInfoMsg,
-  RemoveSuggestedChainInfoMsg
+  RemoveSuggestedChainInfoMsg,
+  GetChainInfosWithoutEndpointsMsg
 } from './messages';
 import { ROUTE } from './constants';
 import { getHandler } from './handler';
@@ -12,6 +13,7 @@ export function init(router: Router, service: ChainsService): void {
   router.registerMessage(GetChainInfosMsg);
   router.registerMessage(SuggestChainInfoMsg);
   router.registerMessage(RemoveSuggestedChainInfoMsg);
+  router.registerMessage(GetChainInfosWithoutEndpointsMsg);
 
   router.addHandler(ROUTE, getHandler(service));
 }

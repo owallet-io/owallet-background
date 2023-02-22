@@ -1,14 +1,15 @@
 import { delay, inject, singleton } from 'tsyringe';
 import { TYPES } from '../types';
 
-import { ChainInfoSchema, ChainInfoWithEmbed } from './types';
-import { ChainInfo } from '@owallet/types';
+import { ChainInfoSchema, ChainInfoWithCoreTypes, ChainInfoWithEmbed } from './types';
+import { ChainInfo, ChainInfoWithoutEndpoints } from '@owallet/types';
 import { KVStore, Debouncer } from '@owallet/common';
 import { ChainUpdaterService } from '../updater';
 import { InteractionService } from '../interaction';
 import { Env } from '@owallet/router';
 import { SuggestChainInfoMsg } from './messages';
 import { ChainIdHelper } from '@owallet/cosmos';
+import { Mutable, Optional } from "utility-types";
 
 type ChainRemovedHandler = (chainId: string, identifier: string) => void;
 
@@ -17,7 +18,6 @@ export class ChainsService {
   protected onChainRemovedHandlers: ChainRemovedHandler[] = [];
 
   protected cachedChainInfos: ChainInfoWithEmbed[] | undefined;
-
   constructor(
     @inject(TYPES.ChainsStore)
     protected readonly kvStore: KVStore,
@@ -90,6 +90,32 @@ export class ChainsService {
 
   clearCachedChainInfos() {
     this.cachedChainInfos = undefined;
+  }
+
+  async getChainInfosWithoutEndpoints(): Promise<ChainInfoWithoutEndpoints[]> {
+    return (await this.getChainInfos()).map<ChainInfoWithoutEndpoints>(
+      (chainInfo) => {
+        const chainInfoMutable: Mutable<
+          Optional<
+            ChainInfoWithCoreTypes,
+            "rpc" | "rest" | "updateFromRepoDisabled" | "embeded"
+          >
+        > = {
+          ...chainInfo,
+        };
+
+        // Should remove fields not related to `ChainInfoWithoutEndpoints`
+        delete chainInfoMutable.rpc;
+        delete chainInfoMutable.rpcConfig;
+        delete chainInfoMutable.rest;
+        delete chainInfoMutable.restConfig;
+
+        delete chainInfoMutable.updateFromRepoDisabled;
+        delete chainInfoMutable.embeded;
+
+        return chainInfoMutable;
+      }
+    );
   }
 
   async getChainInfo(chainId: string, networkType?: string): Promise<ChainInfoWithEmbed> {

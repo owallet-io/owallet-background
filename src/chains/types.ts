@@ -132,3 +132,11 @@ export const ChainInfoSchema = Joi.object<ChainInfo>({
       return value;
     })
 });
+
+export type ChainInfoWithRepoUpdateOptions = ChainInfo & {
+  updateFromRepoDisabled?: boolean;
+};
+
+export type ChainInfoWithCoreTypes = ChainInfo & {
+  embeded: boolean;
+} & ChainInfoWithRepoUpdateOptions;
