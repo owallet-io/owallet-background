@@ -696,7 +696,7 @@ export class KeyRing {
           'Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly'
         );
       }
-
+      // could use it here
       const privKey = Mnemonic.generateWalletFromMnemonic(this.mnemonic, path);
 
       this.cached.set(path, privKey);

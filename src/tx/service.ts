@@ -47,7 +47,8 @@ export async function request(
     {
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'x-api-key': 'e2e3f401-2137-409c-b821-bd8c29f2141c'
       }
     }
   );
