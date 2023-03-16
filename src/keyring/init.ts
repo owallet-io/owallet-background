@@ -27,7 +27,8 @@ import {
   RequestSignReEncryptDataMsg,
   RequestSignDecryptDataMsg,
   RequestPublicKeyMsg,
-  ChangeChainMsg
+  ChangeChainMsg,
+  RequestSignTronMsg
 } from './messages';
 import { ROUTE } from './constants';
 import { getHandler } from './handler';
@@ -51,6 +52,7 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(RequestVerifyADR36AminoSignDoc);
   router.registerMessage(RequestSignDirectMsg);
   router.registerMessage(RequestSignEthereumMsg);
+  router.registerMessage(RequestSignTronMsg);
   router.registerMessage(RequestSignEthereumTypedDataMsg);
   // thang3
   router.registerMessage(RequestPublicKeyMsg);
@@ -62,8 +64,8 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(SetKeyStoreCoinTypeMsg);
   router.registerMessage(CheckPasswordMsg);
   router.registerMessage(ExportKeyRingDatasMsg);
-  
-  // 
+
+  //
   router.registerMessage(ChangeChainMsg);
 
   router.addHandler(ROUTE, getHandler(service));

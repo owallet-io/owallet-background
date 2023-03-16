@@ -685,6 +685,41 @@ export class RequestSignEthereumMsg extends Message<{
   }
 }
 
+// request sign tron  goes here
+export class RequestSignTronMsg extends Message<{
+  readonly rawTxHex: object; // raw tx signature to broadcast
+}> {
+  public static type() {
+    return 'request-sign-tron';
+  }
+
+  constructor(public readonly chainId: string, public readonly data: object) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignTronMsg.type();
+  }
+}
+
 export class RequestSignEthereumTypedDataMsg extends Message<{
   readonly result: string; // raw tx signature to broadcast
 }> {
@@ -947,9 +982,7 @@ export class ChangeChainMsg extends Message<{
     return 'change-chain';
   }
 
-  constructor(
-    public readonly chainInfos: object
-  ) {
+  constructor(public readonly chainInfos: object) {
     super();
   }
 

@@ -345,8 +345,6 @@ export class KeyRingService {
       throw new Error('Signer mismatched');
     }
 
-    
-
     const newSignDocBytes = (await this.interactionService.waitApprove(
       env,
       '/sign',
@@ -413,6 +411,25 @@ export class KeyRingService {
       this.interactionService.dispatchEvent(
         APP_PORT,
         'request-sign-ethereum-end',
+        {}
+      );
+    }
+  }
+
+  async requestSignTron(env: Env, data: object): Promise<object> {
+    const newData = (await this.interactionService.waitApprove(
+      env,
+      '/sign-tron',
+      'request-sign-tron',
+      data
+    )) as any;
+    try {
+      const rawTxHex = await this.keyRing.signTron(newData);
+      return rawTxHex;
+    } finally {
+      this.interactionService.dispatchEvent(
+        APP_PORT,
+        'request-sign-tron-end',
         {}
       );
     }
@@ -504,10 +521,7 @@ export class KeyRingService {
         rpc,
         data
       );
-      const rawTxHex = await this.keyRing.signReEncryptData(
-        chainId,
-        newData
-      );
+      const rawTxHex = await this.keyRing.signReEncryptData(chainId, newData);
 
       return rawTxHex;
     } catch (e) {

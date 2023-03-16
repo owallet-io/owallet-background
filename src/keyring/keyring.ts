@@ -15,7 +15,7 @@ import {
 } from 'ethereumjs-util';
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
 import { intToHex, isHexString, stripHexPrefix } from 'ethjs-util';
-import { KVStore } from '@owallet/common';
+import { fetchAdapter, KVStore } from '@owallet/common';
 import { LedgerService } from '../ledger';
 import {
   BIP44HDPath,
@@ -42,7 +42,8 @@ import { TransactionOptions, Transaction } from 'ethereumjs-tx';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
 import { checkNetworkTypeByChainId } from './utils';
-
+import TronWeb from 'tronweb';
+import { Dec, DecUtils } from '@owallet/unit';
 export enum KeyRingStatus {
   NOTLOADED,
   EMPTY,
@@ -198,7 +199,10 @@ export class KeyRing {
   }
 
   public getKey(chainId: string, defaultCoinType: number): Key {
-    return this.loadKey(this.computeKeyStoreCoinType(chainId, defaultCoinType));
+    return this.loadKey(
+      this.computeKeyStoreCoinType(chainId, defaultCoinType),
+      chainId
+    );
   }
 
   public getKeyStoreMeta(key: string): string {
@@ -491,7 +495,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -596,7 +600,7 @@ export class KeyRing {
     return this.getMultiKeyStoreInfo();
   }
 
-  private loadKey(coinType: number): Key {
+  private loadKey(coinType: number, chainId?: string | number): Key {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -621,6 +625,31 @@ export class KeyRing {
     } else {
       const privKey = this.loadPrivKey(coinType);
       const pubKey = privKey.getPubKey();
+      if (chainId && chainId !== '') {
+        const networkType = checkNetworkTypeByChainId(chainId);
+
+        if (networkType === 'evm') {
+          // For Ethereum Key-Gen Only:
+          const wallet = new Wallet(privKey.toBytes());
+          const ethereumAddress = ETH.decoder(wallet.address);
+
+          return {
+            algo: 'ethsecp256k1',
+            pubKey: pubKey.toBytes(),
+            address: ethereumAddress,
+            isNanoLedger: false
+          };
+        }
+
+        if (networkType === 'cosmos') {
+          return {
+            algo: 'secp256k1',
+            pubKey: pubKey.toBytes(),
+            address: pubKey.getAddress(),
+            isNanoLedger: false
+          };
+        }
+      }
 
       if (coinType === 60) {
         // For Ethereum Key-Gen Only:
@@ -855,6 +884,92 @@ export class KeyRing {
       return BytesUtils.arrayify(
         BytesUtils.concat([splitSignature.r, splitSignature.s])
       );
+    }
+  }
+
+  public async signTron(message: {
+    recipient: string;
+    amount: string;
+    address: string;
+    tokenTrc20?: {
+      contractAddress?: string;
+    };
+  }): Promise<object> {
+    let privateKey;
+    let tronWeb;
+    if (
+      this.status !== KeyRingStatus.UNLOCKED ||
+      this.type === 'none' ||
+      !this.keyStore
+    ) {
+      throw new Error('Key ring is not unlocked');
+    }
+
+    const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
+    if (this.type === 'mnemonic') {
+      const coinTypeModified = bip44HDPath.coinType ?? 195;
+      const path = `m/44'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
+      privateKey = Mnemonic.generateWalletFromMnemonic(this.mnemonic, path);
+    } else {
+      privateKey = this.privateKey;
+    }
+
+    const bufferPrivaKey = Buffer.from(privateKey).toString('hex');
+    tronWeb = new TronWeb({
+      fullHost: 'https://api.trongrid.io',
+      privateKey: bufferPrivaKey
+    });
+    tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
+
+    try {
+      if (message?.tokenTrc20) {
+        const { abi } = await tronWeb.trx.getContract(
+          message?.tokenTrc20?.contractAddress
+        );
+        const contract = tronWeb.contract(
+          abi.entrys,
+          message?.tokenTrc20?.contractAddress
+        );
+        const balance = await contract.methods
+          .balanceOf(message?.address)
+          .call();
+
+        if (Number(balance.toString()) > 0) {
+          const resp = await contract.methods
+            .transfer(
+              message.recipient,
+              Number((message.amount ?? '0').replace(/,/g, '.')) *
+                Math.pow(10, 6)
+            )
+            .send({
+              feeLimit: 50_000_000, //in SUN. Fee limit is required while send TRC20 in TRON network, 50_000_000 SUN is equal to 50 TRX maximun fee. Read more: https://developers.tron.network/docs/set-feelimit
+              callValue: 0
+            });
+
+          return {
+            result: true,
+            txid: resp,
+            transaction: {
+              visible: false,
+              txID: resp
+            }
+          };
+        }
+      } else {
+        const tradeobj = await tronWeb.transactionBuilder.sendTrx(
+          message.recipient,
+          new Dec(Number((message.amount ?? '0').replace(/,/g, '.'))).mul(
+            DecUtils.getTenExponentNInPrecisionRange(6)
+          ),
+          message.address
+        );
+        const signedtxn = await tronWeb.trx.sign(tradeobj, bufferPrivaKey);
+        const receipt = await tronWeb.trx.sendRawTransaction(signedtxn);
+        return receipt;
+      }
+    } catch (error) {
+      console.log('error', error);
+      return { result: false, txid: error.message };
     }
   }
 
@@ -1192,7 +1307,7 @@ export class KeyRing {
         );
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map(item =>
+      const typeValuePairs = value.map((item) =>
         this.encodeField(types, name, parsedType, item, version)
       );
       return [
