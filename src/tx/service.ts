@@ -47,8 +47,7 @@ export async function request(
     {
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'x-api-key': process.env.X_API_KEY
+        'Access-Control-Allow-Origin': '*'
       }
     }
   );
