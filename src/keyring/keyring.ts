@@ -15,7 +15,7 @@ import {
 } from 'ethereumjs-util';
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
 import { intToHex, isHexString, stripHexPrefix } from 'ethjs-util';
-import { fetchAdapter, KVStore } from '@owallet/common';
+import { KVStore } from '@owallet/common';
 import { LedgerService } from '../ledger';
 import {
   BIP44HDPath,
@@ -32,7 +32,6 @@ import { ChainInfo } from '@owallet/types';
 import { Env, OWalletError } from '@owallet/router';
 import { Buffer } from 'buffer';
 import { ChainIdHelper } from '@owallet/cosmos';
-import PRE from 'proxy-recrypt-js';
 import { Wallet } from '@ethersproject/wallet';
 import * as BytesUtils from '@ethersproject/bytes';
 import { ETH } from '@tharsis/address-converter';
@@ -43,7 +42,6 @@ import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
 import { checkNetworkTypeByChainId } from './utils';
 import TronWeb from 'tronweb';
-import { Dec, DecUtils } from '@owallet/unit';
 export enum KeyRingStatus {
   NOTLOADED,
   EMPTY,
@@ -686,8 +684,6 @@ export class KeyRing {
     const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
 
     if (this.type === 'mnemonic') {
-      console.log('mnemonic coinType');
-
       const coinTypeModified = bip44HDPath.coinType ?? coinType;
       const path = `m/44'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
       const cachedKey = this.cached.get(path);
@@ -887,17 +883,7 @@ export class KeyRing {
     }
   }
 
-  public async signTron(
-    tronWeb,
-    message: {
-      recipient: string;
-      amount: string;
-      address: string;
-      tokenTrc20?: {
-        contractAddress?: string;
-      };
-    }
-  ): Promise<object> {
+  public async signTron(transaction): Promise<object> {
     let privateKey;
     if (
       this.status !== KeyRingStatus.UNLOCKED ||
@@ -919,56 +905,11 @@ export class KeyRing {
     const bufferPrivaKey = Buffer.from(privateKey).toString('hex');
 
     try {
-      if (message?.tokenTrc20) {
-        const { abi } = await tronWeb.trx.getContract(
-          message?.tokenTrc20?.contractAddress
-        );
-        const contract = tronWeb.contract(
-          abi.entrys,
-          message?.tokenTrc20?.contractAddress
-        );
-        const balance = await contract.methods
-          .balanceOf(message?.address)
-          .call();
-
-        if (Number(balance.toString()) > 0) {
-          const resp = await contract.methods
-            .transfer(
-              message.recipient,
-              Number((message.amount ?? '0').replace(/,/g, '.')) *
-                Math.pow(10, 6)
-            )
-            .send({
-              feeLimit: 50_000_000, //in SUN. Fee limit is required while send TRC20 in TRON network, 50_000_000 SUN is equal to 50 TRX maximun fee. Read more: https://developers.tron.network/docs/set-feelimit
-              callValue: 0
-            });
-
-          return {
-            result: true,
-            txid: resp,
-            transaction: {
-              visible: false,
-              txID: resp
-            }
-          };
-        }
-      } else {
-        const tradeobj = await tronWeb.transactionBuilder.sendTrx(
-          message.recipient,
-          new Dec(Number((message.amount ?? '0').replace(/,/g, '.'))).mul(
-            DecUtils.getTenExponentNInPrecisionRange(6)
-          ),
-          message.address
-        );
-        // const signedtxn = await tronWeb.trx.sign(tradeobj, bufferPrivaKey);
-        const signedtxn = TronWeb.utils.crypto.signTransaction(
-          bufferPrivaKey,
-          tradeobj
-        );
-        return signedtxn;
-        // const receipt = await tronWeb.trx.sendRawTransaction(signedtxn);
-        // return receipt;
-      }
+      const signedtxn = TronWeb.utils.crypto.signTransaction(
+        bufferPrivaKey,
+        transaction
+      );
+      return signedtxn;
     } catch (error) {
       console.log('error', error);
       return { result: false, txid: error.message };

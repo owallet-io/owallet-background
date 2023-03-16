@@ -48,6 +48,7 @@ import { RNG } from '@owallet/crypto';
 import { cosmos } from '@owallet/cosmos';
 import { Buffer } from 'buffer/';
 import { request } from '../tx';
+import { Dec, DecUtils } from '@owallet/unit';
 
 @singleton()
 export class KeyRingService {
@@ -417,7 +418,11 @@ export class KeyRingService {
     }
   }
 
-  async requestSignTron(env: Env, data: object): Promise<object> {
+  async requestSignTron(
+    env: Env,
+    chainId: string,
+    data: object
+  ): Promise<object> {
     const newData = (await this.interactionService.waitApprove(
       env,
       '/sign-tron',
@@ -426,10 +431,39 @@ export class KeyRingService {
     )) as any;
     try {
       const tronWeb = new TronWeb({
-        fullHost: (await this.chainsService.getChainInfo('0x2b6653dc')).rpc
+        fullHost: (await this.chainsService.getChainInfo(chainId)).rpc
       });
       tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
-      const rawTxHex = await this.keyRing.signTron(tronWeb, newData);
+      let transaction;
+      if (newData?.tokenTrc20) {
+        const amount = BigInt(Math.trunc(newData?.amount * 10 ** 6));
+        transaction = await tronWeb.transactionBuilder.triggerSmartContract(
+          newData.tokenTrc20.contractAddress,
+          'transfer(address,uint256)',
+          {
+            callValue: 0,
+            userFeePercentage: 100,
+            shouldPollResponse: false
+          },
+          [
+            { type: 'address', value: newData.recipient },
+            { type: 'uint256', value: amount }
+          ],
+          newData.address
+        );
+      } else {
+        transaction = await tronWeb.transactionBuilder.sendTrx(
+          newData.recipient,
+          new Dec(Number((newData.amount ?? '0').replace(/,/g, '.'))).mul(
+            DecUtils.getTenExponentNInPrecisionRange(6)
+          ),
+          newData.address
+        );
+      }
+
+      const rawTxHex = await this.keyRing.signTron(
+        transaction.transaction ?? transaction
+      );
       const receipt = await tronWeb.trx.sendRawTransaction(rawTxHex);
       return receipt;
     } finally {

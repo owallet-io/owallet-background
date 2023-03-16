@@ -478,7 +478,7 @@ const handleRequestSignTronMsg: (
   service: KeyRingService
 ) => InternalHandler<RequestSignTronMsg> = (service) => {
   return async (env, msg) => {
-    const response = await service.requestSignTron(env, msg.data);
+    const response = await service.requestSignTron(env, msg.chainId, msg.data);
     return { rawTxHex: response };
   };
 };
