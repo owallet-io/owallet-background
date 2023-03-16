@@ -887,16 +887,18 @@ export class KeyRing {
     }
   }
 
-  public async signTron(message: {
-    recipient: string;
-    amount: string;
-    address: string;
-    tokenTrc20?: {
-      contractAddress?: string;
-    };
-  }): Promise<object> {
+  public async signTron(
+    tronWeb,
+    message: {
+      recipient: string;
+      amount: string;
+      address: string;
+      tokenTrc20?: {
+        contractAddress?: string;
+      };
+    }
+  ): Promise<object> {
     let privateKey;
-    let tronWeb;
     if (
       this.status !== KeyRingStatus.UNLOCKED ||
       this.type === 'none' ||
@@ -915,11 +917,6 @@ export class KeyRing {
     }
 
     const bufferPrivaKey = Buffer.from(privateKey).toString('hex');
-    tronWeb = new TronWeb({
-      fullHost: 'https://api.trongrid.io',
-      privateKey: bufferPrivaKey
-    });
-    tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
 
     try {
       if (message?.tokenTrc20) {
@@ -963,9 +960,14 @@ export class KeyRing {
           ),
           message.address
         );
-        const signedtxn = await tronWeb.trx.sign(tradeobj, bufferPrivaKey);
-        const receipt = await tronWeb.trx.sendRawTransaction(signedtxn);
-        return receipt;
+        // const signedtxn = await tronWeb.trx.sign(tradeobj, bufferPrivaKey);
+        const signedtxn = TronWeb.utils.crypto.signTransaction(
+          bufferPrivaKey,
+          tradeobj
+        );
+        return signedtxn;
+        // const receipt = await tronWeb.trx.sendRawTransaction(signedtxn);
+        // return receipt;
       }
     } catch (error) {
       console.log('error', error);

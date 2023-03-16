@@ -24,8 +24,9 @@ import {
   SignTypedDataVersion,
   TypedMessage
 } from './types';
+import TronWeb from 'tronWeb';
 
-import { KVStore } from '@owallet/common';
+import { fetchAdapter, KVStore } from '@owallet/common';
 
 import { ChainsService } from '../chains';
 import { LedgerService } from '../ledger';
@@ -424,8 +425,13 @@ export class KeyRingService {
       data
     )) as any;
     try {
-      const rawTxHex = await this.keyRing.signTron(newData);
-      return rawTxHex;
+      const tronWeb = new TronWeb({
+        fullHost: (await this.chainsService.getChainInfo('0x2b6653dc')).rpc
+      });
+      tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
+      const rawTxHex = await this.keyRing.signTron(tronWeb, newData);
+      const receipt = await tronWeb.trx.sendRawTransaction(rawTxHex);
+      return receipt;
     } finally {
       this.interactionService.dispatchEvent(
         APP_PORT,
@@ -492,7 +498,6 @@ export class KeyRingService {
         data
       );
       const rawTxHex = await this.keyRing.signDecryptData(chainId, newData);
-
       return rawTxHex;
     } catch (e) {
       console.log('e', e.message);
