@@ -29,6 +29,7 @@ import {
   ECDSASignature
 } from './types';
 import { ChainInfo } from '@owallet/types';
+import TronWeb from 'tronweb';
 import { Env, OWalletError } from '@owallet/router';
 import { Buffer } from 'buffer';
 import { ChainIdHelper } from '@owallet/cosmos';
@@ -761,6 +762,39 @@ export class KeyRing {
 
       const privKey = this.loadPrivKey(coinType);
       return privKey.sign(message);
+    }
+  }
+
+  public async signTron(transaction): Promise<object> {
+    let privateKey;
+    if (
+      this.status !== KeyRingStatus.UNLOCKED ||
+      this.type === 'none' ||
+      !this.keyStore
+    ) {
+      throw new Error('Key ring is not unlocked');
+    }
+
+    const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
+    if (this.type === 'mnemonic') {
+      const coinTypeModified = bip44HDPath.coinType ?? 195;
+      const path = `m/44'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
+      privateKey = Mnemonic.generateWalletFromMnemonic(this.mnemonic, path);
+    } else {
+      privateKey = this.privateKey;
+    }
+
+    const bufferPrivaKey = Buffer.from(privateKey).toString('hex');
+
+    try {
+      const signedtxn = TronWeb.utils.crypto.signTransaction(
+        bufferPrivaKey,
+        transaction
+      );
+      return signedtxn;
+    } catch (error) {
+      console.log('error', error);
+      return { result: false, txid: error.message };
     }
   }
 

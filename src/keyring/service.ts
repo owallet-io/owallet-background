@@ -25,14 +25,15 @@ import {
   TypedMessage
 } from './types';
 
-import { KVStore } from '@owallet/common';
-
+import { KVStore, fetchAdapter } from '@owallet/common';
+import TronWeb from 'tronWeb';
 import { ChainsService } from '../chains';
 import { LedgerService } from '../ledger';
 import { BIP44, ChainInfo, OWalletSignOptions } from '@owallet/types';
 import { APP_PORT, Env, OWalletError, WEBPAGE_PORT } from '@owallet/router';
 import { InteractionService } from '../interaction';
 import { PermissionService } from '../permission';
+import { Dec, DecUtils } from '@owallet/unit';
 
 import {
   encodeSecp256k1Signature,
@@ -735,5 +736,62 @@ export class KeyRingService {
 
   async exportKeyRingDatas(password: string): Promise<ExportKeyRingData[]> {
     return await this.keyRing.exportKeyRingDatas(password);
+  }
+
+  async requestSignTron(
+    env: Env,
+    chainId: string,
+    data: object
+  ): Promise<object> {
+    const newData = (await this.interactionService.waitApprove(
+      env,
+      '/sign-tron',
+      'request-sign-tron',
+      data
+    )) as any;
+    try {
+      const tronWeb = new TronWeb({
+        fullHost: (await this.chainsService.getChainInfo(chainId)).rpc
+      });
+      tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
+      let transaction;
+      if (newData?.tokenTrc20) {
+        const amount = BigInt(Math.trunc(newData?.amount * 10 ** 6));
+        transaction = await tronWeb.transactionBuilder.triggerSmartContract(
+          newData.tokenTrc20.contractAddress,
+          'transfer(address,uint256)',
+          {
+            callValue: 0,
+            userFeePercentage: 100,
+            shouldPollResponse: false
+          },
+          [
+            { type: 'address', value: newData.recipient },
+            { type: 'uint256', value: amount }
+          ],
+          newData.address
+        );
+      } else {
+        transaction = await tronWeb.transactionBuilder.sendTrx(
+          newData.recipient,
+          new Dec(Number((newData.amount ?? '0').replace(/,/g, '.'))).mul(
+            DecUtils.getTenExponentNInPrecisionRange(6)
+          ),
+          newData.address
+        );
+      }
+
+      const rawTxHex = await this.keyRing.signTron(
+        transaction.transaction ?? transaction
+      );
+      const receipt = await tronWeb.trx.sendRawTransaction(rawTxHex);
+      return receipt;
+    } finally {
+      this.interactionService.dispatchEvent(
+        APP_PORT,
+        'request-sign-tron-end',
+        {}
+      );
+    }
   }
 }
