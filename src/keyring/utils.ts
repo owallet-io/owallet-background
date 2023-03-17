@@ -1,5 +1,6 @@
-import { LIST_CHAIN_ID_BY_NETWORK } from './constants';
+import { EmbedChainInfos } from '@owallet/common';
 
-export const checkNetworkTypeByChainId = chainId => {
-  return LIST_CHAIN_ID_BY_NETWORK[chainId] ?? '';
+export const checkNetworkTypeByChainId = (chainId) => {
+  const network = EmbedChainInfos.find((nw) => nw.chainId === chainId);
+  return network?.networkType ?? '';
 };
