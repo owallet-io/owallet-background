@@ -26,7 +26,7 @@ import {
 } from './types';
 
 import { KVStore, fetchAdapter } from '@owallet/common';
-import TronWeb from 'tronWeb';
+import TronWeb from 'tronweb';
 import { ChainsService } from '../chains';
 import { LedgerService } from '../ledger';
 import { BIP44, ChainInfo, OWalletSignOptions } from '@owallet/types';
@@ -757,6 +757,7 @@ export class KeyRingService {
       let transaction;
       if (newData?.tokenTrc20) {
         const amount = BigInt(Math.trunc(newData?.amount * 10 ** 6));
+
         transaction = await tronWeb.transactionBuilder.triggerSmartContract(
           newData.tokenTrc20.contractAddress,
           'transfer(address,uint256)',
@@ -767,7 +768,7 @@ export class KeyRingService {
           },
           [
             { type: 'address', value: newData.recipient },
-            { type: 'uint256', value: amount }
+            { type: 'uint256', value: amount.toString() }
           ],
           newData.address
         );
@@ -785,6 +786,8 @@ export class KeyRingService {
         transaction.transaction ?? transaction
       );
       const receipt = await tronWeb.trx.sendRawTransaction(rawTxHex);
+      console.log('receipt ===', receipt);
+
       return receipt;
     } finally {
       this.interactionService.dispatchEvent(
