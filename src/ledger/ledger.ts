@@ -1,3 +1,4 @@
+import { NetworkType } from '@owallet/types';
 import { LedgerInternal } from './ledger-internal';
 
 let callProxy: (method: string, args?: any[]) => Promise<any>;
@@ -80,9 +81,10 @@ export class Ledger {
 
   async sign(
     path: number[] | string,
-    message: Uint8Array
+    message: Uint8Array,
+    networkType: NetworkType
   ): Promise<Uint8Array> {
-    return await callProxy('sign', [path, message]);
+    return await callProxy('sign', [path, message, networkType]);
   }
 
   async close(): Promise<void> {

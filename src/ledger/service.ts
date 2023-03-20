@@ -11,6 +11,7 @@ import { KVStore } from '@owallet/common';
 import { InteractionService } from '../interaction';
 import { LedgerOptions } from './options';
 import { Buffer } from 'buffer';
+import { NetworkType } from '@owallet/types';
 
 @singleton()
 export class LedgerService {
@@ -56,19 +57,14 @@ export class LedgerService {
 
   async sign(
     env: Env,
-    bip44HDPath: BIP44HDPath,
+    path: number[],
     expectedPubKey: Uint8Array,
-    message: Uint8Array
+    message: Uint8Array,
+    networkType: NetworkType
   ): Promise<Uint8Array> {
     return await this.useLedger(env, async (ledger, retryCount: number) => {
       try {
-        const pubKey = await ledger.getPublicKey([
-          44,
-          118,
-          bip44HDPath.account,
-          bip44HDPath.change,
-          bip44HDPath.addressIndex
-        ]);
+        const pubKey = await ledger.getPublicKey(path);
 
         if (
           Buffer.from(expectedPubKey).toString('hex') !==
@@ -77,16 +73,7 @@ export class LedgerService {
           throw new Error('Unmatched public key');
         }
         // Cosmos App on Ledger doesn't support the coin type other than 118.
-        const signature = await ledger.sign(
-          [
-            44,
-            118,
-            bip44HDPath.account,
-            bip44HDPath.change,
-            bip44HDPath.addressIndex
-          ],
-          message
-        );
+        const signature = await ledger.sign(path, message, networkType);
 
         // Notify UI Ledger signing succeeded only when Ledger initialization is tried again.
         if (retryCount > 0) {

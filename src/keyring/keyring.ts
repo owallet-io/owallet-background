@@ -495,7 +495,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -730,16 +730,11 @@ export class KeyRing {
     if (!this.keyStore) {
       throw new OWalletError('keyring', 130, 'Key store is empty');
     }
-    // get here
-    // Sign with Evmos/Ethereum
-    // const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
-    // Need to check network type by chain id instead coin type
-    const networkType = checkNetworkTypeByChainId(chainId);
-    if (networkType === 'evm') {
-      // if (coinType === 60) {
-      return this.signEthereum(chainId, defaultCoinType, message);
-    }
 
+    const networkType = checkNetworkTypeByChainId(chainId);
+    const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
+
+    // using ledger app
     if (this.keyStore.type === 'ledger') {
       const pubKey = this.ledgerPublicKey;
 
@@ -751,14 +746,32 @@ export class KeyRing {
         );
       }
 
+      const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
+      const path = [
+        44,
+        coinType,
+        bip44HDPath.account,
+        bip44HDPath.change,
+        bip44HDPath.addressIndex
+      ];
+
       return await this.ledgerKeeper.sign(
         env,
-        KeyRing.getKeyStoreBIP44Path(this.keyStore),
+        path,
         pubKey,
-        message
+        message,
+        networkType
       );
     } else {
-      const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
+      // get here
+      // Sign with Evmos/Ethereum
+      // const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
+      // Need to check network type by chain id instead coin type
+
+      if (networkType === 'evm') {
+        // if (coinType === 60) {
+        return this.signEthereum(chainId, defaultCoinType, message);
+      }
 
       const privKey = this.loadPrivKey(coinType);
       return privKey.sign(message);
@@ -897,31 +910,26 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    if (this.keyStore.type === 'ledger') {
-      // TODO: Ethereum Ledger Integration
-      throw new Error('Ethereum signing with Ledger is not yet supported');
-    } else {
-      const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
-      // Need to check network type by chain id instead coin type
-      const networkType = checkNetworkTypeByChainId(chainId);
-      // if (coinType !== 60) {
-      if (networkType !== 'evm') {
-        throw new Error(
-          'Invalid coin type passed in to Ethereum signing (expected 60)'
-        );
-      }
-
-      const privKey = this.loadPrivKey(coinType);
-
-      // Use ether js to sign Ethereum tx
-      const ethWallet = new Wallet(privKey.toBytes());
-
-      const signature = ethWallet._signingKey().signDigest(keccak256(message));
-      const splitSignature = BytesUtils.splitSignature(signature);
-      return BytesUtils.arrayify(
-        BytesUtils.concat([splitSignature.r, splitSignature.s])
+    const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
+    // Need to check network type by chain id instead coin type
+    const networkType = checkNetworkTypeByChainId(chainId);
+    // if (coinType !== 60) {
+    if (networkType !== 'evm') {
+      throw new Error(
+        'Invalid coin type passed in to Ethereum signing (expected 60)'
       );
     }
+
+    const privKey = this.loadPrivKey(coinType);
+
+    // Use ether js to sign Ethereum tx
+    const ethWallet = new Wallet(privKey.toBytes());
+
+    const signature = ethWallet._signingKey().signDigest(keccak256(message));
+    const splitSignature = BytesUtils.splitSignature(signature);
+    return BytesUtils.arrayify(
+      BytesUtils.concat([splitSignature.r, splitSignature.s])
+    );
   }
 
   public async signProxyDecryptionData(
@@ -1228,7 +1236,7 @@ export class KeyRing {
         );
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map(item =>
+      const typeValuePairs = value.map((item) =>
         this.encodeField(types, name, parsedType, item, version)
       );
       return [
