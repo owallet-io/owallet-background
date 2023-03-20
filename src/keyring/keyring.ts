@@ -766,13 +766,14 @@ export class KeyRing {
       // Sign with Evmos/Ethereum
       // const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
       // Need to check network type by chain id instead coin type
-
+      const privKey = this.loadPrivKey(coinType);
       if (networkType === 'evm') {
-        // if (coinType === 60) {
-        return this.signEthereum(chainId, defaultCoinType, message);
+        // if (coinType === 195) {
+        //   return this.signTron(privKey, message);
+        // }
+        return this.signEthereum(privKey, message);
       }
 
-      const privKey = this.loadPrivKey(coinType);
       return privKey.sign(message);
     }
   }
@@ -864,30 +865,9 @@ export class KeyRing {
   }
 
   public async signEthereum(
-    chainId: string,
-    defaultCoinType: number,
+    privKey: PrivKeySecp256k1,
     message: Uint8Array
   ): Promise<Uint8Array> {
-    if (this.status !== KeyRingStatus.UNLOCKED) {
-      throw new Error('Key ring is not unlocked');
-    }
-
-    if (!this.keyStore) {
-      throw new Error('Key Store is empty');
-    }
-
-    const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
-    // Need to check network type by chain id instead coin type
-    const networkType = checkNetworkTypeByChainId(chainId);
-    // if (coinType !== 60) {
-    if (networkType !== 'evm') {
-      throw new Error(
-        'Invalid coin type passed in to Ethereum signing (expected 60)'
-      );
-    }
-
-    const privKey = this.loadPrivKey(coinType);
-
     // Use ether js to sign Ethereum tx
     const ethWallet = new Wallet(privKey.toBytes());
 
