@@ -1,11 +1,15 @@
 import Transport from '@ledgerhq/hw-transport';
-import CosmosApp from '@ledgerhq/hw-app-cosmos/src/Cosmos';
+import CosmosApp from '@ledgerhq/hw-app-cosmos';
+import EthApp from '@ledgerhq/hw-app-eth';
+import TrxApp from '@ledgerhq/hw-app-trx';
 import TransportWebHID from '@ledgerhq/hw-transport-webhid';
 import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
 import { signatureImport } from 'secp256k1';
 import { Buffer } from 'buffer';
-import { fromString } from 'bip32-path';
+import { fromString, fromPathArray } from 'bip32-path';
 import { OWalletError } from '@owallet/router';
+import { NetworkType } from '@owallet/types';
+import * as BytesUtils from '@ethersproject/bytes';
 
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 
@@ -27,6 +31,9 @@ export class LedgerInitError extends Error {
 export type TransportMode = 'webusb' | 'webhid' | 'ble';
 
 export class LedgerInternal {
+  private static transport: Transport;
+  private ethApp: EthApp;
+  private trxApp: TrxApp;
   constructor(private readonly cosmosApp: CosmosApp) {}
 
   static transportIniters: Record<TransportMode, TransportIniter> = {
@@ -45,15 +52,16 @@ export class LedgerInternal {
       throw new OWalletError('ledger', 112, `Unknown mode: ${mode}`);
     }
 
+    // already init
+    if (this.transport) {
+      return;
+    }
+
     const transport = await transportIniter(...initArgs);
     try {
-      console.log('return ledger 1');
-      const cosmosApp = new CosmosApp(transport);
-      console.log('return ledger 2');
-      const ledger = new LedgerInternal(cosmosApp);
-      console.log('return ledger 3');
+      const ledger = new LedgerInternal(new CosmosApp(transport));
+
       const versionResponse = await ledger.getVersion();
-      console.log('return ledger 4');
 
       // In this case, device is on screen saver.
       // However, it is almost same as that the device is not unlocked to user-side.
@@ -61,8 +69,7 @@ export class LedgerInternal {
       if (versionResponse.deviceLocked) {
         throw new Error('Device is on screen saver');
       }
-
-      console.log('return ledger 5');
+      this.transport = transport;
       return ledger;
     } catch (e) {
       console.log(e);
@@ -86,11 +93,9 @@ export class LedgerInternal {
     if (!this.cosmosApp) {
       throw new Error('Cosmos App not initialized');
     }
-    console.log('getversion 1');
+
     const { version, device_locked, major, test_mode } =
       await this.cosmosApp.getAppConfiguration();
-
-    console.log('getversion 2');
 
     return {
       deviceLocked: device_locked,
@@ -116,23 +121,59 @@ export class LedgerInternal {
 
   async sign(
     path: number[] | string,
-    message: Uint8Array
+    message: Uint8Array,
+    networkType: NetworkType
   ): Promise<Uint8Array> {
-    if (!this.cosmosApp) {
-      throw new Error('Cosmos App not initialized');
+    const hdPath =
+      typeof path === 'string' ? fromString(path).toPathArray() : path;
+    const hdPathString =
+      typeof path === 'string' ? path : fromPathArray(path).toString();
+    if (networkType === 'cosmos') {
+      if (!this.cosmosApp) {
+        throw new Error('Cosmos App not initialized');
+      }
+
+      const { signature } = await this.cosmosApp.sign(hdPath, message);
+
+      // Parse a DER ECDSA signature
+      return signatureImport(signature);
+    } else if (networkType === 'evm') {
+      const rawTxHex = Buffer.from(message).toString('hex');
+      const coinType = hdPath[1];
+      if (coinType === 195) {
+        if (!this.trxApp) {
+          this.trxApp = new TrxApp(LedgerInternal.transport);
+        }
+        const trxSignature = await this.trxApp.signTransaction(
+          hdPathString,
+          rawTxHex,
+          []
+        );
+        return Buffer.from(trxSignature, 'hex');
+      }
+
+      if (!this.ethApp) {
+        this.ethApp = new EthApp(LedgerInternal.transport);
+      }
+      const signature = await this.ethApp.signTransaction(
+        hdPathString,
+        rawTxHex
+      );
+
+      const splitSignature = BytesUtils.splitSignature({
+        v: Number(signature.v),
+        r: signature.r,
+        s: signature.s
+      });
+      return BytesUtils.arrayify(
+        BytesUtils.concat([splitSignature.r, splitSignature.s])
+      );
     }
-
-    const { signature } = await this.cosmosApp.sign(
-      typeof path === 'string' ? fromString(path).toPathArray() : path,
-      message
-    );
-
-    // Parse a DER ECDSA signature
-    return signatureImport(signature);
   }
 
   async close(): Promise<void> {
-    return await this.cosmosApp.transport.close();
+    await LedgerInternal.transport.close();
+    delete LedgerInternal.transport;
   }
 
   static async isWebHIDSupported(): Promise<boolean> {
