@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "bip32-path": "^0.4.2",
+    "tronweb": "^5.1.0",
     "@ledgerhq/hw-transport-webhid": "6.20.0",
     "@ledgerhq/hw-transport-webusb": "6.20.0",
     "@ledgerhq/hw-app-cosmos": "6.27.2",

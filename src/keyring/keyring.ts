@@ -43,6 +43,9 @@ import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
 import { checkNetworkTypeByChainId, getCoinTypeByChainId } from './utils';
 
+// inject TronWeb class
+(globalThis as any).TronWeb = require('tronweb');
+
 export enum KeyRingStatus {
   NOTLOADED,
   EMPTY,
@@ -768,9 +771,12 @@ export class KeyRing {
       // Need to check network type by chain id instead coin type
       const privKey = this.loadPrivKey(coinType);
       if (networkType === 'evm') {
-        // if (coinType === 195) {
-        //   return this.signTron(privKey, message);
-        // }
+        if (coinType === 195) {
+          Buffer.from(
+            TronWeb.utils.crypto.signTransaction(privKey, message),
+            'hex'
+          );
+        }
         return this.signEthereum(privKey, message);
       }
 
@@ -864,7 +870,7 @@ export class KeyRing {
     }
   }
 
-  public async signEthereum(
+  private async signEthereum(
     privKey: PrivKeySecp256k1,
     message: Uint8Array
   ): Promise<Uint8Array> {
