@@ -1,11 +1,11 @@
 import { EmbedChainInfos } from '@owallet/common';
 
-export const checkNetworkTypeByChainId = (chainId) => {
+export const getNetworkTypeByChainId = (chainId) => {
   const network = EmbedChainInfos.find((nw) => nw.chainId === chainId);
   return network?.networkType ?? '';
 };
 
-export const checkCoinTypeByChainId = (chainId) => {
+export const getCoinTypeByChainId = (chainId) => {
   const network = EmbedChainInfos.find((nw) => nw.chainId === chainId);
-  return network?.coinType ?? '';
+  return network?.coinType ?? network?.bip44?.coinType ?? '';
 };
