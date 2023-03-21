@@ -7,14 +7,14 @@ export const SigningKey: typeof utils.SigningKey;
 export const AbiCoder: typeof utils.AbiCoder;
 export const Interface: typeof utils.Interface;
 export const FormatTypes: {
-    [name: string]: string;
+  [name: string]: string;
 };
 export const splitSignature: typeof utils.splitSignature;
 export const joinSignature: typeof utils.joinSignature;
 export const arrayify: typeof utils.arrayify;
-import { Wallet as ethersWallet } from "ethers";
+import { Wallet as ethersWallet } from 'ethers';
 export const concat: typeof utils.concat;
 export const id: typeof utils.id;
-export const isValidMnemonic: typeof utils.isValidMnemonic;
-import { utils } from "ethers";
+// export const isValidMnemonic: typeof utils.isValidMnemonic;
+import { utils } from 'ethers';
 export { ethersWallet };

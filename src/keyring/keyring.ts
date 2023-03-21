@@ -498,7 +498,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -616,7 +616,7 @@ export class KeyRing {
       if (!this.ledgerPublicKey) {
         throw new Error('Ledger public key not set');
       }
-
+      // This need to be check by network type or cointype, cause now we support ledger with evm too, but this pubKey.getAddress() is hardcoded by cosmos address
       const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
 
       return {
@@ -630,7 +630,8 @@ export class KeyRing {
       const pubKey = privKey.getPubKey();
       if (chainId && chainId !== '') {
         const networkType = checkNetworkTypeByChainId(chainId);
-        if (networkType === 'evm') {
+
+        if (coinType === 60 || networkType === 'evm') {
           // For Ethereum Key-Gen Only:
           const wallet = new Wallet(privKey.toBytes());
           const ethereumAddress = ETH.decoder(wallet.address);
@@ -652,7 +653,7 @@ export class KeyRing {
           };
         }
       }
-
+      // Need to check by network type, because cointype = 60 could be cosmos network either
       if (coinType === 60) {
         // For Ethereum Key-Gen Only:
         const wallet = new Wallet(privKey.toBytes());
@@ -772,6 +773,7 @@ export class KeyRing {
       // Need to check network type by chain id instead coin type
       const privKey = this.loadPrivKey(coinType);
       if (networkType === 'evm') {
+        // Only check coinType === 195 for Ton network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
           Buffer.from(
             TronWeb.utils.crypto.signTransaction(privKey, message),
@@ -1222,7 +1224,7 @@ export class KeyRing {
         );
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map((item) =>
+      const typeValuePairs = value.map(item =>
         this.encodeField(types, name, parsedType, item, version)
       );
       return [

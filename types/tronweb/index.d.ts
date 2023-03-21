@@ -11,7 +11,7 @@ type Utils = typeof utils;
 type Providers = typeof providers;
 
 declare global {
-  declare class TronWeb {
+  class TronWeb {
     static providers: Providers;
     static BigNumber: typeof BigNumber;
     static TransactionBuilder: TransactionBuilder;
@@ -44,12 +44,12 @@ declare global {
     constructor(
       optionsOrFullNode?:
         | {
-          fullNode?: string;
-          fullHost?: string;
-          solidityNode?: string;
-          eventServer?: string;
-          privateKey?: string;
-        }
+            fullNode?: string;
+            fullHost?: string;
+            solidityNode?: string;
+            eventServer?: string;
+            privateKey?: string;
+          }
         | string,
       solidityNode?: string,
       eventServer?: string,
