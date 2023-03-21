@@ -40,7 +40,7 @@ import Common from '@ethereumjs/common';
 import { TransactionOptions, Transaction } from 'ethereumjs-tx';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
-import { checkNetworkTypeByChainId } from './utils';
+import { checkCoinTypeByChainId, checkNetworkTypeByChainId } from './utils';
 import TronWeb from 'tronweb';
 export enum KeyRingStatus {
   NOTLOADED,
@@ -625,8 +625,7 @@ export class KeyRing {
       const pubKey = privKey.getPubKey();
       if (chainId && chainId !== '') {
         const networkType = checkNetworkTypeByChainId(chainId);
-
-        if (networkType === 'evm') {
+        if (coinType === 60 || networkType === 'evm') {
           // For Ethereum Key-Gen Only:
           const wallet = new Wallet(privKey.toBytes());
           const ethereumAddress = ETH.decoder(wallet.address);
@@ -733,7 +732,8 @@ export class KeyRing {
     // Sign with Evmos/Ethereum
     // const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
     const networkType = checkNetworkTypeByChainId(chainId);
-    if (networkType === 'evm') {
+    const coinType = checkCoinTypeByChainId(chainId);
+    if (networkType === 'evm' || coinType == 60) {
       return this.signEthereum(chainId, defaultCoinType, message);
     }
 
@@ -796,7 +796,7 @@ export class KeyRing {
     // const cType = this.computeKeyStoreCoinType(chainId, coinType);
     const networkType = checkNetworkTypeByChainId(chainId);
     // if (cType !== 60) {
-    if (networkType !== 'evm') {
+    if (networkType !== 'evm' && coinType !== 60) {
       throw new Error(
         'Invalid coin type passed in to Ethereum signing (expected 60)'
       );

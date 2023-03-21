@@ -4,3 +4,8 @@ export const checkNetworkTypeByChainId = (chainId) => {
   const network = EmbedChainInfos.find((nw) => nw.chainId === chainId);
   return network?.networkType ?? '';
 };
+
+export const checkCoinTypeByChainId = (chainId) => {
+  const network = EmbedChainInfos.find((nw) => nw.chainId === chainId);
+  return network?.coinType ?? '';
+};

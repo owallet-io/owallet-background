@@ -24,9 +24,9 @@ import {
   SignTypedDataVersion,
   TypedMessage
 } from './types';
-import TronWeb from 'tronWeb';
+import TronWeb from 'tronweb';
 
-import { fetchAdapter, KVStore } from '@owallet/common';
+import { fetchAdapter, KVStore, EVMOS_NETWORKS } from '@owallet/common';
 
 import { ChainsService } from '../chains';
 import { LedgerService } from '../ledger';
@@ -338,6 +338,7 @@ export class KeyRingService {
   ): Promise<DirectSignResponse> {
     const coinType = await this.chainsService.getChainCoinType(chainId);
 
+    // sign get here
     const key = this.keyRing.getKey(chainId, coinType);
     const bech32Address = new Bech32Address(key.address).toBech32(
       (await this.chainsService.getChainInfo(chainId)).bech32Config
@@ -388,7 +389,9 @@ export class KeyRingService {
     data: object
   ): Promise<string> {
     const coinType = await this.chainsService.getChainCoinType(chainId);
-    const rpc = (await this.chainsService.getChainInfo(chainId)).rest;
+    // const rpc =(await this.chainsService.getChainInfo(chainId)).rest;
+    const rpc = await this.chainsService.getChainInfo(chainId);
+    const rpcCustom = EVMOS_NETWORKS.includes(chainId) ? rpc.evmRpc : rpc.rest;
 
     console.log(data, 'DATA IN HEREEEEEEEEEEEEEEEEEEEEEEEE');
 
@@ -396,7 +399,7 @@ export class KeyRingService {
     const newData = await this.estimateFeeAndWaitApprove(
       env,
       chainId,
-      rpc,
+      rpcCustom,
       data
     );
 
@@ -404,7 +407,7 @@ export class KeyRingService {
       const rawTxHex = await this.keyRing.signAndBroadcastEthereum(
         chainId,
         coinType,
-        rpc,
+        rpcCustom,
         newData
       );
 
@@ -420,8 +423,8 @@ export class KeyRingService {
 
   async requestSignTron(
     env: Env,
-    chainId: string,
-    data: object
+    chainId?: string,
+    data?: object
   ): Promise<object> {
     const newData = (await this.interactionService.waitApprove(
       env,
@@ -430,13 +433,24 @@ export class KeyRingService {
       data
     )) as any;
     try {
+      // sign transaction
+      if (newData?.txID) {
+        return await this.keyRing.signTron(newData);
+      }
+
       const tronWeb = new TronWeb({
         fullHost: (await this.chainsService.getChainInfo(chainId)).rpc
       });
       tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
       let transaction;
       if (newData?.tokenTrc20) {
-        const amount = BigInt(Math.trunc(newData?.amount * 10 ** 6));
+        const amount = BigInt(
+          Math.trunc(
+            newData?.amount *
+              Math.pow(10, newData?.tokenTrc20?.coinDecimals ?? 6)
+          )
+        );
+
         transaction = await tronWeb.transactionBuilder.triggerSmartContract(
           newData.tokenTrc20.contractAddress,
           'transfer(address,uint256)',
@@ -447,7 +461,7 @@ export class KeyRingService {
           },
           [
             { type: 'address', value: newData.recipient },
-            { type: 'uint256', value: amount }
+            { type: 'uint256', value: amount.toString() }
           ],
           newData.address
         );
@@ -524,11 +538,14 @@ export class KeyRingService {
     console.log('in request sign proxy decryption data: ', chainId);
 
     try {
-      const rpc = (await this.chainsService.getChainInfo(chainId)).rest;
+      const rpc = await this.chainsService.getChainInfo(chainId);
+      const rpcCustom = EVMOS_NETWORKS.includes(chainId)
+        ? rpc.evmRpc
+        : rpc.rest;
       const newData = await this.estimateFeeAndWaitApprove(
         env,
         chainId,
-        rpc,
+        rpcCustom,
         data
       );
       const rawTxHex = await this.keyRing.signDecryptData(chainId, newData);
@@ -553,11 +570,14 @@ export class KeyRingService {
     console.log('in request sign proxy re-encryption data: ', chainId);
 
     try {
-      const rpc = (await this.chainsService.getChainInfo(chainId)).rest;
+      const rpc = await this.chainsService.getChainInfo(chainId);
+      const rpcCustom = EVMOS_NETWORKS.includes(chainId)
+        ? rpc.evmRpc
+        : rpc.rest;
       const newData = await this.estimateFeeAndWaitApprove(
         env,
         chainId,
-        rpc,
+        rpcCustom,
         data
       );
       const rawTxHex = await this.keyRing.signReEncryptData(chainId, newData);
