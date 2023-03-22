@@ -398,6 +398,7 @@ export class KeyRingService {
     );
     console.log(newData, 'NEW DATA IN HEREEEEEEEEEEEEEEEEEEEEEEEE');
 
+    // Need to check ledger here and ledger app type by chainId
     try {
       const rawTxHex = await this.keyRing.signAndBroadcastEthereum(
         env,

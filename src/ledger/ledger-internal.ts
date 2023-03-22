@@ -119,7 +119,7 @@ export class LedgerInternal {
   public get LedgerAppTypeDesc(): string {
     switch (this.type) {
       case 'cosmos':
-        return 'Cosmap App';
+        return 'Cosmos App';
       case 'eth':
         return 'Ethereum App';
       case 'trx':

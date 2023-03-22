@@ -498,7 +498,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -758,8 +758,14 @@ export class KeyRing {
         bip44HDPath.change,
         bip44HDPath.addressIndex
       ];
-
-      return await this.ledgerKeeper.sign(env, path, pubKey, message);
+      // Need to check ledger here and ledger app type by chainId
+      return await this.ledgerKeeper.sign(
+        env,
+        path,
+        pubKey,
+        message
+        // (type = 'cosmos')
+      );
     } else {
       // get here
       // Sign with Evmos/Ethereum
@@ -856,6 +862,8 @@ export class KeyRing {
     }
 
     if (this.keyStore.type === 'ledger') {
+      // Need to check ledger here and ledger app type by chainId
+      // Do the same like comos above
       // TODO: Ethereum Ledger Integration
       throw new Error('Ethereum signing with Ledger is not yet supported');
     } else {
@@ -1218,7 +1226,7 @@ export class KeyRing {
         );
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map((item) =>
+      const typeValuePairs = value.map(item =>
         this.encodeField(types, name, parsedType, item, version)
       );
       return [
