@@ -29,7 +29,6 @@ import {
   ECDSASignature
 } from './types';
 import { ChainInfo } from '@owallet/types';
-import TronWeb from 'tronweb';
 import { Env, OWalletError } from '@owallet/router';
 import { Buffer } from 'buffer';
 import { ChainIdHelper } from '@owallet/cosmos';
@@ -783,10 +782,7 @@ export class KeyRing {
       if (networkType === 'evm') {
         // Only check coinType === 195 for Ton network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
-          Buffer.from(
-            TronWeb.utils.crypto.signTransaction(privKey, message),
-            'hex'
-          );
+          Buffer.from(TronWeb.utils.crypto.signBytes(privKey, message), 'hex');
         }
         return this.signEthereum(privKey, message);
       }
