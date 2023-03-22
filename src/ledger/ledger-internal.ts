@@ -54,7 +54,9 @@ export class LedgerInternal {
     }
 
     let app: CosmosApp | EthApp | TrxApp;
+
     const transport = await transportIniter(...initArgs);
+
     try {
       if (ledgerAppType === 'trx') {
         app = new TrxApp(transport);

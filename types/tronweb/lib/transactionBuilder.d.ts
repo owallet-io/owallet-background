@@ -3,8 +3,8 @@ export default class TransactionBuilder {
     tronWeb: true;
     injectPromise: any;
     validator: any;
-    sendTrx(to: boolean, amount: number, from: any, options: any, callback?: boolean): any;
-    sendToken(to: boolean, amount: number, tokenID: boolean, from: any, options: any, callback?: boolean): any;
+    sendTrx(to: any, amount: any, from: any, options?: any, callback?: boolean): any;
+    sendToken(to: any, amount: any, tokenID: boolean, from: any, options: any, callback?: boolean): any;
     purchaseToken(issuerAddress: boolean, tokenID: boolean, amount: number, buyer: any, options: any, callback?: boolean): any;
     freezeBalance(amount: number, duration: number, resource: string, address: any, receiverAddress: any, options: any, callback?: boolean): any;
     unfreezeBalance(resource: string, address: any, receiverAddress: any, options: any, callback?: boolean): any;

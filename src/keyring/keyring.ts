@@ -16,7 +16,7 @@ import {
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
 import { intToHex, isHexString, stripHexPrefix } from 'ethjs-util';
 import { KVStore } from '@owallet/common';
-import { LedgerService } from '../ledger';
+import { LedgerAppType, LedgerService } from '../ledger';
 import {
   BIP44HDPath,
   CommonCrypto,
@@ -739,6 +739,8 @@ export class KeyRing {
     const networkType = checkNetworkTypeByChainId(chainId);
     const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
 
+    console.log('ledgerAppType', this.keyStore.type);
+
     // using ledger app
     if (this.keyStore.type === 'ledger') {
       const pubKey = this.ledgerPublicKey;
@@ -759,14 +761,18 @@ export class KeyRing {
         bip44HDPath.change,
         bip44HDPath.addressIndex
       ];
+
+      const ledgerAppType: LedgerAppType =
+        networkType === 'evm' ? (coinType === 195 ? 'trx' : 'eth') : 'cosmos';
+
+      console.log('ledgerAppType', ledgerAppType);
       // Need to check ledger here and ledger app type by chainId
       return await this.ledgerKeeper.sign(
         env,
         path,
         pubKey,
         message,
-        'cosmos'
-        // (type = 'cosmos')
+        ledgerAppType
       );
     } else {
       // get here
@@ -786,39 +792,6 @@ export class KeyRing {
       }
 
       return privKey.sign(message);
-    }
-  }
-
-  public async signTron(transaction): Promise<object> {
-    let privateKey;
-    if (
-      this.status !== KeyRingStatus.UNLOCKED ||
-      this.type === 'none' ||
-      !this.keyStore
-    ) {
-      throw new Error('Key ring is not unlocked');
-    }
-
-    const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
-    if (this.type === 'mnemonic') {
-      const coinTypeModified = bip44HDPath.coinType ?? 195;
-      const path = `m/44'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
-      privateKey = Mnemonic.generateWalletFromMnemonic(this.mnemonic, path);
-    } else {
-      privateKey = this.privateKey;
-    }
-
-    const bufferPrivaKey = Buffer.from(privateKey).toString('hex');
-
-    try {
-      const signedtxn = TronWeb.utils.crypto.signTransaction(
-        bufferPrivaKey,
-        transaction
-      );
-      return signedtxn;
-    } catch (error) {
-      console.log('error', error);
-      return { result: false, txid: error.message };
     }
   }
 
