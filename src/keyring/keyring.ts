@@ -498,7 +498,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -759,13 +759,7 @@ export class KeyRing {
         bip44HDPath.addressIndex
       ];
 
-      return await this.ledgerKeeper.sign(
-        env,
-        path,
-        pubKey,
-        message,
-        networkType
-      );
+      return await this.ledgerKeeper.sign(env, path, pubKey, message);
     } else {
       // get here
       // Sign with Evmos/Ethereum
@@ -1224,7 +1218,7 @@ export class KeyRing {
         );
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map(item =>
+      const typeValuePairs = value.map((item) =>
         this.encodeField(types, name, parsedType, item, version)
       );
       return [

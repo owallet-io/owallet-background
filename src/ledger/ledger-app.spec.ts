@@ -18,6 +18,8 @@ describe('Test ledger app', () => {
       )
     );
 
+    console.log('instance of', ethApp instanceof CosmosApp);
+
     const ethRet = await ethApp.getAddress("44'/60'/0'/0'/0");
     console.log(ethRet.address);
 

@@ -1,9 +1,11 @@
 import { NetworkType } from '@owallet/types';
-import { LedgerInternal } from './ledger-internal';
+import { LedgerAppType, LedgerInternal } from './ledger-internal';
 
 let callProxy: (method: string, args?: any[]) => Promise<any>;
 let ledger: LedgerInternal = null;
 let currentMode = null;
+let ledgerType: LedgerAppType;
+let initArgs = null;
 
 export const ledgerProxy = async (
   method: string,
@@ -12,15 +14,14 @@ export const ledgerProxy = async (
   let response: any;
 
   if (!ledger && currentMode && method !== 'init') {
-    ledger = await LedgerInternal.init(currentMode);
+    ledger = await LedgerInternal.init(currentMode, initArgs, ledgerType);
   }
 
   switch (method) {
     case 'init':
       try {
-        const [mode, initArgs] = args;
-        currentMode = mode;
-        ledger = await LedgerInternal.init(mode, initArgs);
+        [currentMode, initArgs, ledgerType] = args;
+        ledger = await LedgerInternal.init(currentMode, initArgs, ledgerType);
         response = true;
       } catch (error) {
         console.log(error);
@@ -46,7 +47,7 @@ if (isReactNative) {
   const channelDevice = new BroadcastChannel('device');
 
   callProxy = async (method: string, args: any[] = []): Promise<any> =>
-    new Promise(resolve => {
+    new Promise((resolve) => {
       let requestId = Date.now();
       const handler = ({ data }) => {
         if (data.requestId !== requestId) return;
@@ -63,9 +64,9 @@ export class Ledger {
   static async init(
     mode: string,
     initArgs: any[] = [],
-    networkType?: string
+    type: LedgerAppType
   ): Promise<Ledger> {
-    const resultInit = await callProxy('init', [mode, initArgs, networkType]);
+    const resultInit = await callProxy('init', [mode, initArgs, type]);
     if (resultInit) return new Ledger();
     else throw new Error('Device state invalid!');
   }
@@ -85,10 +86,9 @@ export class Ledger {
 
   async sign(
     path: number[] | string,
-    message: Uint8Array,
-    networkType: NetworkType
+    message: Uint8Array
   ): Promise<Uint8Array> {
-    return await callProxy('sign', [path, message, networkType]);
+    return await callProxy('sign', [path, message]);
   }
 
   async close(): Promise<void> {
