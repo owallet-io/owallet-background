@@ -5,6 +5,7 @@ import {
 import Bip32Path from 'bip32-path';
 import CosmosApp from '@ledgerhq/hw-app-cosmos';
 import EthApp from '@ledgerhq/hw-app-eth';
+import { fromString } from 'bip32-path';
 
 describe('Test ledger app', () => {
   it('test ledger app type', async () => {
@@ -20,7 +21,9 @@ describe('Test ledger app', () => {
 
     console.log('instance of', ethApp instanceof CosmosApp);
 
-    const ethRet = await ethApp.getAddress("44'/60'/0'/0'/0");
+    const ethRet = await ethApp.getAddress(
+      fromString("44'/60'/0'/0'/0").toPathArray()
+    );
     console.log(ethRet.address);
 
     const cosmosApp = new CosmosApp(
