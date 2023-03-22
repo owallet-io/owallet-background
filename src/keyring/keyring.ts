@@ -300,7 +300,7 @@ export class KeyRing {
 
     return {
       status: this.status,
-      multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
+      multiKeyStoreInfo: this.getMultiKeyStoreInfo()
     };
   }
 
@@ -321,7 +321,8 @@ export class KeyRing {
     // Get public key first
     this.ledgerPublicKey = await this.ledgerKeeper.getPublicKey(
       env,
-      bip44HDPath
+      bip44HDPath,
+      'cosmos'
     );
 
     const keyStore = await KeyRing.CreateLedgerKeyStore(
@@ -498,7 +499,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -763,7 +764,8 @@ export class KeyRing {
         env,
         path,
         pubKey,
-        message
+        message,
+        'cosmos'
         // (type = 'cosmos')
       );
     } else {
@@ -1226,7 +1228,7 @@ export class KeyRing {
         );
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map(item =>
+      const typeValuePairs = value.map((item) =>
         this.encodeField(types, name, parsedType, item, version)
       );
       return [
@@ -1422,7 +1424,11 @@ export class KeyRing {
       console.log('HERE');
 
       // Get public key first
-      const publicKey = await this.ledgerKeeper.getPublicKey(env, bip44HDPath);
+      const publicKey = await this.ledgerKeeper.getPublicKey(
+        env,
+        bip44HDPath,
+        'cosmos'
+      );
 
       console.log(publicKey, 'pubkey hre');
 
