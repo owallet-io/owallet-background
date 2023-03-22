@@ -46,7 +46,7 @@ if (isReactNative) {
   const channelDevice = new BroadcastChannel('device');
 
   callProxy = async (method: string, args: any[] = []): Promise<any> =>
-    new Promise((resolve) => {
+    new Promise(resolve => {
       let requestId = Date.now();
       const handler = ({ data }) => {
         if (data.requestId !== requestId) return;
@@ -60,8 +60,12 @@ if (isReactNative) {
 }
 
 export class Ledger {
-  static async init(mode: string, initArgs: any[] = []): Promise<Ledger> {
-    const resultInit = await callProxy('init', [mode, initArgs]);
+  static async init(
+    mode: string,
+    initArgs: any[] = [],
+    networkType?: string
+  ): Promise<Ledger> {
+    const resultInit = await callProxy('init', [mode, initArgs, networkType]);
     if (resultInit) return new Ledger();
     else throw new Error('Device state invalid!');
   }

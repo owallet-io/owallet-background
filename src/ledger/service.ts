@@ -38,7 +38,7 @@ export class LedgerService {
         // Cosmos App on Ledger doesn't support the coin type other than 118.
         return await ledger.getPublicKey([
           44,
-          118,
+          bip44HDPath.coinType,
           bip44HDPath.account,
           bip44HDPath.change,
           bip44HDPath.addressIndex
@@ -59,7 +59,7 @@ export class LedgerService {
     env: Env,
     path: number[],
     expectedPubKey: Uint8Array,
-    message: Uint8Array,
+    message: any,
     networkType: NetworkType
   ): Promise<Uint8Array> {
     return await this.useLedger(env, async (ledger, retryCount: number) => {
@@ -101,6 +101,7 @@ export class LedgerService {
     fn: (ledger: Ledger, retryCount: number) => Promise<T>
   ): Promise<T> {
     let ledger: { ledger: Ledger; retryCount: number } | undefined;
+
     try {
       ledger = await this.initLedger(env);
       return await fn(ledger.ledger, ledger.retryCount);

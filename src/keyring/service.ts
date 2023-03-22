@@ -400,6 +400,7 @@ export class KeyRingService {
 
     try {
       const rawTxHex = await this.keyRing.signAndBroadcastEthereum(
+        env,
         chainId,
         coinType,
         rpc,
