@@ -787,7 +787,9 @@ export class KeyRingService {
       const transactionData = Buffer.from(transaction.raw_data_hex, 'hex');
 
       transaction.signature = [
-        await this.keyRing.sign(env, chainId, 195, transactionData)
+        Buffer.from(
+          await this.keyRing.sign(env, chainId, 195, transactionData)
+        ).toString('hex')
       ];
 
       const receipt = await tronWeb.trx.sendRawTransaction(transaction);

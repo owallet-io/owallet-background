@@ -738,8 +738,6 @@ export class KeyRing {
     const networkType = checkNetworkTypeByChainId(chainId);
     const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
 
-    console.log('ledgerAppType', this.keyStore.type);
-
     // using ledger app
     if (this.keyStore.type === 'ledger') {
       const pubKey = this.ledgerPublicKey;
@@ -778,11 +776,16 @@ export class KeyRing {
       // Sign with Evmos/Ethereum
       // const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
       // Need to check network type by chain id instead coin type
+
       const privKey = this.loadPrivKey(coinType);
       if (networkType === 'evm') {
         // Only check coinType === 195 for Ton network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
-          Buffer.from(TronWeb.utils.crypto.signBytes(privKey, message), 'hex');
+          const signature = Buffer.from(
+            TronWeb.utils.crypto.signBytes(privKey.toBytes(), message),
+            'hex'
+          );
+          return signature;
         }
         return this.signEthereum(privKey, message);
       }

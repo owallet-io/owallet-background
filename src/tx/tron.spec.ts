@@ -24,6 +24,7 @@ describe('Test ledger app', () => {
       privateKey,
       Buffer.from(transaction.raw_data_hex, 'hex')
     );
+
     expect(transaction.signature).toEqual([signature]);
   });
 });
