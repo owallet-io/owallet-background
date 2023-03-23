@@ -6,15 +6,14 @@ import {
   RNG
 } from '@owallet/crypto';
 import {
-  bufferToHex,
+  privateToAddress,
   ecsign,
   keccak,
-  publicToAddress,
+  privateToPublic,
   toBuffer
 } from 'ethereumjs-util';
 
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
-import { intToHex, isHexString, stripHexPrefix } from 'ethjs-util';
 import { KVStore } from '@owallet/common';
 import { LedgerAppType, LedgerService } from '../ledger';
 import {
@@ -33,18 +32,11 @@ import { Env, OWalletError } from '@owallet/router';
 import { Buffer } from 'buffer';
 import { ChainIdHelper } from '@owallet/cosmos';
 import PRE from 'proxy-recrypt-js';
-import { Wallet } from '@ethersproject/wallet';
-import { ETH } from '@tharsis/address-converter';
-import { keccak256 } from '@ethersproject/keccak256';
 import Common from '@ethereumjs/common';
 import { TransactionOptions, Transaction } from 'ethereumjs-tx';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
-import {
-  checkNetworkTypeByChainId,
-  convertEthSignature,
-  getCoinTypeByChainId
-} from './utils';
+import { checkNetworkTypeByChainId, getCoinTypeByChainId } from './utils';
 
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
@@ -631,36 +623,14 @@ export class KeyRing {
     } else {
       const privKey = this.loadPrivKey(coinType);
       const pubKey = privKey.getPubKey();
-      if (chainId && chainId !== '') {
-        const networkType = checkNetworkTypeByChainId(chainId);
 
-        if (coinType === 60 || networkType === 'evm') {
-          // For Ethereum Key-Gen Only:
-          // const wallet = new Wallet(privKey.toBytes());
-          const ethereumAddress = ETH.decoder('wallet.address');
+      const networkType = checkNetworkTypeByChainId(chainId);
 
-          return {
-            algo: 'ethsecp256k1',
-            pubKey: pubKey.toBytes(),
-            address: ethereumAddress,
-            isNanoLedger: false
-          };
-        }
-
-        if (networkType === 'cosmos') {
-          return {
-            algo: 'secp256k1',
-            pubKey: pubKey.toBytes(),
-            address: pubKey.getAddress(),
-            isNanoLedger: false
-          };
-        }
-      }
-      // Need to check by network type, because cointype = 60 could be cosmos network either
-      if (coinType === 60) {
+      if (coinType === 60 || networkType === 'evm') {
         // For Ethereum Key-Gen Only:
-        // const wallet = new Wallet(privKey.toBytes());
-        const ethereumAddress = ETH.decoder('wallet.address');
+        const ethereumAddress = privateToAddress(
+          Buffer.from(privKey.toBytes())
+        );
 
         return {
           algo: 'ethsecp256k1',
@@ -852,7 +822,6 @@ export class KeyRing {
         chainId: chainIdNumber
       });
 
-      // const signer = new Wallet(privKey.toBytes()).address;
       const nonce = await request(rpc, 'eth_getTransactionCount', [
         'signer',
         'latest'
@@ -890,10 +859,12 @@ export class KeyRing {
     message: Uint8Array
   ): Promise<Uint8Array> {
     // Use ether js to sign Ethereum tx
-    // const ethWallet = new Wallet(privKey.toBytes());
+    const signature = ecsign(
+      Buffer.from(message),
+      Buffer.from(privKey.toBytes())
+    );
 
-    const signature = { s: '', r: '' }; //ethWallet._signingKey().signDigest(keccak256(message));
-    return convertEthSignature(signature);
+    return Buffer.concat([signature.r, signature.s, Buffer.from('1b', 'hex')]);
   }
 
   public async signProxyDecryptionData(
@@ -909,8 +880,7 @@ export class KeyRing {
     }
 
     const privKey = this.loadPrivKey(getCoinTypeByChainId(chainId));
-    // const ethWallet = new Wallet(privKey.toBytes());
-    const privKeyHex = 'ethWallet.privateKey.slice(2)';
+    const privKeyHex = Buffer.from(privKey.toBytes()).toString('hex');
     const decryptedData = PRE.decryptData(privKeyHex, message[0]);
     return {
       decryptedData
@@ -930,8 +900,7 @@ export class KeyRing {
     }
 
     const privKey = this.loadPrivKey(getCoinTypeByChainId(chainId));
-    // const ethWallet = new Wallet(privKey.toBytes());
-    const privKeyHex = 'ethWallet.privateKey.slice(2)';
+    const privKeyHex = Buffer.from(privKey.toBytes()).toString('hex');
     const rk = PRE.generateReEncrytionKey(privKeyHex, message[0]);
 
     return {
@@ -949,10 +918,8 @@ export class KeyRing {
     }
 
     const privKey = this.loadPrivKey(getCoinTypeByChainId(chainId));
-    // const ethWallet = new Wallet(privKey.toBytes());
-    const pubKeyHex = 'ethWallet.publicKey.slice(2)';
-    // Could use privKey to get pubKey hex like this
-    // Buffer.from(privKey.getPubKey().toBytes()).toString('hex')
+    const pubKeyHex =
+      '04' + privateToPublic(Buffer.from(privKey.toBytes())).toString('hex');
 
     return pubKeyHex;
   }
@@ -1033,7 +1000,7 @@ export class KeyRing {
         return e.value;
       }
 
-      return typeof e.value === 'string' && !isHexString(e.value)
+      return typeof e.value === 'string' && !e.value.startsWith('0x')
         ? Buffer.from(e.value)
         : toBuffer(e.value);
     });
