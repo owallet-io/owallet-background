@@ -8,7 +8,7 @@ import { signatureImport, publicKeyConvert } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { fromString } from 'bip32-path';
 import { OWalletError } from '@owallet/router';
-import * as BytesUtils from '@ethersproject/bytes';
+import { convertEthSignature } from '../keyring/utils';
 
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 
@@ -172,14 +172,7 @@ export class LedgerInternal {
 
       const signature = await this.ledgerApp.signTransaction(hdPath, rawTxHex);
 
-      const splitSignature = BytesUtils.splitSignature({
-        v: Number(signature.v),
-        r: signature.r,
-        s: signature.s
-      });
-      return BytesUtils.arrayify(
-        BytesUtils.concat([splitSignature.r, splitSignature.s])
-      );
+      return convertEthSignature(signature);
     } else {
       const rawTxHex = Buffer.from(message).toString('hex');
       const trxSignature = await this.ledgerApp.signTransaction(

@@ -34,14 +34,17 @@ import { Buffer } from 'buffer';
 import { ChainIdHelper } from '@owallet/cosmos';
 import PRE from 'proxy-recrypt-js';
 import { Wallet } from '@ethersproject/wallet';
-import * as BytesUtils from '@ethersproject/bytes';
 import { ETH } from '@tharsis/address-converter';
 import { keccak256 } from '@ethersproject/keccak256';
 import Common from '@ethereumjs/common';
 import { TransactionOptions, Transaction } from 'ethereumjs-tx';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
-import { checkNetworkTypeByChainId, getCoinTypeByChainId } from './utils';
+import {
+  checkNetworkTypeByChainId,
+  convertEthSignature,
+  getCoinTypeByChainId
+} from './utils';
 
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
@@ -633,8 +636,8 @@ export class KeyRing {
 
         if (coinType === 60 || networkType === 'evm') {
           // For Ethereum Key-Gen Only:
-          const wallet = new Wallet(privKey.toBytes());
-          const ethereumAddress = ETH.decoder(wallet.address);
+          // const wallet = new Wallet(privKey.toBytes());
+          const ethereumAddress = ETH.decoder('wallet.address');
 
           return {
             algo: 'ethsecp256k1',
@@ -656,8 +659,8 @@ export class KeyRing {
       // Need to check by network type, because cointype = 60 could be cosmos network either
       if (coinType === 60) {
         // For Ethereum Key-Gen Only:
-        const wallet = new Wallet(privKey.toBytes());
-        const ethereumAddress = ETH.decoder(wallet.address);
+        // const wallet = new Wallet(privKey.toBytes());
+        const ethereumAddress = ETH.decoder('wallet.address');
 
         return {
           algo: 'ethsecp256k1',
@@ -849,9 +852,9 @@ export class KeyRing {
         chainId: chainIdNumber
       });
 
-      const signer = new Wallet(privKey.toBytes()).address;
+      // const signer = new Wallet(privKey.toBytes()).address;
       const nonce = await request(rpc, 'eth_getTransactionCount', [
-        signer,
+        'signer',
         'latest'
       ]);
 
@@ -887,13 +890,10 @@ export class KeyRing {
     message: Uint8Array
   ): Promise<Uint8Array> {
     // Use ether js to sign Ethereum tx
-    const ethWallet = new Wallet(privKey.toBytes());
+    // const ethWallet = new Wallet(privKey.toBytes());
 
-    const signature = ethWallet._signingKey().signDigest(keccak256(message));
-    const splitSignature = BytesUtils.splitSignature(signature);
-    return BytesUtils.arrayify(
-      BytesUtils.concat([splitSignature.r, splitSignature.s])
-    );
+    const signature = { s: '', r: '' }; //ethWallet._signingKey().signDigest(keccak256(message));
+    return convertEthSignature(signature);
   }
 
   public async signProxyDecryptionData(
@@ -909,8 +909,8 @@ export class KeyRing {
     }
 
     const privKey = this.loadPrivKey(getCoinTypeByChainId(chainId));
-    const ethWallet = new Wallet(privKey.toBytes());
-    const privKeyHex = ethWallet.privateKey.slice(2);
+    // const ethWallet = new Wallet(privKey.toBytes());
+    const privKeyHex = 'ethWallet.privateKey.slice(2)';
     const decryptedData = PRE.decryptData(privKeyHex, message[0]);
     return {
       decryptedData
@@ -930,8 +930,8 @@ export class KeyRing {
     }
 
     const privKey = this.loadPrivKey(getCoinTypeByChainId(chainId));
-    const ethWallet = new Wallet(privKey.toBytes());
-    const privKeyHex = ethWallet.privateKey.slice(2);
+    // const ethWallet = new Wallet(privKey.toBytes());
+    const privKeyHex = 'ethWallet.privateKey.slice(2)';
     const rk = PRE.generateReEncrytionKey(privKeyHex, message[0]);
 
     return {
@@ -949,8 +949,8 @@ export class KeyRing {
     }
 
     const privKey = this.loadPrivKey(getCoinTypeByChainId(chainId));
-    const ethWallet = new Wallet(privKey.toBytes());
-    const pubKeyHex = ethWallet.publicKey.slice(2);
+    // const ethWallet = new Wallet(privKey.toBytes());
+    const pubKeyHex = 'ethWallet.publicKey.slice(2)';
     // Could use privKey to get pubKey hex like this
     // Buffer.from(privKey.getPubKey().toBytes()).toString('hex')
 
