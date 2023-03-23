@@ -22,7 +22,7 @@
     "@types/aes-js": "^3.1.0",
     "@types/big.js": "^6.1.3",
     "@types/secp256k1": "^4.0.1",
-    "@types/ethereumjs-abi":"^0.6.3"
+    "@types/ethereumjs-abi": "^0.6.3"
   },
   "dependencies": {
     "bip32-path": "^0.4.2",
@@ -36,7 +36,6 @@
     "@cosmjs/launchpad": "^0.27.1",
     "@cosmjs/proto-signing": "^0.29.3",
     "@ethereumjs/common": "^2.6.4",
-    "@ethersproject/keccak256": "^5.7.0",
     "@owallet/common": "^0.9.10",
     "@owallet/cosmos": "^0.9.16",
     "@owallet/crypto": "^0.9.10",

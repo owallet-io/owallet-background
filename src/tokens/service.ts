@@ -1,6 +1,5 @@
 import { delay, inject, singleton } from 'tsyringe';
 import { TYPES } from '../types';
-import Web3 from 'web3';
 
 import { Env } from '@owallet/router';
 import {
@@ -395,7 +394,7 @@ export class TokensService {
     currency = await ERC20CurrencySchema.validateAsync(currency);
 
     // Validate the contract address.
-    if (!Web3.utils.isAddress(currency.contractAddress))
+    if (!currency.contractAddress.startsWith('0x'))
       throw new Error('Not a valid erc20 address');
     return currency;
   }
