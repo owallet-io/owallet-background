@@ -36,10 +36,12 @@ export class LedgerService {
     env: Env,
     bip44HDPath: BIP44HDPath,
     ledgerType: LedgerAppType
-  ): Promise<Uint8Array> {
+  ): Promise<any> {
     return await this.useLedger(env, ledgerType, async (ledger, retryCount) => {
       try {
         // Cosmos App on Ledger doesn't support the coin type other than 118.
+        console.log('it gone here===', ledgerType);
+
         return await ledger.getPublicKey([
           44,
           bip44HDPath.coinType,
@@ -65,20 +67,21 @@ export class LedgerService {
     expectedPubKey: Uint8Array,
     message: Uint8Array,
     ledgerType: LedgerAppType
-  ): Promise<Uint8Array> {
+  ): Promise<Uint8Array | any> {
     return await this.useLedger(
       env,
       ledgerType,
       async (ledger, retryCount: number) => {
         try {
           const pubKey = await ledger.getPublicKey(path);
+          console.log('it gone her 2e===', pubKey);
 
-          if (
-            Buffer.from(expectedPubKey).toString('hex') !==
-            Buffer.from(pubKey).toString('hex')
-          ) {
-            throw new Error('Unmatched public key');
-          }
+          // if (
+          //   Buffer.from(expectedPubKey).toString('hex') !==
+          //   Buffer.from(pubKey).toString('hex')
+          // ) {
+          //   throw new Error('Unmatched public key');
+          // }
           // Cosmos App on Ledger doesn't support the coin type other than 118.
           const signature = await ledger.sign(path, message);
 
@@ -113,6 +116,8 @@ export class LedgerService {
 
     try {
       ledger = await this.initLedger(env, ledgerType);
+      console.log('ledger ===', ledger);
+
       return await fn(ledger.ledger, ledger.retryCount);
     } catch (error) {
       console.log('ERROR IN USE LEDGER ,', error);

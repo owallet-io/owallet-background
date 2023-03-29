@@ -17,6 +17,7 @@ import {
   AddLedgerKeyMsg,
   CreateLedgerKeyMsg,
   SetKeyStoreCoinTypeMsg,
+  SetKeyStoreLedgerAddressMsg,
   RestoreKeyRingMsg,
   GetIsKeyStoreCoinTypeSetMsg,
   CheckPasswordMsg,
@@ -133,6 +134,11 @@ export const getHandler: (service: KeyRingService) => Handler = (
         return handleSetKeyStoreCoinTypeMsg(service)(
           env,
           msg as SetKeyStoreCoinTypeMsg
+        );
+      case SetKeyStoreLedgerAddressMsg:
+        return handleSetKeyStoreLedgerAddressMsg(service)(
+          env,
+          msg as SetKeyStoreLedgerAddressMsg
         );
       case CheckPasswordMsg:
         return handleCheckPasswordMsg(service)(env, msg as CheckPasswordMsg);
@@ -448,26 +454,10 @@ const handleRequestSignEthereumMsg: (
   service: KeyRingService
 ) => InternalHandler<RequestSignEthereumMsg> = service => {
   return async (env, msg) => {
-    // const signDoc = cosmos.tx.v1beta1.SignDoc.create({
-    //   bodyBytes: msg.signDoc.bodyBytes,
-    //   authInfoBytes: msg.signDoc.authInfoBytes,
-    //   chainId: msg.signDoc.chainId,
-    //   accountNumber: msg.signDoc.accountNumber
-    //     ? Long.fromString(msg.signDoc.accountNumber)
-    //     : undefined,
-    // });
-
-    // await service.permissionService.checkOrGrantBasicAccessPermission(
-    //   env,
-    //   msg.chainId,
-    //   msg.origin
-    // );
-
     const response = await service.requestSignEthereum(
       env,
       msg.chainId,
       msg.data
-      // signDoc
     );
 
     return { rawTxHex: response };
@@ -514,6 +504,20 @@ const handleSetKeyStoreCoinTypeMsg: (
 ) => InternalHandler<SetKeyStoreCoinTypeMsg> = service => {
   return async (_, msg) => {
     await service.setKeyStoreCoinType(msg.chainId, msg.coinType);
+    return service.keyRingStatus;
+  };
+};
+
+const handleSetKeyStoreLedgerAddressMsg: (
+  service: KeyRingService
+) => InternalHandler<SetKeyStoreLedgerAddressMsg> = service => {
+  return async (env, msg) => {
+    console.log(
+      'handleSetKeyStoreLedgerAddressMsg',
+      handleSetKeyStoreLedgerAddressMsg
+    );
+
+    await service.setKeyStoreLedgerAddress(env, msg.bip44HDPath);
     return service.keyRingStatus;
   };
 };

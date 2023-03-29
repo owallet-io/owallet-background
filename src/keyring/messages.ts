@@ -1071,6 +1071,34 @@ export class SetKeyStoreCoinTypeMsg extends Message<KeyRingStatus> {
   }
 }
 
+export class SetKeyStoreLedgerAddressMsg extends Message<KeyRingStatus> {
+  public static type() {
+    return 'set-keystore-ledger-address';
+  }
+
+  constructor(public readonly bip44HDPath: string) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (this.bip44HDPath === '') {
+      throw new OWalletError(
+        'keyring',
+        240,
+        'bip44HDPath address can not be empty'
+      );
+    }
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return SetKeyStoreLedgerAddressMsg.type();
+  }
+}
+
 export class CheckPasswordMsg extends Message<boolean> {
   public static type() {
     return 'check-keyring-password';

@@ -37,6 +37,7 @@ export interface KeyStore {
     kdfparams: ScryptParams;
     mac: string;
   };
+  address?: string;
 }
 
 export class Crypto {
@@ -48,8 +49,11 @@ export class Crypto {
     text: string,
     password: string,
     meta: Record<string, string>,
-    bip44HDPath?: BIP44HDPath
+    bip44HDPath?: BIP44HDPath,
+    address?: string
   ): Promise<KeyStore> {
+    console.log('address Crypto ==- ', address);
+
     let random = new Uint8Array(32);
     const salt = Buffer.from(await rng(random)).toString('hex');
 
@@ -118,7 +122,8 @@ export class Crypto {
         kdf,
         kdfparams: scryptParams,
         mac: Buffer.from(mac).toString('hex')
-      }
+      },
+      address
     };
   }
 

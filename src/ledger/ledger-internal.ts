@@ -9,6 +9,7 @@ import { Buffer } from 'buffer';
 import { fromString } from 'bip32-path';
 import { OWalletError } from '@owallet/router';
 import * as BytesUtils from '@ethersproject/bytes';
+import { serialize } from '@ethersproject/transactions';
 
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 
@@ -49,6 +50,8 @@ export class LedgerInternal {
     ledgerAppType: LedgerAppType
   ): Promise<LedgerInternal> {
     const transportIniter = LedgerInternal.transportIniters[mode];
+    console.log('transportIniter', transportIniter);
+
     if (!transportIniter) {
       throw new OWalletError('ledger', 112, `Unknown mode: ${mode}`);
     }
@@ -56,6 +59,7 @@ export class LedgerInternal {
     let app: CosmosApp | EthApp | TrxApp;
 
     const transport = await transportIniter(...initArgs);
+    console.log('transportIniter transport', transport, ledgerAppType);
 
     try {
       if (ledgerAppType === 'trx') {
@@ -77,7 +81,7 @@ export class LedgerInternal {
           throw new Error('Device is on screen saver');
         }
       }
-
+      console.log('transportIniter ledger', ledger);
       return ledger;
     } catch (e) {
       console.log(e);
@@ -129,64 +133,119 @@ export class LedgerInternal {
     return typeof path === 'string' ? fromString(path).toPathArray() : path;
   }
 
-  async getPublicKey(path: number[] | string): Promise<Uint8Array> {
+  async getPublicKey(path: number[] | string): Promise<object> {
     if (!this.ledgerApp) {
       throw new Error(`${this.LedgerAppTypeDesc} not initialized`);
     }
 
     const hdPath = this.getHdPath(path);
+
+    console.log('get publichdPath', hdPath);
+    console.log(
+      'get this.ledgerAp',
+      this.ledgerApp,
+      this.ledgerApp instanceof TrxApp,
+      this.ledgerApp instanceof EthApp,
+      this.ledgerApp instanceof CosmosApp
+    );
 
     if (this.ledgerApp instanceof CosmosApp) {
       // make compartible with ledger-cosmos-js
-      const { publicKey } = await this.ledgerApp.getAddress(hdPath, 'cosmos');
-      return Buffer.from(publicKey, 'hex');
+      const { publicKey, address } = await this.ledgerApp.getAddress(
+        "44'/118'/0'/0/0",
+        'cosmos'
+      );
+      return { publicKey: Buffer.from(publicKey, 'hex'), address };
     } else if (this.ledgerApp instanceof EthApp) {
-      const result = await this.ledgerApp.getAddress(hdPath);
-      const pubKey = Buffer.from(result.publicKey, 'hex');
+      const { publicKey, address } = await this.ledgerApp.getAddress(
+        "44'/60'/0'/0/0"
+      );
+
+      console.log('get here eth ===', publicKey, address);
+
+      const pubKey = Buffer.from(publicKey, 'hex');
       // Compress the public key
-      return publicKeyConvert(pubKey, true);
+      return {
+        publicKey: publicKeyConvert(pubKey, true),
+        address
+      };
     } else {
-      const result = await this.ledgerApp.getAddress(hdPath);
-      const pubKey = Buffer.from(result.publicKey, 'hex');
+      console.log('hdPath', hdPath);
+
+      const { publicKey, address } = await this.ledgerApp.getAddress(
+        "44'/195'/0'/0/0"
+      );
+
       // Compress the public key
-      return publicKeyConvert(pubKey, true);
+
+      return { publicKey: Buffer.from(publicKey, 'hex'), address };
     }
   }
 
-  async sign(path: number[] | string, message: any): Promise<Uint8Array> {
+  async sign(path: number[] | string, message: any): Promise<Uint8Array | any> {
     console.log('sign ledger === ', message, path);
-
-    const hdPath = this.getHdPath(path);
 
     if (!this.ledgerApp) {
       throw new Error(`${this.LedgerAppTypeDesc} not initialized`);
     }
 
     if (this.ledgerApp instanceof CosmosApp) {
-      const { signature } = await this.ledgerApp.sign(hdPath, message);
+      const { signature } = await this.ledgerApp.sign(
+        "44'/118'/0'/0/0",
+        message
+      );
 
       // Parse a DER ECDSA signature
       return signatureImport(signature);
     } else if (this.ledgerApp instanceof EthApp) {
       const rawTxHex = Buffer.from(message).toString('hex');
+      // const tx = JSON.parse(Buffer.from(message).toString());
+      // This is normal object to serialize
+      // const rlpArray = serialize(tx).replace('0x', '');
+      // const signature = await this.ledgerApp.signTransaction(
+      //   "44'/60'/0'/0/0",
+      //   rlpArray
+      // );
 
-      const signature = await this.ledgerApp.signTransaction(hdPath, rawTxHex);
-
-      const splitSignature = BytesUtils.splitSignature({
-        v: Number(signature.v),
-        r: signature.r,
-        s: signature.s
-      });
-      return BytesUtils.arrayify(
-        BytesUtils.concat([splitSignature.r, splitSignature.s])
+      // console.log('rawTxHex wth===', rawTxHex);
+      const signature = await this.ledgerApp.signTransaction(
+        "44'/60'/0'/0/0",
+        rawTxHex
       );
+      // const signedTx = serialize(message, {
+      //   r: `0x${signature.r}`,
+      //   s: `0x${signature.s}`,
+      //   v: parseInt(signature.v, 16)
+      // }).replace('0x', '');
+      // return Buffer.from(signedTx, 'hex');
+      console.log('signature eth ===', signature);
+      return signature;
+      // const splitSignature = BytesUtils.splitSignature({
+      //   v: Number(signature.v),
+      //   r: '0x' + signature.r,
+      //   s: '0x' + signature.s
+      // });
+      // console.log('splitSignature === 1', splitSignature);
+      // console.log(
+      //   'Buffer === 1',
+      //   BytesUtils.arrayify(
+      //     BytesUtils.concat([splitSignature.r, splitSignature.s])
+      //   )
+      // );
+      // return BytesUtils.arrayify(
+      //   BytesUtils.concat([splitSignature.r, splitSignature.s])
+      // );
     } else {
       const rawTxHex = Buffer.from(message).toString('hex');
+      console.log('rawTxHex sign ===', rawTxHex);
+
       const trxSignature = await this.ledgerApp.signTransaction(
-        hdPath,
+        "44'/195'/0'/0/0",
         rawTxHex,
         []
       );
+      console.log('trxSignature', trxSignature);
+
       return Buffer.from(trxSignature, 'hex');
     }
   }

@@ -205,6 +205,15 @@ export class KeyRingService {
     );
   }
 
+  async updateLedgerAddress(
+    env: Env,
+    bip44HDPath: string
+  ): Promise<{
+    status: KeyRingStatus;
+  }> {
+    return await this.keyRing.setKeyStoreLedgerAddress(env, bip44HDPath);
+  }
+
   lock(): KeyRingStatus {
     this.keyRing.lock();
     return this.keyRing.status;
@@ -233,6 +242,10 @@ export class KeyRingService {
 
   getKeyRingType(): string {
     return this.keyRing.type;
+  }
+
+  getKeyRingLedgerAddress(): string {
+    return this.keyRing.address;
   }
 
   async requestSignAmino(
@@ -400,6 +413,7 @@ export class KeyRingService {
     // Need to check ledger here and ledger app type by chainId
     try {
       const rawTxHex = await this.keyRing.signAndBroadcastEthereum(
+        env,
         chainId,
         coinType,
         rpc,
@@ -489,7 +503,6 @@ export class KeyRingService {
     }
   }
 
-  // thang6
   async requestSignProxyReEncryptionData(
     env: Env,
     chainId: string,
@@ -708,6 +721,14 @@ export class KeyRingService {
     }
   }
 
+  async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string): Promise<void> {
+    console.log('services setKeyStoreLedgerAddress', bip44HDPath);
+
+    await this.keyRing.setKeyStoreLedgerAddress(env, bip44HDPath);
+
+    this.interactionService.dispatchEvent(WEBPAGE_PORT, 'keystore-changed', {});
+  }
+
   async getKeyStoreBIP44Selectables(
     chainId: string,
     paths: BIP44[]
@@ -775,6 +796,7 @@ export class KeyRingService {
           )
         ).transaction;
       } else {
+        // get address here from keyring and
         transaction = await tronWeb.transactionBuilder.sendTrx(
           newData.recipient,
           new Dec(Number((newData.amount ?? '0').replace(/,/g, '.'))).mul(
@@ -794,8 +816,7 @@ export class KeyRingService {
 
       const receipt = await tronWeb.trx.sendRawTransaction(transaction);
       console.log('receipt ===', receipt);
-
-      return receipt;
+      return receipt.transaction.raw_data_hex;
     } finally {
       this.interactionService.dispatchEvent(
         APP_PORT,
