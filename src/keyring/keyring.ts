@@ -920,11 +920,11 @@ export class KeyRing {
       //   // TODO: Ethereum Ledger Integration
       //   throw new Error('Ethereum signing with Ledger is not yet supported');
       const chainIdNumber = this.validateChainId(chainId);
-      const customCommon = Common.custom({
-        name: chainId,
-        networkId: chainIdNumber,
-        chainId: chainIdNumber
-      });
+      // const customCommon = Common.custom({
+      //   name: chainId,
+      //   networkId: chainIdNumber,
+      //   chainId: chainIdNumber
+      // });
 
       const address = this.address;
 
@@ -953,21 +953,12 @@ export class KeyRing {
         finalMessage
       );
 
-      // const opts: TransactionOptions = { common: customCommon } as any;
-      // const tx = new Transaction(finalMessage, opts);
-
-      // // // check sign with ledger here
-
-      // const serializedTx = tx.serialize();
       const serializedTx = serialize(finalMessage).replace('0x', '');
 
-      console.log('serializedTx ===4', serializedTx);
-      // // check sign with ledger here
       const signature = await this.sign(
         env,
         chainId,
         60,
-        // serializedTx
         Buffer.from(serializedTx, 'hex')
       );
 
@@ -978,18 +969,6 @@ export class KeyRing {
       });
 
       console.log('signedT === 1', signedTx);
-
-      // console.log('rawTxHexSigned eth===', rawTxHexSigned);
-      // console.log(
-      //   'rawTxHexSigned hex eth===',
-      //   Buffer.from(rawTxHexSigned).toString('hex')
-      // );
-
-      // tx.sign(Buffer.from(privKey.toBytes()));
-
-      // const serializedTx = tx.serialize();
-      // const rawTxHex = '0x' + serializedTx.toString('hex');
-
       const response = await request(rpc, 'eth_sendRawTransaction', [signedTx]);
       console.log('response eth ===', response);
 
@@ -1027,15 +1006,10 @@ export class KeyRing {
       const opts: TransactionOptions = { common: customCommon } as any;
       const tx = new Transaction(finalMessage, opts);
 
-      // check sign with ledger here
       tx.sign(Buffer.from(privKey.toBytes()));
 
       const serializedTx = tx.serialize();
-
-      console.log('serializedTx', serializedTx);
-
       const rawTxHex = '0x' + serializedTx.toString('hex');
-      console.log('rawTxHex ====', rawTxHex);
       const response = await request(rpc, 'eth_sendRawTransaction', [rawTxHex]);
       return response;
     }
