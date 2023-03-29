@@ -1,5 +1,10 @@
 import { Env, Handler, InternalHandler, Message } from '@owallet/router';
 import {
+  getBase58Address,
+  getAddressFromBech32,
+  bufferToHex
+} from '@owallet/common';
+import {
   CreateMnemonicKeyMsg,
   CreatePrivateKeyMsg,
   GetKeyMsg,
@@ -28,7 +33,8 @@ import {
   RequestSignDecryptDataMsg,
   RequestPublicKeyMsg,
   ChangeChainMsg,
-  RequestSignTronMsg
+  RequestSignTronMsg,
+  GetDefaultAddressTronMsg
 } from './messages';
 import { KeyRingService } from './service';
 import { Bech32Address, cosmos } from '@owallet/cosmos';
@@ -79,6 +85,8 @@ export const getHandler: (service: KeyRingService) => Handler = (
         return handleUnlockKeyRingMsg(service)(env, msg as UnlockKeyRingMsg);
       case GetKeyMsg:
         return handleGetKeyMsg(service)(env, msg as GetKeyMsg);
+      case GetDefaultAddressTronMsg:
+        return handleGetDefaultAddressMsg(service)(env, msg as any);
       case RequestSignAminoMsg:
         return handleRequestSignAminoMsg(service)(
           env,
@@ -309,6 +317,27 @@ const handleGetKeyMsg: (
   };
 };
 
+const handleGetDefaultAddressMsg: (
+  service: KeyRingService
+) => InternalHandler<GetDefaultAddressTronMsg> = (service) => {
+  return async (_, msg) => {
+    const key = await service.getKey(msg.chainId);
+    return {
+      name: service.getKeyStoreMeta('name'),
+      type: Number(key.isNanoLedger),
+      hex: bufferToHex(key.pubKey),
+      base58: getBase58Address(
+        getAddressFromBech32(
+          new Bech32Address(key.address).toBech32(
+            (await service.chainsService.getChainInfo(msg.chainId)).bech32Config
+              .bech32PrefixAccAddr
+          )
+        )
+      )
+    };
+  };
+};
+
 const handleRequestSignAminoMsg: (
   service: KeyRingService
 ) => InternalHandler<RequestSignAminoMsg> = (service) => {
@@ -479,7 +508,7 @@ const handleRequestSignTronMsg: (
 ) => InternalHandler<RequestSignTronMsg> = (service) => {
   return async (env, msg) => {
     const response = await service.requestSignTron(env, msg.chainId, msg.data);
-    return { rawTxHex: response };
+    return { ...response };
   };
 };
 
