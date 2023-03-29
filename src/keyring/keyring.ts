@@ -41,7 +41,7 @@ import Common from '@ethereumjs/common';
 import { TransactionOptions, Transaction } from 'ethereumjs-tx';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
-import { checkNetworkTypeByChainId, getCoinTypeByChainId } from './utils';
+import { getNetworkTypeByChainId, getCoinTypeByChainId } from './utils';
 import {
   getNetworkTypeByBip44HDPath,
   getNetworkTypeByPathOrCoinType,
@@ -707,7 +707,7 @@ export class KeyRing {
       const privKey = this.loadPrivKey(coinType);
       const pubKey = privKey.getPubKey();
       if (chainId && chainId !== '') {
-        const networkType = checkNetworkTypeByChainId(chainId);
+        const networkType = getNetworkTypeByChainId(chainId);
 
         if (coinType === 60 || networkType === 'evm') {
           // For Ethereum Key-Gen Only:
@@ -813,7 +813,7 @@ export class KeyRing {
       throw new OWalletError('keyring', 130, 'Key store is empty');
     }
 
-    const networkType = checkNetworkTypeByChainId(chainId);
+    const networkType = getNetworkTypeByChainId(chainId);
     const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
 
     // using ledger app
@@ -904,28 +904,14 @@ export class KeyRing {
     }
 
     const cType = this.computeKeyStoreCoinType(chainId, coinType);
-    // Need to check network type by chain id instead coin type
-    const networkType = checkNetworkTypeByChainId(chainId);
+    const networkType = getNetworkTypeByChainId(chainId);
     if (networkType !== 'evm') {
       throw new Error(
         'Invalid coin type passed in to Ethereum signing (expected 60)'
       );
     }
 
-    console.log('(this.keyStore.type 1  ===', this.keyStore.type);
-
     if (this.keyStore.type === 'ledger') {
-      //   // Need to check ledger here and ledger app type by chainId
-      //   // Do the same like comos above
-      //   // TODO: Ethereum Ledger Integration
-      //   throw new Error('Ethereum signing with Ledger is not yet supported');
-      const chainIdNumber = this.validateChainId(chainId);
-      // const customCommon = Common.custom({
-      //   name: chainId,
-      //   networkId: chainIdNumber,
-      //   chainId: chainIdNumber
-      // });
-
       const address = this.address;
 
       const nonce = await request(rpc, 'eth_getTransactionCount', [
@@ -1112,7 +1098,7 @@ export class KeyRing {
 
       const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
       // Need to check network type by chain id instead of coin type
-      const networkType = checkNetworkTypeByChainId(chainId);
+      const networkType = getNetworkTypeByChainId(chainId);
       // if (coinType !== 60) {
       if (networkType !== 'evm') {
         throw new Error(
