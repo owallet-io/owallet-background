@@ -126,7 +126,7 @@ export class LedgerInternal {
     }
   }
 
-  async getPublicKey(path: number[] | string): Promise<object> {
+  async getPublicKey(path: number[]): Promise<object> {
     if (!this.ledgerApp) {
       throw new Error(`${this.LedgerAppTypeDesc} not initialized`);
     }
@@ -166,7 +166,7 @@ export class LedgerInternal {
     }
   }
 
-  async sign(path: number[] | string, message: any): Promise<Uint8Array | any> {
+  async sign(path: number[], message: any): Promise<Uint8Array | any> {
     console.log('sign ledger === ', message, path);
 
     if (!this.ledgerApp) {
@@ -187,7 +187,6 @@ export class LedgerInternal {
     } else {
       const rawTxHex = Buffer.from(message).toString('hex');
       console.log('rawTxHex sign ===', rawTxHex);
-
       const trxSignature = await this.ledgerApp.signTransaction(
         path,
         rawTxHex,
