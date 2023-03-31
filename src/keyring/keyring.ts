@@ -43,8 +43,8 @@ import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
 import { getNetworkTypeByChainId, getCoinTypeByChainId } from './utils';
 import {
+  formatNeworkTypeToLedgerAppName,
   getNetworkTypeByBip44HDPath,
-  getNetworkTypeByPathOrCoinType,
   splitPath
 } from '../utils/helper';
 import { serialize } from '@ethersproject/transactions';
@@ -323,7 +323,7 @@ export class KeyRing {
 
     return {
       status: this.status,
-      multiKeyStoreInfo: this.getMultiKeyStoreInfo()
+      multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
     };
   }
 
@@ -550,18 +550,20 @@ export class KeyRing {
     await this.save();
   }
 
-  public async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string) {
+  public async setKeyStoreLedgerAddress(
+    env: Env,
+    bip44HDPath: string,
+    chainId: string | number
+  ) {
     if (!this.keyStore) {
       throw new Error('Empty key store');
     }
+    const networkType = getNetworkTypeByChainId(chainId);
 
     console.log('env 3===', env);
 
     console.log('bip44HDPath ===', bip44HDPath);
-    console.log(
-      'getNetworkTypeByPathOrCoinType ===',
-      getNetworkTypeByPathOrCoinType(bip44HDPath)
-    );
+
     console.log('splitPath ===', splitPath(bip44HDPath));
 
     // Update ledger address here with this function below
@@ -570,7 +572,7 @@ export class KeyRing {
       (await this.ledgerKeeper.getPublicKey(
         env,
         splitPath(bip44HDPath),
-        getNetworkTypeByPathOrCoinType(bip44HDPath)
+        formatNeworkTypeToLedgerAppName(networkType, chainId)
       )) || {};
 
     console.log('address 3> ===', address, publicKey);
@@ -649,7 +651,7 @@ export class KeyRing {
     this.multiKeyStore = multiKeyStore;
     await this.save();
     return {
-      multiKeyStoreInfo: this.getMultiKeyStoreInfo(),
+      multiKeyStoreInfo: await this.getMultiKeyStoreInfo(),
       keyStoreChanged
     };
   }
@@ -837,18 +839,18 @@ export class KeyRing {
         bip44HDPath.addressIndex
       ];
 
-      const ledgerAppType: LedgerAppType =
-        getNetworkTypeByPathOrCoinType(coinType);
+      const ledgerAppType: LedgerAppType = formatNeworkTypeToLedgerAppName(
+        networkType,
+        chainId
+      );
 
-      console.log('ledgerAppType', ledgerAppType);
       // Need to check ledger here and ledger app type by chainId
       return await this.ledgerKeeper.sign(
         env,
         path,
         pubKey,
         message,
-        // ledgerAppType,
-        getNetworkTypeByPathOrCoinType(coinType)
+        ledgerAppType
       );
     } else {
       // get here
@@ -1461,7 +1463,7 @@ export class KeyRing {
 
     await this.save();
     return {
-      multiKeyStoreInfo: this.getMultiKeyStoreInfo()
+      multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
     };
   }
 
@@ -1492,7 +1494,7 @@ export class KeyRing {
 
     await this.save();
     return {
-      multiKeyStoreInfo: this.getMultiKeyStoreInfo()
+      multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
     };
   }
 
@@ -1542,7 +1544,7 @@ export class KeyRing {
 
       console.log(this.getMultiKeyStoreInfo, 'multi here');
       return {
-        multiKeyStoreInfo: this.getMultiKeyStoreInfo()
+        multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
       };
     } catch (error) {
       console.log('Error in add ledger key: ', error);
@@ -1572,7 +1574,7 @@ export class KeyRing {
 
     await this.save();
     return {
-      multiKeyStoreInfo: this.getMultiKeyStoreInfo()
+      multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
     };
   }
 
@@ -1750,6 +1752,7 @@ export class KeyRing {
   private static getKeyStoreBIP44Path(keyStore: KeyStore): BIP44HDPath {
     if (!keyStore.bip44HDPath) {
       return {
+        coinType: 118,
         account: 0,
         change: 0,
         addressIndex: 0

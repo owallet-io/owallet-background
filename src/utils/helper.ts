@@ -1,3 +1,4 @@
+import { TRON_ID } from '@owallet/common';
 import { BIP44HDPath } from 'src/keyring';
 import { LedgerAppType } from 'src/ledger';
 
@@ -15,27 +16,6 @@ export function splitPath(path: string): BIP44HDPath {
   return result;
 }
 
-export function getNetworkTypeByPathOrCoinType(
-  path: string | number
-): LedgerAppType {
-  const type = {
-    118: 'cosmos',
-    60: 'eth',
-    195: 'trx'
-  };
-  if (typeof path === 'number') {
-    return type[path];
-  } else {
-    const components = path.split('/');
-    if (path.startsWith('44')) {
-      components.shift();
-    }
-    if (components.length > 0) {
-      return type[components[0].replace("'", '')];
-    }
-  }
-}
-
 export function getNetworkTypeByBip44HDPath(path: BIP44HDPath): LedgerAppType {
   switch (path.coinType) {
     case 118:
@@ -44,6 +24,23 @@ export function getNetworkTypeByBip44HDPath(path: BIP44HDPath): LedgerAppType {
       return 'eth';
     case 195:
       return 'trx';
+    default:
+      return 'cosmos';
+  }
+}
+
+export function formatNeworkTypeToLedgerAppName(
+  network: string,
+  chainId?: string | number
+): LedgerAppType {
+  switch (network) {
+    case 'cosmos':
+      return 'cosmos';
+    case 'evm':
+      if (chainId && chainId === TRON_ID) {
+        return 'trx';
+      }
+      return 'eth';
     default:
       return 'cosmos';
   }

@@ -1076,7 +1076,10 @@ export class SetKeyStoreLedgerAddressMsg extends Message<KeyRingStatus> {
     return 'set-keystore-ledger-address';
   }
 
-  constructor(public readonly bip44HDPath: string) {
+  constructor(
+    public readonly bip44HDPath: string,
+    public readonly chainId: string | number
+  ) {
     super();
   }
 
@@ -1086,6 +1089,13 @@ export class SetKeyStoreLedgerAddressMsg extends Message<KeyRingStatus> {
         'keyring',
         240,
         'bip44HDPath address can not be empty'
+      );
+    }
+    if (this.chainId === '') {
+      throw new OWalletError(
+        'keyring',
+        240,
+        'chainId address can not be empty'
       );
     }
   }

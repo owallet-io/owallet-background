@@ -517,7 +517,7 @@ const handleSetKeyStoreLedgerAddressMsg: (
       handleSetKeyStoreLedgerAddressMsg
     );
 
-    await service.setKeyStoreLedgerAddress(env, msg.bip44HDPath);
+    await service.setKeyStoreLedgerAddress(env, msg.bip44HDPath, msg.chainId);
     return service.keyRingStatus;
   };
 };
