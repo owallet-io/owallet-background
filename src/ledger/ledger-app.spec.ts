@@ -35,7 +35,10 @@ describe('Test ledger app', () => {
       `)
       )
     );
-    const cosmosRet = await cosmosApp.getAddress("44'/118'/0'/0'/0", 'cosmos');
+    const cosmosRet = await cosmosApp.getAddress(
+      Bip32Path.fromString("44'/118'/0'/0'/0").toPathArray(),
+      'orai'
+    );
     console.log(cosmosRet.publicKey);
   });
 });

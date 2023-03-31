@@ -7,6 +7,7 @@ import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
 import { signatureImport, publicKeyConvert } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
+import { convertEthSignature } from '../keyring/utils';
 
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 
@@ -56,7 +57,6 @@ export class LedgerInternal {
     let app: CosmosApp | EthApp | TrxApp;
 
     const transport = await transportIniter(...initArgs);
-    console.log('transportIniter transport', transport, ledgerAppType);
 
     try {
       if (ledgerAppType === 'trx') {
@@ -183,8 +183,7 @@ export class LedgerInternal {
 
       const signature = await this.ledgerApp.signTransaction(path, rawTxHex);
 
-      console.log('signature eth ===', signature);
-      return signature;
+      return convertEthSignature(signature);
     } else {
       const rawTxHex = Buffer.from(message).toString('hex');
       console.log('rawTxHex sign ===', rawTxHex);
