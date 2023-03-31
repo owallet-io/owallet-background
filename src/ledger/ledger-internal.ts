@@ -182,8 +182,8 @@ export class LedgerInternal {
       const rawTxHex = Buffer.from(message).toString('hex');
 
       const signature = await this.ledgerApp.signTransaction(path, rawTxHex);
-
-      return convertEthSignature(signature);
+      return signature;
+      // return convertEthSignature(signature);
     } else {
       const rawTxHex = Buffer.from(message).toString('hex');
       console.log('rawTxHex sign ===', rawTxHex);
