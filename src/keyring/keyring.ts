@@ -937,6 +937,10 @@ export class KeyRing {
     } else {
       const privKey = this.loadPrivKey(coinType);
       const chainIdNumber = this.validateChainId(chainId);
+
+      // For Ethereum Key-Gen Only:
+      const ethereumAddress = privateToAddress(Buffer.from(privKey.toBytes()));
+
       const customCommon = Common.custom({
         name: chainId,
         networkId: chainIdNumber,
@@ -944,7 +948,7 @@ export class KeyRing {
       });
 
       const nonce = await request(rpc, 'eth_getTransactionCount', [
-        'signer',
+        '0x' + Buffer.from(ethereumAddress).toString('hex'),
         'latest'
       ]);
 
