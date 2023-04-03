@@ -31,7 +31,7 @@
     "@ledgerhq/hw-transport-webhid": "^6.27.12",
     "@ledgerhq/hw-transport-webusb": "^6.27.12",
     "@ledgerhq/hw-app-cosmos": "^6.27.12",
-    "@ledgerhq/hw-app-eth": "^6.32.1",
+    "@ledgerhq/hw-app-eth": "6.27.0",
     "@ledgerhq/hw-app-trx": "^6.27.12",
     "@cosmjs/launchpad": "^0.27.1",
     "@cosmjs/proto-signing": "^0.29.3",
