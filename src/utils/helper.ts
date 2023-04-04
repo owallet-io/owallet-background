@@ -19,7 +19,7 @@ export function splitPath(path: string): BIP44HDPath {
 export function stringifyPath(paths: number[]): string {
   let stringPaths = '';
   if (paths.length < 5) {
-    return;
+    return "44'/118'/0'/0/0";
   }
   paths.map((path, index) => {
     if (index < 3) {

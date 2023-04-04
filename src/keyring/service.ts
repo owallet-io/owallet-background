@@ -786,7 +786,7 @@ export class KeyRingService {
       tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
       let transaction: any;
       if (newData?.tokenTrc20) {
-        const amount = BigInt(Math.trunc(newData?.amount * 10 ** 6));
+        const amount = BigInt(Math.trunc(newData?.amount * Math.pow(10, 6)));
 
         transaction = (
           await tronWeb.transactionBuilder.triggerSmartContract(
