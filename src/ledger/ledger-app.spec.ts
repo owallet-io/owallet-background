@@ -21,9 +21,7 @@ describe('Test ledger app', () => {
 
     console.log('instance of', ethApp instanceof CosmosApp);
 
-    const ethRet = await ethApp.getAddress(
-      fromString("44'/60'/0'/0'/0").toPathArray()
-    );
+    const ethRet = await ethApp.getAddress("44'/60'/0'/0'/0");
     console.log(ethRet.address);
 
     const cosmosApp = new CosmosApp(
@@ -36,7 +34,8 @@ describe('Test ledger app', () => {
       )
     );
     const cosmosRet = await cosmosApp.getAddress(
-      Bip32Path.fromString("44'/118'/0'/0'/0").toPathArray(),
+      // Bip32Path.fromString("44'/118'/0'/0'/0").toPathArray(),
+      "44'/118'/0'/0'/0",
       'orai'
     );
     console.log(cosmosRet.publicKey);

@@ -58,6 +58,8 @@ export class LedgerInternal {
 
     const transport = await transportIniter(...initArgs);
 
+    console.log('transport ===', transport);
+
     try {
       if (ledgerAppType === 'trx') {
         app = new TrxApp(transport);
@@ -142,12 +144,14 @@ export class LedgerInternal {
     if (this.ledgerApp instanceof CosmosApp) {
       // make compartible with ledger-cosmos-js
       const { publicKey, address } = await this.ledgerApp.getAddress(
-        path,
+        "44'/118'/0'/0/0",
         'cosmos'
       );
       return { publicKey: Buffer.from(publicKey, 'hex'), address };
     } else if (this.ledgerApp instanceof EthApp) {
-      const { publicKey, address } = await this.ledgerApp.getAddress(path);
+      const { publicKey, address } = await this.ledgerApp.getAddress(
+        "44'/60'/0'/0/0"
+      );
 
       console.log('get here eth ===', publicKey, address);
 
@@ -158,7 +162,11 @@ export class LedgerInternal {
         address
       };
     } else {
-      const { publicKey, address } = await this.ledgerApp.getAddress(path);
+      console.log('get here trx === ', path);
+      const { publicKey, address } = await this.ledgerApp.getAddress(
+        "44'/195'/0'/0/0"
+      );
+      console.log('get here trx  2 === ', address);
 
       // Compress the public key
 
@@ -174,21 +182,27 @@ export class LedgerInternal {
     }
 
     if (this.ledgerApp instanceof CosmosApp) {
-      const { signature } = await this.ledgerApp.sign(path, message);
+      const { signature } = await this.ledgerApp.sign(
+        "44'/118'/0'/0/0",
+        message
+      );
 
       // Parse a DER ECDSA signature
       return signatureImport(signature);
     } else if (this.ledgerApp instanceof EthApp) {
       const rawTxHex = Buffer.from(message).toString('hex');
 
-      const signature = await this.ledgerApp.signTransaction(path, rawTxHex);
+      const signature = await this.ledgerApp.signTransaction(
+        "44'/60'/0'/0/0",
+        rawTxHex
+      );
       return signature;
       // return convertEthSignature(signature);
     } else {
       const rawTxHex = Buffer.from(message).toString('hex');
       console.log('rawTxHex sign ===', rawTxHex);
       const trxSignature = await this.ledgerApp.signTransaction(
-        path,
+        "44'/195'/0'/0/0",
         rawTxHex,
         []
       );
