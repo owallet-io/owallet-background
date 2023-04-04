@@ -16,19 +16,24 @@ export function splitPath(path: string): BIP44HDPath {
   return result;
 }
 
-// export function stringifyPath(path: number): string {
-//   const bip44HDPathOrder = ['coinType', 'account', 'change', 'addressIndex'];
-//   const result = {} as BIP44HDPath;
-//   const components = path.split('/');
-//   if (path.startsWith('44')) {
-//     components.shift();
-//   }
-//   components.forEach((element, index) => {
-//     result[bip44HDPathOrder[index]] = element.replace("'", '');
-//   });
-
-//   return result;
-// }
+export function stringifyPath(paths: number[]): string {
+  let stringPaths = '';
+  if (paths.length < 5) {
+    return;
+  }
+  paths.map((path, index) => {
+    if (index < 3) {
+      stringPaths += `${path}'/`;
+    } else {
+      if (index < 4) {
+      } else {
+        stringPaths += `${path}/`;
+      }
+      stringPaths += `${path}`;
+    }
+  });
+  return stringPaths;
+}
 
 export function getNetworkTypeByBip44HDPath(path: BIP44HDPath): LedgerAppType {
   switch (path.coinType) {

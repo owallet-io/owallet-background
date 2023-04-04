@@ -8,6 +8,7 @@ import { signatureImport, publicKeyConvert } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
 import { convertEthSignature } from '../keyring/utils';
+import { stringifyPath } from '../utils/helper';
 
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 
@@ -144,13 +145,13 @@ export class LedgerInternal {
     if (this.ledgerApp instanceof CosmosApp) {
       // make compartible with ledger-cosmos-js
       const { publicKey, address } = await this.ledgerApp.getAddress(
-        "44'/118'/0'/0/0",
+        stringifyPath(path),
         'cosmos'
       );
       return { publicKey: Buffer.from(publicKey, 'hex'), address };
     } else if (this.ledgerApp instanceof EthApp) {
       const { publicKey, address } = await this.ledgerApp.getAddress(
-        "44'/60'/0'/0/0"
+        stringifyPath(path)
       );
 
       console.log('get here eth ===', publicKey, address);
@@ -162,9 +163,9 @@ export class LedgerInternal {
         address
       };
     } else {
-      console.log('get here trx === ', path);
+      console.log('get here trx === ', path, stringifyPath(path));
       const { publicKey, address } = await this.ledgerApp.getAddress(
-        "44'/195'/0'/0/0"
+        stringifyPath(path)
       );
       console.log('get here trx  2 === ', address);
 
@@ -183,7 +184,7 @@ export class LedgerInternal {
 
     if (this.ledgerApp instanceof CosmosApp) {
       const { signature } = await this.ledgerApp.sign(
-        "44'/118'/0'/0/0",
+        stringifyPath(path),
         message
       );
 
@@ -193,7 +194,7 @@ export class LedgerInternal {
       const rawTxHex = Buffer.from(message).toString('hex');
 
       const signature = await this.ledgerApp.signTransaction(
-        "44'/60'/0'/0/0",
+        stringifyPath(path),
         rawTxHex
       );
       return signature;
@@ -202,7 +203,7 @@ export class LedgerInternal {
       const rawTxHex = Buffer.from(message).toString('hex');
       console.log('rawTxHex sign ===', rawTxHex);
       const trxSignature = await this.ledgerApp.signTransaction(
-        "44'/195'/0'/0/0",
+        stringifyPath(path),
         rawTxHex,
         []
       );
