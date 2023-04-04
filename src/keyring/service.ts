@@ -237,6 +237,19 @@ export class KeyRingService {
     return this.keyRing.type;
   }
 
+  async updateLedgerAddress(
+    env: Env,
+    bip44HDPath: string
+  ): Promise<{
+    status: KeyRingStatus;
+  }> {
+    return await this.keyRing.setKeyStoreLedgerAddress(env, bip44HDPath);
+  }
+
+  getKeyRingLedgerAddress(): string {
+    return this.keyRing.address;
+  }
+
   async requestSignAmino(
     env: Env,
     msgOrigin: string,
@@ -405,6 +418,7 @@ export class KeyRingService {
 
     try {
       const rawTxHex = await this.keyRing.signAndBroadcastEthereum(
+        env,
         chainId,
         coinType,
         rpcCustom,
@@ -412,6 +426,8 @@ export class KeyRingService {
       );
 
       return rawTxHex;
+    } catch (error) {
+      console.log({ error });
     } finally {
       this.interactionService.dispatchEvent(
         APP_PORT,
@@ -451,20 +467,22 @@ export class KeyRingService {
           )
         );
 
-        transaction = await tronWeb.transactionBuilder.triggerSmartContract(
-          newData.tokenTrc20.contractAddress,
-          'transfer(address,uint256)',
-          {
-            callValue: 0,
-            userFeePercentage: 100,
-            shouldPollResponse: false
-          },
-          [
-            { type: 'address', value: newData.recipient },
-            { type: 'uint256', value: amount.toString() }
-          ],
-          newData.address
-        );
+        transaction = (
+          await tronWeb.transactionBuilder.triggerSmartContract(
+            newData.tokenTrc20.contractAddress,
+            'transfer(address,uint256)',
+            {
+              callValue: 0,
+              userFeePercentage: 100,
+              shouldPollResponse: false
+            },
+            [
+              { type: 'address', value: newData.recipient },
+              { type: 'uint256', value: amount.toString() }
+            ],
+            newData.address
+          )
+        ).transaction;
       } else {
         transaction = await tronWeb.transactionBuilder.sendTrx(
           newData.recipient,
@@ -475,10 +493,14 @@ export class KeyRingService {
         );
       }
 
-      const rawTxHex = await this.keyRing.signTron(
-        transaction.transaction ?? transaction
-      );
-      const receipt = await tronWeb.trx.sendRawTransaction(rawTxHex);
+      const transactionData = Buffer.from(transaction.raw_data_hex, 'hex');
+      transaction.signature = [
+        Buffer.from(
+          await this.keyRing.sign(env, chainId, 195, transactionData)
+        ).toString('hex')
+      ];
+      // const rawTxHex = await this.keyRing.signTron(transaction);
+      const receipt = await tronWeb.trx.sendRawTransaction(transaction);
       return receipt;
     } finally {
       this.interactionService.dispatchEvent(
@@ -592,6 +614,14 @@ export class KeyRingService {
         {}
       );
     }
+  }
+
+  async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string): Promise<void> {
+    console.log('services setKeyStoreLedgerAddress', bip44HDPath);
+
+    await this.keyRing.setKeyStoreLedgerAddress(env, bip44HDPath);
+
+    this.interactionService.dispatchEvent(WEBPAGE_PORT, 'keystore-changed', {});
   }
 
   async estimateFeeAndWaitApprove(

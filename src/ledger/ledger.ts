@@ -1,28 +1,34 @@
-import { LedgerInternal } from './ledger-internal';
+import { NetworkType } from '@owallet/types';
+import { LedgerAppType, LedgerInternal } from './ledger-internal';
 
 let callProxy: (method: string, args?: any[]) => Promise<any>;
 let ledger: LedgerInternal = null;
 let currentMode = null;
+let ledgerType: LedgerAppType;
+let initArgs = null;
 
 export const ledgerProxy = async (
   method: string,
   args: any[] = []
 ): Promise<any> => {
   let response: any;
+  console.log('ledger proxy params: ', ledger, currentMode, method);
 
   if (!ledger && currentMode && method !== 'init') {
-    ledger = await LedgerInternal.init(currentMode);
+    ledger = await LedgerInternal.init(currentMode, initArgs, ledgerType);
   }
 
   switch (method) {
     case 'init':
       try {
-        const [mode, initArgs] = args;
-        currentMode = mode;
-        ledger = await LedgerInternal.init(mode, initArgs);
+        const [currentMode, initArgs, ledgerType] = args;
+        console.log('args', args);
+        ledger = await LedgerInternal.init(currentMode, initArgs, ledgerType);
+        console.log('ledger init ===', ledger);
+
         response = true;
       } catch (error) {
-        console.log(error);
+        console.log('ledger init err ===', error);
         response = false;
       }
       break;
@@ -35,7 +41,6 @@ export const ledgerProxy = async (
   }
   return response;
 };
-
 const isReactNative =
   typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
 
@@ -59,8 +64,12 @@ if (isReactNative) {
 }
 
 export class Ledger {
-  static async init(mode: string, initArgs: any[] = []): Promise<Ledger> {
-    const resultInit = await callProxy('init', [mode, initArgs]);
+  static async init(
+    mode: string,
+    initArgs: any[] = [],
+    type: LedgerAppType
+  ): Promise<Ledger> {
+    const resultInit = await callProxy('init', [mode, initArgs, type]);
     if (resultInit) return new Ledger();
     else throw new Error('Device state invalid!');
   }

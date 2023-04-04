@@ -26,6 +26,7 @@ import {
   RequestSignEthereumTypedDataMsg,
   RequestSignReEncryptDataMsg,
   RequestSignDecryptDataMsg,
+  SetKeyStoreLedgerAddressMsg,
   RequestPublicKeyMsg,
   ChangeChainMsg,
   RequestSignTronMsg,
@@ -57,6 +58,7 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(RequestSignEthereumTypedDataMsg);
   // thang3
   router.registerMessage(RequestPublicKeyMsg);
+  router.registerMessage(SetKeyStoreLedgerAddressMsg);
   router.registerMessage(RequestSignDecryptDataMsg);
   router.registerMessage(RequestSignReEncryptDataMsg);
   router.registerMessage(GetMultiKeyStoreInfoMsg);

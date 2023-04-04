@@ -32,6 +32,7 @@ import {
   RequestSignReEncryptDataMsg,
   RequestSignDecryptDataMsg,
   RequestPublicKeyMsg,
+  SetKeyStoreLedgerAddressMsg,
   ChangeChainMsg,
   RequestSignTronMsg,
   GetDefaultAddressTronMsg
@@ -111,6 +112,11 @@ export const getHandler: (service: KeyRingService) => Handler = (
         return handleRequestSignTronMsg(service)(
           env,
           msg as RequestSignTronMsg
+        );
+      case SetKeyStoreLedgerAddressMsg:
+        return handleSetKeyStoreLedgerAddressMsg(service)(
+          env,
+          msg as SetKeyStoreLedgerAddressMsg
         );
       case RequestSignEthereumTypedDataMsg:
         return handleRequestSignEthereumTypedData(service)(
@@ -218,6 +224,20 @@ const handleAddMnemonicKeyMsg: (
       msg.meta,
       msg.bip44HDPath
     );
+  };
+};
+
+const handleSetKeyStoreLedgerAddressMsg: (
+  service: KeyRingService
+) => InternalHandler<SetKeyStoreLedgerAddressMsg> = (service) => {
+  return async (env, msg) => {
+    console.log(
+      'handleSetKeyStoreLedgerAddressMsg',
+      handleSetKeyStoreLedgerAddressMsg
+    );
+
+    await service.setKeyStoreLedgerAddress(env, msg.bip44HDPath);
+    return service.keyRingStatus;
   };
 };
 
