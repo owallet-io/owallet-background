@@ -4,7 +4,7 @@ export default class TransactionBuilder {
   injectPromise: any;
   validator: any;
   sendTrx(
-    to: boolean,
+    to: string,
     amount: any,
     from: any,
     options?: any,
