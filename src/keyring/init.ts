@@ -29,7 +29,8 @@ import {
   RequestSignProxyDecryptionDataMsg,
   RequestPublicKeyMsg,
   ChangeChainMsg,
-  RequestSignTronMsg
+  RequestSignTronMsg,
+  GetDefaultAddressTronMsg
 } from './messages';
 import { ROUTE } from './constants';
 import { getHandler } from './handler';
@@ -55,6 +56,7 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(RequestSignEthereumMsg);
   router.registerMessage(RequestSignEthereumTypedDataMsg);
   router.registerMessage(RequestSignTronMsg);
+  router.registerMessage(GetDefaultAddressTronMsg);
   router.registerMessage(RequestPublicKeyMsg);
   router.registerMessage(RequestSignProxyDecryptionDataMsg);
   router.registerMessage(RequestSignProxyReEncryptionDataMsg);

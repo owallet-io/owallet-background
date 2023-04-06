@@ -627,9 +627,7 @@ export class RequestSignDirectMsg extends Message<{
 }
 
 // request sign tron goes here
-export class RequestSignTronMsg extends Message<{
-  readonly rawTxHex: object; // raw tx signature to broadcast
-}> {
+export class RequestSignTronMsg extends Message<{}> {
   public static type() {
     return 'request-sign-tron';
   }
@@ -658,6 +656,35 @@ export class RequestSignTronMsg extends Message<{
 
   type(): string {
     return RequestSignTronMsg.type();
+  }
+}
+
+export class GetDefaultAddressTronMsg extends Message<{
+  hex?: string;
+  base58?: string;
+  name?: string;
+  type?: number;
+}> {
+  public static type() {
+    return 'get-default-address-tron';
+  }
+
+  constructor(public readonly chainId: string) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return GetDefaultAddressTronMsg.type();
   }
 }
 

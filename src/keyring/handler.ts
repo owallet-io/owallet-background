@@ -29,10 +29,14 @@ import {
   RequestSignProxyDecryptionDataMsg,
   RequestPublicKeyMsg,
   ChangeChainMsg,
-  RequestSignTronMsg
+  RequestSignTronMsg,
+  GetDefaultAddressTronMsg
 } from './messages';
 import { KeyRingService } from './service';
 import { Bech32Address, cosmos } from '@owallet/cosmos';
+import { Address } from '@owallet/crypto';
+
+import { getAddressFromBech32, bufferToHex } from '@owallet/common';
 
 import Long from 'long';
 import { SignEthereumTypedDataObject } from './types';
@@ -123,6 +127,8 @@ export const getHandler: (service: KeyRingService) => Handler = (
           env,
           msg as GetMultiKeyStoreInfoMsg
         );
+      case GetDefaultAddressTronMsg:
+        return handleGetDefaultAddressMsg(service)(env, msg as any);
       case ChangeKeyRingMsg:
         return handleChangeKeyRingMsg(service)(env, msg as ChangeKeyRingMsg);
       case GetIsKeyStoreCoinTypeSetMsg:
@@ -435,6 +441,27 @@ const handleRequestSignProxyDecryptionData: (
   };
 };
 
+const handleGetDefaultAddressMsg: (
+  service: KeyRingService
+) => InternalHandler<GetDefaultAddressTronMsg> = service => {
+  return async (_, msg) => {
+    const key = await service.getKey(msg.chainId);
+    return {
+      name: service.getKeyStoreMeta('name'),
+      type: Number(key.isNanoLedger),
+      hex: bufferToHex(key.pubKey),
+      base58: Address.getBase58Address(
+        getAddressFromBech32(
+          new Bech32Address(key.address).toBech32(
+            (await service.chainsService.getChainInfo(msg.chainId)).bech32Config
+              .bech32PrefixAccAddr
+          )
+        )
+      )
+    };
+  };
+};
+
 // thang5
 const handleRequestSignProxyReEncryptionData: (
   service: KeyRingService
@@ -543,6 +570,6 @@ const handleRequestSignTronMsg: (
 ) => InternalHandler<RequestSignTronMsg> = service => {
   return async (env, msg) => {
     const response = await service.requestSignTron(env, msg.chainId, msg.data);
-    return { rawTxHex: response };
+    return { ...response };
   };
 };
