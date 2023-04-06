@@ -15,7 +15,7 @@ import {
 } from 'ethereumjs-util';
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
 import { intToHex, isHexString, stripHexPrefix } from 'ethjs-util';
-import { KVStore } from '@owallet/common';
+import { formatNeworkTypeToLedgerAppName, KVStore } from '@owallet/common';
 import { LedgerAppType, LedgerService } from '../ledger';
 import {
   BIP44HDPath,
@@ -44,7 +44,6 @@ import {
   getCoinTypeByChainId,
   getNetworkTypeByBip44HDPath,
   getNetworkTypeByChainId,
-  getNetworkTypeByPathOrCoinType,
   splitPath
 } from '@owallet/common';
 import TronWeb from 'tronweb';
@@ -788,8 +787,10 @@ export class KeyRing {
         bip44HDPath.addressIndex
       ];
 
-      const ledgerAppType: LedgerAppType =
-        getNetworkTypeByPathOrCoinType(coinType);
+      const ledgerAppType: LedgerAppType = formatNeworkTypeToLedgerAppName(
+        networkType,
+        chainId
+      );
 
       console.log('ledgerAppType', ledgerAppType);
 
@@ -1710,17 +1711,21 @@ export class KeyRing {
     );
   }
 
-  public async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string) {
+  public async setKeyStoreLedgerAddress(
+    env: Env,
+    bip44HDPath: string,
+    chainId: string | number
+  ) {
     if (!this.keyStore) {
       throw new Error('Empty key store');
     }
 
     console.log('env 3===', env);
-
+    const networkType = getNetworkTypeByChainId(chainId);
     console.log('bip44HDPath ===', bip44HDPath);
     console.log(
-      'getNetworkTypeByPathOrCoinType ===',
-      getNetworkTypeByPathOrCoinType(bip44HDPath)
+      'formatNeworkTypeToLedgerAppName ===',
+      formatNeworkTypeToLedgerAppName(bip44HDPath)
     );
     console.log('splitPath ===', splitPath(bip44HDPath));
 
@@ -1730,7 +1735,7 @@ export class KeyRing {
       (await this.ledgerKeeper.getPublicKey(
         env,
         splitPath(bip44HDPath),
-        getNetworkTypeByPathOrCoinType(bip44HDPath)
+        formatNeworkTypeToLedgerAppName(networkType, chainId)
       )) || {};
 
     console.log('address 3> ===', address, publicKey);

@@ -723,7 +723,10 @@ export class SetKeyStoreLedgerAddressMsg extends Message<KeyRingStatus> {
     return 'set-keystore-ledger-address';
   }
 
-  constructor(public readonly bip44HDPath: string) {
+  constructor(
+    public readonly bip44HDPath: string,
+    public readonly chainId: number | string
+  ) {
     super();
   }
 

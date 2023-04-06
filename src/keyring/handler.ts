@@ -231,12 +231,9 @@ const handleSetKeyStoreLedgerAddressMsg: (
   service: KeyRingService
 ) => InternalHandler<SetKeyStoreLedgerAddressMsg> = (service) => {
   return async (env, msg) => {
-    console.log(
-      'handleSetKeyStoreLedgerAddressMsg',
-      handleSetKeyStoreLedgerAddressMsg
-    );
+    console.log('handleSetKeyStoreLedgerAddressMsg', msg);
 
-    await service.setKeyStoreLedgerAddress(env, msg.bip44HDPath);
+    await service.setKeyStoreLedgerAddress(env, msg.bip44HDPath, msg.chainId);
     return service.keyRingStatus;
   };
 };

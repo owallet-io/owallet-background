@@ -239,11 +239,16 @@ export class KeyRingService {
 
   async updateLedgerAddress(
     env: Env,
-    bip44HDPath: string
+    bip44HDPath: string,
+    chainId?: string
   ): Promise<{
     status: KeyRingStatus;
   }> {
-    return await this.keyRing.setKeyStoreLedgerAddress(env, bip44HDPath);
+    return await this.keyRing.setKeyStoreLedgerAddress(
+      env,
+      bip44HDPath,
+      chainId
+    );
   }
 
   getKeyRingLedgerAddress(): string {
@@ -616,10 +621,14 @@ export class KeyRingService {
     }
   }
 
-  async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string): Promise<void> {
+  async setKeyStoreLedgerAddress(
+    env: Env,
+    bip44HDPath: string,
+    chainId: string | number
+  ): Promise<void> {
     console.log('services setKeyStoreLedgerAddress', bip44HDPath);
 
-    await this.keyRing.setKeyStoreLedgerAddress(env, bip44HDPath);
+    await this.keyRing.setKeyStoreLedgerAddress(env, bip44HDPath, chainId);
 
     this.interactionService.dispatchEvent(WEBPAGE_PORT, 'keystore-changed', {});
   }

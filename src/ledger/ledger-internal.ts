@@ -42,18 +42,12 @@ export class LedgerInternal {
     ble: () => Promise.resolve(null)
   };
 
-  static transportList: Record<any, any> = {
-    webusb: TransportWebUSB.list(),
-    webhid: TransportWebHID.list()
-  };
-
   static async init(
     mode: TransportMode,
     initArgs: any[] = [],
     ledgerAppType: LedgerAppType
   ): Promise<LedgerInternal> {
     const transportIniter = LedgerInternal.transportIniters[mode];
-    // const list = await LedgerInternal.transportIniters[mode];
     console.log('transportIniter', transportIniter);
     console.log(
       'transportIniter type ledger 12',
@@ -69,11 +63,6 @@ export class LedgerInternal {
     let transport;
     try {
       transport = await transportIniter(...initArgs);
-      // if (list.length > 1) {
-      //   await transport.close();
-      //   transport = await transportIniter(...initArgs);
-      // }
-      // listen((log) => console.log('log listen: ', log));
       console.log('transportIniter transport', transport);
       if (ledgerAppType === 'trx') {
         app = new TrxApp(transport);
