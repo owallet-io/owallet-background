@@ -136,6 +136,8 @@ export class LedgerInternal {
   }
 
   async getPublicKey(path: number[] | string): Promise<object> {
+    console.log('getPublicKey ledger internal');
+
     if (!this.ledgerApp) {
       throw new Error(`${this.LedgerAppTypeDesc} not initialized`);
     }
@@ -241,17 +243,22 @@ export class LedgerInternal {
       //   BytesUtils.concat([splitSignature.r, splitSignature.s])
       // );
     } else {
-      const rawTxHex = Buffer.from(message).toString('hex');
-      console.log('rawTxHex sign ===', rawTxHex);
+      try {
+        console.log('message ===', message);
 
-      const trxSignature = await this.ledgerApp.signTransaction(
-        "44'/195'/0'/0/0",
-        rawTxHex,
-        []
-      );
-      console.log('trxSignature', trxSignature);
+        const rawTxHex = Buffer.from(message).toString('hex');
+        console.log('rawTxHex sign ===', rawTxHex);
 
-      return Buffer.from(trxSignature, 'hex');
+        const trxSignature = await this.ledgerApp.signTransaction(
+          "44'/195'/0'/0/0",
+          rawTxHex,
+          []
+        );
+        console.log('trxSignature', trxSignature);
+        return Buffer.from(trxSignature, 'hex');
+      } catch (error) {
+        console.log('error tx Signature: ', error);
+      }
     }
   }
 
