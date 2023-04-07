@@ -170,6 +170,12 @@ export class BackgroundTxService {
         if (chainInfo.coinType !== 60) return undefined;
         const chainIdOrCoinType = params.length ? parseInt(params[0]) : chainId; // default is cointype 60 for ethereum based
         const key = await this.keyRingService.getKey(chainIdOrCoinType);
+        const ledgerCheck = await this.keyRingService.getKeyRingType();
+        if (ledgerCheck === 'ledger') {
+          const addresses =
+            await this.keyRingService.getKeyRingLedgerAddresses();
+          return [`${addresses?.eth}`];
+        }
         return [`0x${Buffer.from(key.address).toString('hex')}`];
       case 'wallet_switchEthereumChain' as any:
         const { chainId: inputChainId, isEvm } = this.parseChainId(params[0]);
