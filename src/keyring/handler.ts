@@ -446,18 +446,24 @@ const handleGetDefaultAddressMsg: (
 ) => InternalHandler<GetDefaultAddressTronMsg> = service => {
   return async (_, msg) => {
     const key = await service.getKey(msg.chainId);
+    const ledgerCheck = await service.getKeyRingType();
+    let base58 = Address.getBase58Address(
+      getAddressFromBech32(
+        new Bech32Address(key.address).toBech32(
+          (await service.chainsService.getChainInfo(msg.chainId)).bech32Config
+            .bech32PrefixAccAddr
+        )
+      )
+    );
+    if (ledgerCheck === 'ledger') {
+      const ledgerAddress = await service.getKeyRingLedgerAddress();
+      base58 = ledgerAddress?.trx;
+    }
     return {
       name: service.getKeyStoreMeta('name'),
       type: Number(key.isNanoLedger),
       hex: bufferToHex(key.pubKey),
-      base58: Address.getBase58Address(
-        getAddressFromBech32(
-          new Bech32Address(key.address).toBech32(
-            (await service.chainsService.getChainInfo(msg.chainId)).bech32Config
-              .bech32PrefixAccAddr
-          )
-        )
-      )
+      base58
     };
   };
 };

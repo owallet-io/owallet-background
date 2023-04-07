@@ -15,6 +15,7 @@ import {
   verifyADR36AminoSignDoc
 } from '@owallet/cosmos';
 import {
+  AddressesLedger,
   BIP44HDPath,
   CommonCrypto,
   ECDSASignature,
@@ -205,19 +206,19 @@ export class KeyRingService {
     );
   }
 
-  async updateLedgerAddress(
-    env: Env,
-    bip44HDPath: string,
-    chainId: string | number
-  ): Promise<{
-    status: KeyRingStatus;
-  }> {
-    return await this.keyRing.setKeyStoreLedgerAddress(
-      env,
-      bip44HDPath,
-      chainId
-    );
-  }
+  // async updateLedgerAddress(
+  //   env: Env,
+  //   bip44HDPath: string,
+  //   chainId: string | number
+  // ): Promise<{
+  //   status: KeyRingStatus;
+  // }> {
+  //   return await this.keyRing.setKeyStoreLedgerAddress(
+  //     env,
+  //     bip44HDPath,
+  //     chainId
+  //   );
+  // }
 
   lock(): KeyRingStatus {
     this.keyRing.lock();
@@ -249,8 +250,8 @@ export class KeyRingService {
     return this.keyRing.type;
   }
 
-  getKeyRingLedgerAddress(): string {
-    return this.keyRing.address;
+  getKeyRingLedgerAddress(): AddressesLedger {
+    return this.keyRing.addresses;
   }
 
   async requestSignAmino(
@@ -780,6 +781,16 @@ export class KeyRingService {
       data
     )) as any;
     try {
+      if (newData?.txID) {
+        const transactionData = Buffer.from(newData.raw_data_hex, 'hex');
+        newData.signature = [
+          Buffer.from(
+            await this.keyRing.sign(env, chainId, 195, transactionData)
+          ).toString('hex')
+        ];
+        return newData;
+      }
+
       const tronWeb = new TronWeb({
         fullHost: (await this.chainsService.getChainInfo(chainId)).rpc
       });
