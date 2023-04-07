@@ -837,10 +837,16 @@ export class KeyRing {
       if (networkType === 'evm') {
         // Only check coinType === 195 for Ton network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
-          const signature = Buffer.from(
-            TronWeb.utils.crypto.signBytes(privKey.toBytes(), message),
-            'hex'
+          let signature;
+          const transactionSign = TronWeb.utils.crypto.signTransaction(
+            privKey.toBytes(),
+            {
+              txID: message
+            }
           );
+
+          signature = Buffer.from(transactionSign.signature?.[0], 'hex');
+
           return signature;
         }
         return this.signEthereum(privKey, message);

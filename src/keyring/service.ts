@@ -782,10 +782,9 @@ export class KeyRingService {
     )) as any;
     try {
       if (newData?.txID) {
-        const transactionData = Buffer.from(newData.raw_data_hex, 'hex');
         newData.signature = [
           Buffer.from(
-            await this.keyRing.sign(env, chainId, 195, transactionData)
+            await this.keyRing.sign(env, chainId, 195, newData.txID)
           ).toString('hex')
         ];
         return newData;
@@ -826,11 +825,11 @@ export class KeyRingService {
         );
       }
 
-      const transactionData = Buffer.from(transaction.raw_data_hex, 'hex');
+      // const transactionData = Buffer.from(transaction.raw_data_hex, 'hex');
 
       transaction.signature = [
         Buffer.from(
-          await this.keyRing.sign(env, chainId, 195, transactionData)
+          await this.keyRing.sign(env, chainId, 195, transaction?.txID)
         ).toString('hex')
       ];
 
