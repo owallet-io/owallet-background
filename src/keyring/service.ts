@@ -15,6 +15,7 @@ import {
   verifyADR36AminoSignDoc
 } from '@owallet/cosmos';
 import {
+  AddressesLedger,
   BIP44HDPath,
   CommonCrypto,
   ECDSASignature,
@@ -237,22 +238,22 @@ export class KeyRingService {
     return this.keyRing.type;
   }
 
-  async updateLedgerAddress(
-    env: Env,
-    bip44HDPath: string,
-    chainId?: string
-  ): Promise<{
-    status: KeyRingStatus;
-  }> {
-    return await this.keyRing.setKeyStoreLedgerAddress(
-      env,
-      bip44HDPath,
-      chainId
-    );
-  }
+  // async updateLedgerAddress(
+  //   env: Env,
+  //   bip44HDPath: string,
+  //   chainId?: string
+  // ): Promise<{
+  //   status: KeyRingStatus;
+  // }> {
+  //   return await this.keyRing.setKeyStoreLedgerAddress(
+  //     env,
+  //     bip44HDPath,
+  //     chainId
+  //   );
+  // }
 
-  getKeyRingLedgerAddress(): string {
-    return this.keyRing.address;
+  getKeyRingLedgerAddress(): AddressesLedger {
+    return this.keyRing.addresses;
   }
 
   async requestSignAmino(
@@ -456,7 +457,14 @@ export class KeyRingService {
     try {
       // sign transaction
       if (newData?.txID) {
-        return await this.keyRing.signTron(newData);
+        // const transactionSignTron: any = await this.keyRing.signTron(newData);
+        const transactionData = Buffer.from(newData.raw_data_hex, 'hex');
+        newData.signature = [
+          Buffer.from(
+            await this.keyRing.sign(env, chainId, 195, transactionData)
+          ).toString('hex')
+        ];
+        return newData;
       }
 
       const tronWeb = new TronWeb({
@@ -497,6 +505,7 @@ export class KeyRingService {
           newData.address
         );
       }
+      console.log({ transaction });
 
       const transactionData = Buffer.from(transaction.raw_data_hex, 'hex');
       transaction.signature = [
@@ -504,7 +513,6 @@ export class KeyRingService {
           await this.keyRing.sign(env, chainId, 195, transactionData)
         ).toString('hex')
       ];
-      // const rawTxHex = await this.keyRing.signTron(transaction);
       const receipt = await tronWeb.trx.sendRawTransaction(transaction);
       return receipt;
     } finally {

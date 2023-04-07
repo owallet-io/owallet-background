@@ -3,7 +3,8 @@ import {
   BIP44HDPath,
   CoinTypeForChain,
   ScryptParams,
-  CommonCrypto
+  CommonCrypto,
+  AddressesLedger
 } from './types';
 import { Hash, RNG } from '@owallet/crypto';
 import pbkdf2 from 'pbkdf2';
@@ -37,7 +38,7 @@ export interface KeyStore {
     kdfparams: ScryptParams;
     mac: string;
   };
-  address?: string;
+  addresses?: AddressesLedger;
 }
 
 export class Crypto {
@@ -50,7 +51,7 @@ export class Crypto {
     password: string,
     meta: Record<string, string>,
     bip44HDPath?: BIP44HDPath,
-    address?: string
+    addresses?: AddressesLedger
   ): Promise<KeyStore> {
     let random = new Uint8Array(32);
     const salt = Buffer.from(await rng(random)).toString('hex');
@@ -121,7 +122,7 @@ export class Crypto {
         kdfparams: scryptParams,
         mac: Buffer.from(mac).toString('hex')
       },
-      address
+      addresses
     };
   }
 

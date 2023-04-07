@@ -9,6 +9,12 @@ export type BIP44HDPath = {
   addressIndex: number;
 };
 
+export type AddressesLedger = {
+  cosmos?: string;
+  eth?: string;
+  trx?: string;
+};
+
 export interface CommonCrypto {
   scrypt: (text: string, params: ScryptParams) => Promise<Uint8Array>;
 }

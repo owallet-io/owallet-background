@@ -74,7 +74,7 @@ export class LedgerService {
       async (ledger, retryCount: number) => {
         try {
           const pubKey = await ledger.getPublicKey(path);
-          console.log('it gone her 2e===', pubKey);
+          console.log('it gone her 2e===', pubKey, path);
 
           // if (
           //   Buffer.from(expectedPubKey).toString('hex') !==
@@ -84,6 +84,10 @@ export class LedgerService {
           // }
           // Cosmos App on Ledger doesn't support the coin type other than 118.
           const signature = await ledger.sign(path, message);
+          console.log({
+            signaturesignature: signature,
+            retryCount
+          });
 
           // Notify UI Ledger signing succeeded only when Ledger initialization is tried again.
           if (retryCount > 0) {
@@ -116,7 +120,8 @@ export class LedgerService {
 
     try {
       ledger = await this.initLedger(env, ledgerType);
-      console.log('ledger ===', ledger);
+      console.log('ledger ===', ledger.ledger);
+      console.log('ledger retryCount===', ledger.retryCount);
 
       return await fn(ledger.ledger, ledger.retryCount);
     } catch (error) {

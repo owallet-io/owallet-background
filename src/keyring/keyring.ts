@@ -26,7 +26,8 @@ import {
   TypedDataV1,
   TypedMessage,
   MessageTypeProperty,
-  ECDSASignature
+  ECDSASignature,
+  AddressesLedger
 } from './types';
 import { ChainInfo } from '@owallet/types';
 import { Env, OWalletError } from '@owallet/router';
@@ -70,7 +71,7 @@ export type MultiKeyStoreInfoElem = Pick<
 export type MultiKeyStoreInfo = MultiKeyStoreInfoElem[];
 export type MultiKeyStoreInfoWithSelectedElem = MultiKeyStoreInfoElem & {
   selected: boolean;
-  address?: string;
+  addresses?: AddressesLedger;
 };
 export type MultiKeyStoreInfoWithSelected = MultiKeyStoreInfoWithSelectedElem[];
 
@@ -137,15 +138,15 @@ export class KeyRing {
 
   public static getLedgerAddressOfKeyStore(
     keyStore: Omit<KeyStore, 'crypto'>
-  ): string {
-    const address = keyStore.address;
-    console.log('keyStore getLedgerAddressOfKeyStore==', keyStore?.address);
-    return address;
+  ): AddressesLedger {
+    const addresses = keyStore.addresses;
+    console.log('keyStore getLedgerAddressOfKeyStore==', keyStore?.addresses);
+    return addresses;
   }
 
-  public get address(): string {
+  public get addresses(): AddressesLedger {
     if (!this.keyStore) {
-      return 'none';
+      return {} as AddressesLedger;
     } else {
       return KeyRing.getLedgerAddressOfKeyStore(this.keyStore);
     }
@@ -336,14 +337,11 @@ export class KeyRing {
     // if (this.status !== KeyRingStatus.EMPTY) {
     //   throw new Error('Key ring is not loaded or not empty');
     // }
-
+    const ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath);
     // Get public key first
     const { publicKey, address } =
-      (await this.ledgerKeeper.getPublicKey(
-        env,
-        bip44HDPath,
-        getNetworkTypeByBip44HDPath(bip44HDPath)
-      )) || {};
+      (await this.ledgerKeeper.getPublicKey(env, bip44HDPath, ledgerAppType)) ||
+      {};
 
     console.log('publicKey---', publicKey, address);
 
@@ -357,7 +355,9 @@ export class KeyRing {
       password,
       await this.assignKeyStoreIdMeta(meta),
       bip44HDPath,
-      address
+      {
+        [ledgerAppType]: address
+      }
     );
 
     this.password = password;
@@ -861,7 +861,7 @@ export class KeyRing {
 
     if (this.keyStore.type === 'ledger') {
       // TODO: Ethereum Ledger Integration
-      const address = this.address;
+      const address = this.addresses;
 
       const nonce = await request(rpc, 'eth_getTransactionCount', [
         address,
@@ -869,7 +869,7 @@ export class KeyRing {
       ]);
       let finalMessage: any = {
         ...message,
-        from: this.address,
+        from: this.addresses,
         // gas: (message as any)?.gasLimit,
         gasLimit: (message as any)?.gasLimit,
         gasPrice: (message as any)?.gasPrice,
@@ -1590,7 +1590,7 @@ export class KeyRing {
       result.push({
         version: keyStore.version,
         type: keyStore.type,
-        address: keyStore.address,
+        addresses: keyStore.addresses,
         meta: keyStore.meta,
         coinTypeForChain: keyStore.coinTypeForChain,
         bip44HDPath: keyStore.bip44HDPath,
@@ -1722,11 +1722,9 @@ export class KeyRing {
 
     console.log('env 3===', env);
     const networkType = getNetworkTypeByChainId(chainId);
+    const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
     console.log('bip44HDPath ===', bip44HDPath);
-    console.log(
-      'formatNeworkTypeToLedgerAppName ===',
-      formatNeworkTypeToLedgerAppName(bip44HDPath)
-    );
+    console.log('formatNeworkTypeToLedgerAppName ===', networkType);
     console.log('splitPath ===', splitPath(bip44HDPath));
 
     // Update ledger address here with this function below
@@ -1735,7 +1733,7 @@ export class KeyRing {
       (await this.ledgerKeeper.getPublicKey(
         env,
         splitPath(bip44HDPath),
-        formatNeworkTypeToLedgerAppName(networkType, chainId)
+        ledgerAppType
       )) || {};
 
     console.log('address 3> ===', address, publicKey);
@@ -1749,7 +1747,14 @@ export class KeyRing {
     });
 
     if (keyStoreInMulti) {
-      keyStoreInMulti.address = address;
+      const keyStoreAddresses = keyStoreInMulti.addresses;
+      keyStoreInMulti.addresses = Object.assign(keyStoreAddresses, {
+        [ledgerAppType]: address
+      });
+      console.log({
+        keyStoreInMulti,
+        [ledgerAppType]: address
+      });
     }
 
     await this.save();
@@ -1764,7 +1769,7 @@ export class KeyRing {
     password: string,
     meta: Record<string, string>,
     bip44HDPath: BIP44HDPath,
-    address?: string
+    addresses?: AddressesLedger
   ): Promise<KeyStore> {
     return await Crypto.encrypt(
       rng,
@@ -1775,7 +1780,7 @@ export class KeyRing {
       password,
       meta,
       bip44HDPath,
-      address
+      addresses
     );
   }
 
