@@ -583,11 +583,11 @@ export class KeyRing {
 
     if (keyStoreInMulti) {
       const keyStoreAddresses = { ...keyStoreInMulti.addresses };
-      Object.assign(keyStoreAddresses, {
+      const returnedAddresses = Object.assign(keyStoreAddresses, {
         [ledgerAppType]: address
       });
-      keyStoreInMulti.addresses = keyStoreAddresses;
-      this.keyStore.addresses = keyStoreAddresses;
+      keyStoreInMulti.addresses = returnedAddresses;
+      this.keyStore.addresses = returnedAddresses;
     }
 
     await this.save();
