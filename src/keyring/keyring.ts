@@ -37,7 +37,7 @@ import Common from '@ethereumjs/common';
 import { TransactionOptions, Transaction } from 'ethereumjs-tx';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
-import { getNetworkTypeByChainId, getCoinTypeByChainId } from './utils';
+import { getNetworkTypeByChainId, getCoinTypeByChainId } from '@owallet/common';
 import {
   formatNeworkTypeToLedgerAppName,
   getNetworkTypeByBip44HDPath,

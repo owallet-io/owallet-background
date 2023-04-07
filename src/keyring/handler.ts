@@ -456,7 +456,7 @@ const handleGetDefaultAddressMsg: (
       )
     );
     if (ledgerCheck === 'ledger') {
-      const ledgerAddress = await service.getKeyRingLedgerAddress();
+      const ledgerAddress = await service.getKeyRingLedgerAddresses();
       base58 = ledgerAddress?.trx;
     }
     return {

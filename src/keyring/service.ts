@@ -250,7 +250,7 @@ export class KeyRingService {
     return this.keyRing.type;
   }
 
-  getKeyRingLedgerAddress(): AddressesLedger {
+  getKeyRingLedgerAddresses(): AddressesLedger {
     return this.keyRing.addresses;
   }
 

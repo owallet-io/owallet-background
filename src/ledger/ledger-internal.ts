@@ -7,7 +7,6 @@ import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
 import { signatureImport, publicKeyConvert } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
-import { convertEthSignature } from '../keyring/utils';
 import { stringifyPath } from '../utils/helper';
 
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
