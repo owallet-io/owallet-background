@@ -246,12 +246,9 @@ export class LedgerInternal {
       try {
         console.log('message ===', message);
 
-        const rawTxHex = Buffer.from(message).toString('hex');
-        console.log('rawTxHex sign ===', rawTxHex);
-
-        const trxSignature = await this.ledgerApp.signTransaction(
+        const trxSignature = await this.ledgerApp.signTransactionHash(
           "44'/195'/0'/0/0",
-          rawTxHex,
+          message,
           []
         );
         console.log('trxSignature', trxSignature);
