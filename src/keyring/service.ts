@@ -458,10 +458,9 @@ export class KeyRingService {
       // sign transaction
       if (newData?.txID) {
         // const transactionSignTron: any = await this.keyRing.signTron(newData);
-        const transactionData = Buffer.from(newData.raw_data_hex, 'hex');
         newData.signature = [
           Buffer.from(
-            await this.keyRing.sign(env, chainId, 195, transactionData)
+            await this.keyRing.sign(env, chainId, 195, newData.txID)
           ).toString('hex')
         ];
         return newData;
@@ -505,12 +504,10 @@ export class KeyRingService {
           newData.address
         );
       }
-      console.log({ transaction });
-
-      const transactionData = Buffer.from(transaction.raw_data_hex, 'hex');
+      // const transactionData = Buffer.from(transaction.raw_data_hex, 'hex');
       transaction.signature = [
         Buffer.from(
-          await this.keyRing.sign(env, chainId, 195, transactionData)
+          await this.keyRing.sign(env, chainId, 195, transaction.txID)
         ).toString('hex')
       ];
       const receipt = await tronWeb.trx.sendRawTransaction(transaction);
