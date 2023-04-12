@@ -1750,14 +1750,12 @@ export class KeyRing {
     });
 
     if (keyStoreInMulti) {
-      const keyStoreAddresses = keyStoreInMulti.addresses;
-      keyStoreInMulti.addresses = Object.assign(keyStoreAddresses, {
+      const keyStoreAddresses = { ...keyStoreInMulti.addresses };
+      const returnedAddresses = Object.assign(keyStoreAddresses, {
         [ledgerAppType]: address
       });
-      console.log({
-        keyStoreInMulti,
-        [ledgerAppType]: address
-      });
+      keyStoreInMulti.addresses = returnedAddresses;
+      this.keyStore.addresses = returnedAddresses;
     }
 
     await this.save();
