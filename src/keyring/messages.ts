@@ -718,6 +718,37 @@ export class RequestSignTronMsg extends Message<object> {
   }
 }
 
+export class SetKeyStoreLedgerAddressMsg extends Message<KeyRingStatus> {
+  public static type() {
+    return 'set-keystore-ledger-address';
+  }
+
+  constructor(
+    public readonly bip44HDPath: string,
+    public readonly chainId: number | string
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (this.bip44HDPath === '') {
+      throw new OWalletError(
+        'keyring',
+        240,
+        'bip44HDPath address can not be empty'
+      );
+    }
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return SetKeyStoreLedgerAddressMsg.type();
+  }
+}
+
 export class RequestSignEthereumTypedDataMsg extends Message<{
   readonly result: string; // raw tx signature to broadcast
 }> {

@@ -32,6 +32,7 @@ import {
   RequestSignReEncryptDataMsg,
   RequestSignDecryptDataMsg,
   RequestPublicKeyMsg,
+  SetKeyStoreLedgerAddressMsg,
   ChangeChainMsg,
   RequestSignTronMsg,
   GetDefaultAddressTronMsg
@@ -111,6 +112,11 @@ export const getHandler: (service: KeyRingService) => Handler = (
         return handleRequestSignTronMsg(service)(
           env,
           msg as RequestSignTronMsg
+        );
+      case SetKeyStoreLedgerAddressMsg:
+        return handleSetKeyStoreLedgerAddressMsg(service)(
+          env,
+          msg as SetKeyStoreLedgerAddressMsg
         );
       case RequestSignEthereumTypedDataMsg:
         return handleRequestSignEthereumTypedData(service)(
@@ -221,6 +227,17 @@ const handleAddMnemonicKeyMsg: (
   };
 };
 
+const handleSetKeyStoreLedgerAddressMsg: (
+  service: KeyRingService
+) => InternalHandler<SetKeyStoreLedgerAddressMsg> = (service) => {
+  return async (env, msg) => {
+    console.log('handleSetKeyStoreLedgerAddressMsg', msg);
+
+    await service.setKeyStoreLedgerAddress(env, msg.bip44HDPath, msg.chainId);
+    return service.keyRingStatus;
+  };
+};
+
 const handleCreatePrivateKeyMsg: (
   service: KeyRingService
 ) => InternalHandler<CreatePrivateKeyMsg> = (service) => {
@@ -322,18 +339,24 @@ const handleGetDefaultAddressMsg: (
 ) => InternalHandler<GetDefaultAddressTronMsg> = (service) => {
   return async (_, msg) => {
     const key = await service.getKey(msg.chainId);
+    const ledgerCheck = await service.getKeyRingType();
+    let base58 = getBase58Address(
+      getAddressFromBech32(
+        new Bech32Address(key.address).toBech32(
+          (await service.chainsService.getChainInfo(msg.chainId)).bech32Config
+            .bech32PrefixAccAddr
+        )
+      )
+    );
+    if (ledgerCheck === 'ledger') {
+      const ledgerAddress = await service.getKeyRingLedgerAddress();
+      base58 = ledgerAddress?.trx;
+    }
     return {
       name: service.getKeyStoreMeta('name'),
       type: Number(key.isNanoLedger),
       hex: bufferToHex(key.pubKey),
-      base58: getBase58Address(
-        getAddressFromBech32(
-          new Bech32Address(key.address).toBech32(
-            (await service.chainsService.getChainInfo(msg.chainId)).bech32Config
-              .bech32PrefixAccAddr
-          )
-        )
-      )
+      base58
     };
   };
 };

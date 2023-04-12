@@ -15,8 +15,8 @@ import {
 } from 'ethereumjs-util';
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
 import { intToHex, isHexString, stripHexPrefix } from 'ethjs-util';
-import { KVStore } from '@owallet/common';
-import { LedgerService } from '../ledger';
+import { formatNeworkTypeToLedgerAppName, KVStore } from '@owallet/common';
+import { LedgerAppType, LedgerService } from '../ledger';
 import {
   BIP44HDPath,
   CommonCrypto,
@@ -26,7 +26,8 @@ import {
   TypedDataV1,
   TypedMessage,
   MessageTypeProperty,
-  ECDSASignature
+  ECDSASignature,
+  AddressesLedger
 } from './types';
 import { ChainInfo } from '@owallet/types';
 import { Env, OWalletError } from '@owallet/router';
@@ -40,8 +41,15 @@ import Common from '@ethereumjs/common';
 import { TransactionOptions, Transaction } from 'ethereumjs-tx';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
-import { getCoinTypeByChainId, getNetworkTypeByChainId } from './utils';
+import {
+  getCoinTypeByChainId,
+  getNetworkTypeByBip44HDPath,
+  getNetworkTypeByChainId,
+  splitPath
+} from '@owallet/common';
 import TronWeb from 'tronweb';
+import { serialize } from '@ethersproject/transactions';
+
 export enum KeyRingStatus {
   NOTLOADED,
   EMPTY,
@@ -63,6 +71,7 @@ export type MultiKeyStoreInfoElem = Pick<
 export type MultiKeyStoreInfo = MultiKeyStoreInfoElem[];
 export type MultiKeyStoreInfoWithSelectedElem = MultiKeyStoreInfoElem & {
   selected: boolean;
+  addresses?: AddressesLedger;
 };
 export type MultiKeyStoreInfoWithSelected = MultiKeyStoreInfoWithSelectedElem[];
 
@@ -124,6 +133,22 @@ export class KeyRing {
       return 'none';
     } else {
       return KeyRing.getTypeOfKeyStore(this.keyStore);
+    }
+  }
+
+  public static getLedgerAddressOfKeyStore(
+    keyStore: Omit<KeyStore, 'crypto'>
+  ): AddressesLedger {
+    const addresses = keyStore.addresses;
+    console.log('keyStore getLedgerAddressOfKeyStore==', keyStore?.addresses);
+    return addresses;
+  }
+
+  public get addresses(): AddressesLedger {
+    if (!this.keyStore) {
+      return {} as AddressesLedger;
+    } else {
+      return KeyRing.getLedgerAddressOfKeyStore(this.keyStore);
     }
   }
 
@@ -312,12 +337,15 @@ export class KeyRing {
     // if (this.status !== KeyRingStatus.EMPTY) {
     //   throw new Error('Key ring is not loaded or not empty');
     // }
-
+    const ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath);
     // Get public key first
-    this.ledgerPublicKey = await this.ledgerKeeper.getPublicKey(
-      env,
-      bip44HDPath
-    );
+    const { publicKey, address } =
+      (await this.ledgerKeeper.getPublicKey(env, bip44HDPath, ledgerAppType)) ||
+      {};
+
+    console.log('publicKey---', publicKey, address);
+
+    this.ledgerPublicKey = publicKey;
 
     const keyStore = await KeyRing.CreateLedgerKeyStore(
       this.rng,
@@ -326,7 +354,10 @@ export class KeyRing {
       this.ledgerPublicKey,
       password,
       await this.assignKeyStoreIdMeta(meta),
-      bip44HDPath
+      bip44HDPath,
+      {
+        [ledgerAppType]: address
+      }
     );
 
     this.password = password;
@@ -720,7 +751,7 @@ export class KeyRing {
     chainId: string,
     defaultCoinType: number,
     message: Uint8Array
-  ): Promise<Uint8Array> {
+  ): Promise<Uint8Array | any> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new OWalletError('keyring', 143, 'Key ring is not unlocked');
     }
@@ -732,10 +763,10 @@ export class KeyRing {
     // Sign with Evmos/Ethereum
     // const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
     const networkType = getNetworkTypeByChainId(chainId);
-    const coinType = getCoinTypeByChainId(chainId);
-    if (networkType === 'evm' || coinType == 60) {
-      return this.signEthereum(chainId, defaultCoinType, message);
-    }
+    const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
+    // if (networkType === 'evm' || coinType == 60) {
+    //   return this.signEthereum(chainId, defaultCoinType, message);
+    // }
 
     if (this.keyStore.type === 'ledger') {
       const pubKey = this.ledgerPublicKey;
@@ -747,17 +778,45 @@ export class KeyRing {
           'Ledger public key is not initialized'
         );
       }
+      const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
+      const path = [
+        44,
+        coinType,
+        bip44HDPath.account,
+        bip44HDPath.change,
+        bip44HDPath.addressIndex
+      ];
+
+      const ledgerAppType: LedgerAppType = formatNeworkTypeToLedgerAppName(
+        networkType,
+        chainId
+      );
+
+      console.log('ledgerAppType', ledgerAppType);
 
       return await this.ledgerKeeper.sign(
         env,
-        KeyRing.getKeyStoreBIP44Path(this.keyStore),
+        path,
         pubKey,
-        message
+        message,
+        ledgerAppType
       );
     } else {
-      const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
-
       const privKey = this.loadPrivKey(coinType);
+      if (networkType === 'evm') {
+        // Only check coinType === 195 for Ton network, because tron is evm but had cointype = 195, not 60
+        if (coinType === 195) {
+          const transactionSign = TronWeb.utils.crypto.signTransaction(
+            privKey.toBytes(),
+            {
+              txID: message
+            }
+          );
+          const signature = Buffer.from(transactionSign.signature?.[0], 'hex');
+          return signature;
+        }
+        return this.signEthereum(privKey, message);
+      }
       return privKey.sign(message);
     }
   }
@@ -776,6 +835,7 @@ export class KeyRing {
   }
 
   public async signAndBroadcastEthereum(
+    env: Env,
     chainId: string,
     coinType: number,
     rpc: string,
@@ -794,17 +854,60 @@ export class KeyRing {
     }
 
     // const cType = this.computeKeyStoreCoinType(chainId, coinType);
-    const networkType = getNetworkTypeByChainId(chainId);
-    // if (cType !== 60) {
-    if (networkType !== 'evm' && coinType !== 60) {
-      throw new Error(
-        'Invalid coin type passed in to Ethereum signing (expected 60)'
-      );
-    }
+    // const networkType = getNetworkTypeByChainId(chainId);
+    // // if (cType !== 60) {
+    // if (networkType !== 'evm' && coinType !== 60) {
+    //   throw new Error(
+    //     'Invalid coin type passed in to Ethereum signing (expected 60)'
+    //   );
+    // }
 
     if (this.keyStore.type === 'ledger') {
       // TODO: Ethereum Ledger Integration
-      throw new Error('Ethereum signing with Ledger is not yet supported');
+      const address = this.addresses;
+
+      const nonce = await request(rpc, 'eth_getTransactionCount', [
+        address?.eth,
+        'latest'
+      ]);
+      let finalMessage: any = {
+        ...message,
+        from: this.addresses?.eth,
+        // gas: (message as any)?.gasLimit,
+        gasLimit: (message as any)?.gasLimit,
+        gasPrice: (message as any)?.gasPrice,
+        nonce,
+        chainId: Number(chainId)
+      };
+      delete finalMessage?.from;
+      delete finalMessage?.type;
+      delete finalMessage?.gas;
+      delete finalMessage?.memo;
+      delete finalMessage?.fees;
+      console.log(
+        '🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage',
+        finalMessage
+      );
+      const serializedTx = serialize(finalMessage).replace('0x', '');
+
+      const signature = await this.sign(
+        env,
+        chainId,
+        60,
+        Buffer.from(serializedTx, 'hex')
+      );
+
+      const signedTx = serialize(finalMessage, {
+        r: `0x${signature.r}`,
+        s: `0x${signature.s}`,
+        v: parseInt(signature.v, 16)
+      });
+
+      console.log('signedT === 1', signedTx);
+      const response = await request(rpc, 'eth_sendRawTransaction', [signedTx]);
+      console.log('response eth ===', response);
+
+      return response;
     } else {
       const privKey = this.loadPrivKey(coinType);
       const chainIdNumber = this.validateChainId(chainId);
@@ -845,42 +948,16 @@ export class KeyRing {
   }
 
   public async signEthereum(
-    chainId: string,
-    defaultCoinType: number,
+    privKey: PrivKeySecp256k1,
     message: Uint8Array
   ): Promise<Uint8Array> {
-    if (this.status !== KeyRingStatus.UNLOCKED) {
-      throw new Error('Key ring is not unlocked');
-    }
+    const ethWallet = new Wallet(privKey.toBytes());
 
-    if (!this.keyStore) {
-      throw new Error('Key Store is empty');
-    }
-
-    if (this.keyStore.type === 'ledger') {
-      // TODO: Ethereum Ledger Integration
-      throw new Error('Ethereum signing with Ledger is not yet supported');
-    } else {
-      const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
-      const networkType = getNetworkTypeByChainId(chainId);
-      // if (coinType !== 60) {
-      if (networkType !== 'evm' && coinType !== 60) {
-        throw new Error(
-          'Invalid coin type passed in to Ethereum signing (expected 60)'
-        );
-      }
-
-      const privKey = this.loadPrivKey(coinType);
-
-      // Use ether js to sign Ethereum tx
-      const ethWallet = new Wallet(privKey.toBytes());
-
-      const signature = ethWallet._signingKey().signDigest(keccak256(message));
-      const splitSignature = BytesUtils.splitSignature(signature);
-      return BytesUtils.arrayify(
-        BytesUtils.concat([splitSignature.r, splitSignature.s])
-      );
-    }
+    const signature = ethWallet._signingKey().signDigest(keccak256(message));
+    const splitSignature = BytesUtils.splitSignature(signature);
+    return BytesUtils.arrayify(
+      BytesUtils.concat([splitSignature.r, splitSignature.s])
+    );
   }
 
   public async signTron(transaction): Promise<object> {
@@ -1001,7 +1078,7 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    const privKey = this.loadPrivKey(60);
+    const privKey = this.loadPrivKey(getCoinTypeByChainId(chainId));
     const ethWallet = new Wallet(privKey.toBytes());
     const pubKeyHex = ethWallet.publicKey.slice(2);
 
@@ -1446,7 +1523,13 @@ export class KeyRing {
       console.log('HERE');
 
       // Get public key first
-      const publicKey = await this.ledgerKeeper.getPublicKey(env, bip44HDPath);
+      const { publicKey, address } =
+        (await this.ledgerKeeper.getPublicKey(
+          env,
+          bip44HDPath,
+          getNetworkTypeByBip44HDPath(bip44HDPath)
+        )) || {};
+      console.log('bip44HDPath: ', bip44HDPath);
 
       console.log(publicKey, 'pubkey hre');
 
@@ -1457,7 +1540,8 @@ export class KeyRing {
         publicKey,
         this.password,
         await this.assignKeyStoreIdMeta(meta),
-        bip44HDPath
+        bip44HDPath,
+        address
       );
 
       console.log(keyStore, 'keystore here');
@@ -1509,6 +1593,7 @@ export class KeyRing {
       result.push({
         version: keyStore.version,
         type: keyStore.type,
+        addresses: keyStore.addresses,
         meta: keyStore.meta,
         coinTypeForChain: keyStore.coinTypeForChain,
         bip44HDPath: keyStore.bip44HDPath,
@@ -1629,6 +1714,56 @@ export class KeyRing {
     );
   }
 
+  public async setKeyStoreLedgerAddress(
+    env: Env,
+    bip44HDPath: string,
+    chainId: string | number
+  ) {
+    if (!this.keyStore) {
+      throw new Error('Empty key store');
+    }
+
+    console.log('env 3===', env);
+    const networkType = getNetworkTypeByChainId(chainId);
+    const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
+    console.log('bip44HDPath ===', bip44HDPath);
+    console.log('formatNeworkTypeToLedgerAppName ===', networkType);
+    console.log('splitPath ===', splitPath(bip44HDPath));
+
+    // Update ledger address here with this function below
+
+    const { publicKey, address } =
+      (await this.ledgerKeeper.getPublicKey(
+        env,
+        splitPath(bip44HDPath),
+        ledgerAppType
+      )) || {};
+
+    console.log('address 3> ===', address, publicKey);
+
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+      return (
+        KeyRing.getKeyStoreId(keyStore) ===
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        KeyRing.getKeyStoreId(this.keyStore!)
+      );
+    });
+
+    if (keyStoreInMulti) {
+      const keyStoreAddresses = keyStoreInMulti.addresses;
+      keyStoreInMulti.addresses = Object.assign(keyStoreAddresses, {
+        [ledgerAppType]: address
+      });
+      console.log({
+        keyStoreInMulti,
+        [ledgerAppType]: address
+      });
+    }
+
+    await this.save();
+    return { status: this.status };
+  }
+
   private static async CreateLedgerKeyStore(
     rng: RNG,
     crypto: CommonCrypto,
@@ -1636,7 +1771,8 @@ export class KeyRing {
     publicKey: Uint8Array,
     password: string,
     meta: Record<string, string>,
-    bip44HDPath: BIP44HDPath
+    bip44HDPath: BIP44HDPath,
+    addresses?: AddressesLedger
   ): Promise<KeyStore> {
     return await Crypto.encrypt(
       rng,
@@ -1646,7 +1782,8 @@ export class KeyRing {
       Buffer.from(publicKey).toString('hex'),
       password,
       meta,
-      bip44HDPath
+      bip44HDPath,
+      addresses
     );
   }
 
