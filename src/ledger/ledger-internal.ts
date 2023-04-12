@@ -62,7 +62,9 @@ export class LedgerInternal {
     let app: CosmosApp | EthApp | TrxApp;
     let transport;
     try {
-      transport = await transportIniter(...initArgs);
+      // transport = await transportIniter(...initArgs);
+      // TODO: hardcode support WEB HID
+      transport = await TransportWebHID.create(...initArgs);
       console.log('transportIniter transport', transport);
       if (ledgerAppType === 'trx') {
         app = new TrxApp(transport);
