@@ -232,6 +232,8 @@ export class KeyRingService {
   }
 
   async getKey(chainIdOrCoinType: string | number): Promise<Key> {
+    console.log('chainIdOrCoinType ===', chainIdOrCoinType);
+
     // if getKey directly from cointype as number
     if (typeof chainIdOrCoinType === 'number') {
       return this.keyRing.getKeyFromCoinType(chainIdOrCoinType);

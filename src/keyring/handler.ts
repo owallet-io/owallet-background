@@ -299,6 +299,8 @@ const handleGetKeyMsg: (
   service: KeyRingService
 ) => InternalHandler<GetKeyMsg> = service => {
   return async (env, msg) => {
+    console.log('msg.chainId ===', msg.chainId);
+
     await service.permissionService.checkOrGrantBasicAccessPermission(
       env,
       msg.chainId,

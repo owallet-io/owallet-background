@@ -830,14 +830,11 @@ export class KeyRing {
         ledgerAppType
       );
     } else {
-      // get here
       // Sign with Evmos/Ethereum
-
       const privKey = this.loadPrivKey(coinType);
       if (networkType === 'evm') {
         // Only check coinType === 195 for Ton network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
-          let signature;
           const transactionSign = TronWeb.utils.crypto.signTransaction(
             privKey.toBytes(),
             {
@@ -845,9 +842,7 @@ export class KeyRing {
             }
           );
 
-          signature = Buffer.from(transactionSign.signature?.[0], 'hex');
-
-          return signature;
+          return Buffer.from(transactionSign?.signature?.[0], 'hex');
         }
         return this.signEthereum(privKey, message);
       }
@@ -906,7 +901,7 @@ export class KeyRing {
 
       let finalMessage: any = {
         ...message,
-        from: address,
+        // from: address,
         // gas: (message as any)?.gasLimit,
         gasLimit: (message as any)?.gasLimit,
         gasPrice: (message as any)?.gasPrice,
@@ -919,6 +914,8 @@ export class KeyRing {
       delete finalMessage?.gas;
       delete finalMessage?.memo;
       delete finalMessage?.fees;
+      delete finalMessage?.maxPriorityFeePerGas;
+      delete finalMessage?.maxFeePerGas;
       console.log(
         '🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage',
         finalMessage

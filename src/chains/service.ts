@@ -172,22 +172,28 @@ export class ChainsService {
     //   }
     // );
 
+    console.log('chainInfo 1 ===', chainInfo);
+
     await this.addChainInfo(chainInfo);
   }
 
   async addChainInfo(chainInfo: ChainInfo): Promise<void> {
-    if (await this.hasChainInfo(chainInfo.chainId)) {
-      throw new Error('Same chain is already registered');
+    try {
+      if (await this.hasChainInfo(chainInfo.chainId)) {
+        throw new Error('Same chain is already registered');
+      }
+
+      const savedChainInfos =
+        (await this.kvStore.get<ChainInfo[]>('chain-infos')) ?? [];
+
+      savedChainInfos.push(chainInfo);
+
+      await this.kvStore.set<ChainInfo[]>('chain-infos', savedChainInfos);
+
+      this.clearCachedChainInfos();
+    } catch (error) {
+      console.log('addChainInfo err ===', error);
     }
-
-    const savedChainInfos =
-      (await this.kvStore.get<ChainInfo[]>('chain-infos')) ?? [];
-
-    savedChainInfos.push(chainInfo);
-
-    await this.kvStore.set<ChainInfo[]>('chain-infos', savedChainInfos);
-
-    this.clearCachedChainInfos();
   }
 
   async removeChainInfo(chainId: string): Promise<void> {
