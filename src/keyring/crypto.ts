@@ -4,7 +4,7 @@ import {
   CoinTypeForChain,
   ScryptParams,
   CommonCrypto,
-  AddressesLedger
+  ledgerAddresses
 } from './types';
 import { Hash, RNG } from '@owallet/crypto';
 import pbkdf2 from 'pbkdf2';
@@ -38,7 +38,7 @@ export interface KeyStore {
     kdfparams: ScryptParams;
     mac: string;
   };
-  addresses?: AddressesLedger;
+  addresses?: ledgerAddresses;
 }
 
 export class Crypto {
@@ -51,7 +51,7 @@ export class Crypto {
     password: string,
     meta: Record<string, string>,
     bip44HDPath?: BIP44HDPath,
-    addresses?: AddressesLedger
+    addresses?: ledgerAddresses
   ): Promise<KeyStore> {
     let random = new Uint8Array(32);
     const salt = Buffer.from(await rng(random)).toString('hex');

@@ -15,7 +15,7 @@ import {
   verifyADR36AminoSignDoc
 } from '@owallet/cosmos';
 import {
-  AddressesLedger,
+  ledgerAddresses,
   BIP44HDPath,
   CommonCrypto,
   ECDSASignature,
@@ -252,7 +252,7 @@ export class KeyRingService {
   //   );
   // }
 
-  getKeyRingLedgerAddress(): AddressesLedger {
+  getKeyRingLedgerAddress(): ledgerAddresses {
     return this.keyRing.addresses;
   }
 

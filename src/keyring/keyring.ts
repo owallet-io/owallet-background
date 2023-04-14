@@ -27,7 +27,7 @@ import {
   TypedMessage,
   MessageTypeProperty,
   ECDSASignature,
-  AddressesLedger
+  ledgerAddresses
 } from './types';
 import { ChainInfo } from '@owallet/types';
 import { Env, OWalletError } from '@owallet/router';
@@ -71,7 +71,7 @@ export type MultiKeyStoreInfoElem = Pick<
 export type MultiKeyStoreInfo = MultiKeyStoreInfoElem[];
 export type MultiKeyStoreInfoWithSelectedElem = MultiKeyStoreInfoElem & {
   selected: boolean;
-  addresses?: AddressesLedger;
+  addresses?: ledgerAddresses;
 };
 export type MultiKeyStoreInfoWithSelected = MultiKeyStoreInfoWithSelectedElem[];
 
@@ -138,15 +138,15 @@ export class KeyRing {
 
   public static getLedgerAddressOfKeyStore(
     keyStore: Omit<KeyStore, 'crypto'>
-  ): AddressesLedger {
+  ): ledgerAddresses {
     const addresses = keyStore.addresses;
     console.log('keyStore getLedgerAddressOfKeyStore==', keyStore?.addresses);
     return addresses;
   }
 
-  public get addresses(): AddressesLedger {
+  public get addresses(): ledgerAddresses {
     if (!this.keyStore) {
-      return {} as AddressesLedger;
+      return {} as ledgerAddresses;
     } else {
       return KeyRing.getLedgerAddressOfKeyStore(this.keyStore);
     }
@@ -1772,7 +1772,7 @@ export class KeyRing {
     password: string,
     meta: Record<string, string>,
     bip44HDPath: BIP44HDPath,
-    addresses?: AddressesLedger
+    addresses?: ledgerAddresses
   ): Promise<KeyStore> {
     return await Crypto.encrypt(
       rng,
