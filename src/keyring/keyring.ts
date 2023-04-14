@@ -832,7 +832,8 @@ export class KeyRing {
     } else {
       // Sign with Evmos/Ethereum
       const privKey = this.loadPrivKey(coinType);
-      if (networkType === 'evm') {
+      // Check cointype = 60 in the case that network is evmos(still cosmos but need to sign with ethereum)
+      if (networkType === 'evm' || coinType === 60) {
         // Only check coinType === 195 for Ton network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
           const transactionSign = TronWeb.utils.crypto.signTransaction(
