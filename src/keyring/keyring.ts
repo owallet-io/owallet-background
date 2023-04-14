@@ -803,7 +803,7 @@ export class KeyRing {
       );
     } else {
       const privKey = this.loadPrivKey(coinType);
-      if (networkType === 'evm') {
+      if (networkType === 'evm' || coinType === 60) {
         // Only check coinType === 195 for Ton network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
           const transactionSign = TronWeb.utils.crypto.signTransaction(
@@ -884,6 +884,8 @@ export class KeyRing {
       delete finalMessage?.gas;
       delete finalMessage?.memo;
       delete finalMessage?.fees;
+      delete finalMessage?.maxPriorityFeePerGas;
+      delete finalMessage?.maxFeePerGas;
       console.log(
         '🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage',
         finalMessage
