@@ -68,6 +68,7 @@ export class LedgerInternal {
       } else {
         app = new CosmosApp(transport);
       }
+
       const ledger = new LedgerInternal(app, ledgerAppType);
 
       if (ledgerAppType === 'cosmos') {

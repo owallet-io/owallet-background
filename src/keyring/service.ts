@@ -26,7 +26,7 @@ import {
   TypedMessage
 } from './types';
 
-import { KVStore, fetchAdapter } from '@owallet/common';
+import { KVStore, fetchAdapter, EVMOS_NETWORKS } from '@owallet/common';
 import { ChainsService } from '../chains';
 import { LedgerService } from '../ledger';
 import { BIP44, ChainInfo, OWalletSignOptions } from '@owallet/types';
@@ -407,13 +407,14 @@ export class KeyRingService {
     data: object
   ): Promise<string> {
     const coinType = await this.chainsService.getChainCoinType(chainId);
-    const rpc = (await this.chainsService.getChainInfo(chainId)).rest;
+    const rpc = await this.chainsService.getChainInfo(chainId);
+    const rpcCustom = EVMOS_NETWORKS.includes(chainId) ? rpc.evmRpc : rpc.rest;
 
     // TODO: add UI here so users can change gas, memo & fee
     const newData = await this.estimateFeeAndWaitApprove(
       env,
       chainId,
-      rpc,
+      rpcCustom,
       data
     );
     console.log(newData, 'NEW DATA IN HEREEEEEEEEEEEEEEEEEEEEEEEE');
@@ -424,7 +425,7 @@ export class KeyRingService {
         env,
         chainId,
         coinType,
-        rpc,
+        rpcCustom,
         newData
       );
 
@@ -487,11 +488,14 @@ export class KeyRingService {
     console.log('in request sign proxy decryption data: ', chainId);
 
     try {
-      const rpc = (await this.chainsService.getChainInfo(chainId)).rest;
+      const rpc = await this.chainsService.getChainInfo(chainId);
+      const rpcCustom = EVMOS_NETWORKS.includes(chainId)
+        ? rpc.evmRpc
+        : rpc.rest;
       const newData = await this.estimateFeeAndWaitApprove(
         env,
         chainId,
-        rpc,
+        rpcCustom,
         data
       );
       const rawTxHex = await this.keyRing.signProxyDecryptionData(
@@ -519,11 +523,14 @@ export class KeyRingService {
     console.log('in request sign proxy re-encryption data: ', chainId);
 
     try {
-      const rpc = (await this.chainsService.getChainInfo(chainId)).rest;
+      const rpc = await this.chainsService.getChainInfo(chainId);
+      const rpcCustom = EVMOS_NETWORKS.includes(chainId)
+        ? rpc.evmRpc
+        : rpc.rest;
       const newData = await this.estimateFeeAndWaitApprove(
         env,
         chainId,
-        rpc,
+        rpcCustom,
         data
       );
       const rawTxHex = await this.keyRing.signProxyReEncryptionData(
