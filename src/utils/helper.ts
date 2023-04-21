@@ -26,10 +26,10 @@ export function stringifyPath(paths: number[]): string {
       stringPaths += `${path}'/`;
     } else {
       if (index < 4) {
-      } else {
         stringPaths += `${path}/`;
+      } else {
+        stringPaths += `${path}`;
       }
-      stringPaths += `${path}`;
     }
   });
   return stringPaths;

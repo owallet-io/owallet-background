@@ -200,13 +200,11 @@ export class LedgerInternal {
       return signature;
       // return convertEthSignature(signature);
     } else {
-      const rawTxHex = Buffer.from(message).toString('hex');
-      console.log('rawTxHex sign ===', rawTxHex);
+      // const rawTxHex = Buffer.from(message).toString('hex');
       const trxSignature = await this.ledgerApp.signTransactionHash(
-        stringifyPath(path),
-        rawTxHex
+        "44'/195'/0'/0/0",
+        message //rawTxHex
       );
-      console.log('trxSignature', trxSignature);
 
       return Buffer.from(trxSignature, 'hex');
     }

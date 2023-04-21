@@ -559,7 +559,7 @@ export class KeyRingService {
     const decimals = (await this.chainsService.getChainInfo(chainId))
       .feeCurrencies?.[0].coinDecimals;
     const estimatedGasPrice = await request(rpc, 'eth_gasPrice', []);
-    var estimatedGasLimit = '0x5028';
+    let estimatedGasLimit = '0x5028';
     try {
       estimatedGasLimit = await request(rpc, 'eth_estimateGas', [
         {
@@ -790,6 +790,8 @@ export class KeyRingService {
       data
     )) as any;
     try {
+      console.log('newData ===', newData);
+
       if (newData?.txID) {
         newData.signature = [
           Buffer.from(
