@@ -879,6 +879,7 @@ export class KeyRing {
         nonce,
         chainId: Number(chainId)
       };
+      delete finalMessage?.chainId;
       delete finalMessage?.from;
       delete finalMessage?.type;
       delete finalMessage?.gas;
