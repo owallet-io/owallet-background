@@ -17,6 +17,24 @@ export enum LedgerInitErrorOn {
   Unknown
 }
 
+export function stringifyPath(paths: number[]): string {
+  let stringPaths = '';
+  if (paths.length < 5) {
+    return "44'/118'/0'/0/0";
+  }
+  paths.map((path, index) => {
+    if (index < 3) {
+      stringPaths += `${path}'/`;
+    } else {
+      if (index < 4) {
+        stringPaths += `${path}/`;
+      } else {
+        stringPaths += `${path}`;
+      }
+    }
+  });
+  return stringPaths;
+}
 export class LedgerInitError extends Error {
   constructor(public readonly errorOn: LedgerInitErrorOn, message?: string) {
     super(message);
@@ -145,8 +163,7 @@ export class LedgerInternal {
     }
 
     const hdPath = this.getHdPath(path);
-
-    console.log('get publichdPath', hdPath);
+    const stringifyhdPath = stringifyPath(hdPath);
     console.log(
       'get this.ledgerAp',
       this.ledgerApp,
@@ -158,15 +175,15 @@ export class LedgerInternal {
     if (this.ledgerApp instanceof CosmosApp) {
       // make compartible with ledger-cosmos-js
       const { publicKey, address } = await this.ledgerApp.getAddress(
-        "44'/118'/0'/0/0",
+        // "44'/118'/0'/0/0",
+        stringifyhdPath,
         'cosmos'
       );
       return { publicKey: Buffer.from(publicKey, 'hex'), address };
     } else if (this.ledgerApp instanceof EthApp) {
-      console.log('11111');
-
       const { publicKey, address } = await this.ledgerApp.getAddress(
-        "44'/60'/0'/0/0"
+        // "44'/60'/0'/0/0"
+        stringifyhdPath
       );
 
       console.log('get here eth ===', publicKey, address);
@@ -179,28 +196,27 @@ export class LedgerInternal {
       };
     } else {
       console.log('hdPath', hdPath);
-
       const { publicKey, address } = await this.ledgerApp.getAddress(
-        "44'/195'/0'/0/0"
+        // "44'/195'/0'/0/0"
+        stringifyhdPath
       );
 
       // Compress the public key
-
       return { publicKey: Buffer.from(publicKey, 'hex'), address };
     }
   }
 
   async sign(path: number[] | string, message: any): Promise<Uint8Array | any> {
     console.log('sign ledger === ', message, path);
-
     if (!this.ledgerApp) {
       throw new Error(`${this.LedgerAppTypeDesc} not initialized`);
     }
-    console.log({ ledgerApp: this.ledgerApp });
-
+    const hdPath = this.getHdPath(path);
+    const stringifyhdPath = stringifyPath(hdPath);
     if (this.ledgerApp instanceof CosmosApp) {
       const { signature } = await this.ledgerApp.sign(
-        "44'/118'/0'/0/0",
+        // "44'/118'/0'/0/0",
+        stringifyhdPath,
         message
       );
 
@@ -208,50 +224,21 @@ export class LedgerInternal {
       return signatureImport(signature);
     } else if (this.ledgerApp instanceof EthApp) {
       const rawTxHex = Buffer.from(message).toString('hex');
-      // const tx = JSON.parse(Buffer.from(message).toString());
-      // This is normal object to serialize
-      // const rlpArray = serialize(tx).replace('0x', '');
-      // const signature = await this.ledgerApp.signTransaction(
-      //   "44'/60'/0'/0/0",
-      //   rlpArray
-      // );
-
-      // console.log('rawTxHex wth===', rawTxHex);
       const signature = await this.ledgerApp.signTransaction(
-        "44'/60'/0'/0/0",
+        // "44'/60'/0'/0/0",
+        stringifyhdPath,
         rawTxHex
       );
-      // const signedTx = serialize(message, {
-      //   r: `0x${signature.r}`,
-      //   s: `0x${signature.s}`,
-      //   v: parseInt(signature.v, 16)
-      // }).replace('0x', '');
-      // return Buffer.from(signedTx, 'hex');
       console.log('signature eth ===', signature);
       return signature;
-      // const splitSignature = BytesUtils.splitSignature({
-      //   v: Number(signature.v),
-      //   r: '0x' + signature.r,
-      //   s: '0x' + signature.s
-      // });
-      // console.log('splitSignature === 1', splitSignature);
-      // console.log(
-      //   'Buffer === 1',
-      //   BytesUtils.arrayify(
-      //     BytesUtils.concat([splitSignature.r, splitSignature.s])
-      //   )
-      // );
-      // return BytesUtils.arrayify(
-      //   BytesUtils.concat([splitSignature.r, splitSignature.s])
-      // );
     } else {
       try {
         console.log('message ===', message);
 
         const trxSignature = await this.ledgerApp.signTransactionHash(
-          "44'/195'/0'/0/0",
-          message,
-          []
+          // "44'/195'/0'/0/0",
+          stringifyhdPath,
+          message
         );
         console.log('trxSignature', trxSignature);
         return Buffer.from(trxSignature, 'hex');
