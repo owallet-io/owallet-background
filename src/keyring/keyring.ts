@@ -906,10 +906,10 @@ export class KeyRing {
         // gas: (message as any)?.gasLimit,
         gasLimit: (message as any)?.gasLimit,
         gasPrice: (message as any)?.gasPrice,
-        nonce,
-        chainId: Number(chainId)
+        nonce
+        // chainId: Number(chainId)
       };
-
+      delete finalMessage?.chainId;
       delete finalMessage?.from;
       delete finalMessage?.type;
       delete finalMessage?.gas;
