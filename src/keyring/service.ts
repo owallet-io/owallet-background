@@ -26,7 +26,12 @@ import {
   TypedMessage
 } from './types';
 
-import { KVStore, fetchAdapter, EVMOS_NETWORKS } from '@owallet/common';
+import {
+  KVStore,
+  fetchAdapter,
+  EVMOS_NETWORKS,
+  MyBigInt
+} from '@owallet/common';
 import { ChainsService } from '../chains';
 import { LedgerService } from '../ledger';
 import { BIP44, ChainInfo, OWalletSignOptions } from '@owallet/types';
@@ -807,7 +812,9 @@ export class KeyRingService {
       tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
       let transaction: any;
       if (newData?.tokenTrc20) {
-        const amount = BigInt(Math.trunc(newData?.amount * Math.pow(10, 6)));
+        const amount = new MyBigInt(
+          Math.trunc(newData?.amount * Math.pow(10, 6))
+        );
 
         transaction = (
           await tronWeb.transactionBuilder.triggerSmartContract(
