@@ -414,7 +414,7 @@ export class KeyRingService {
     const coinType = await this.chainsService.getChainCoinType(chainId);
     const rpc = await this.chainsService.getChainInfo(chainId);
     const rpcCustom = EVMOS_NETWORKS.includes(chainId) ? rpc.evmRpc : rpc.rest;
-
+    // here
     // TODO: add UI here so users can change gas, memo & fee
     const newData = await this.estimateFeeAndWaitApprove(
       env,

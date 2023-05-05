@@ -695,6 +695,7 @@ export class KeyRing {
       if (!this.ledgerPublicKey) {
         throw new Error('Ledger public key not set');
       }
+      // goes here
       // This need to be check by network type or cointype, cause now we support ledger with evm too, but this pubKey.getAddress() is hardcoded by cosmos address
       const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
 
@@ -715,6 +716,10 @@ export class KeyRing {
         const ethereumAddress = privateToAddress(
           Buffer.from(privKey.toBytes())
         );
+
+        // get the ledgerPublicKey here and get address from pubKey.getAddress()
+        // const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
+        // From that address, generate evmosHexAddress
 
         return {
           algo: 'ethsecp256k1',
@@ -744,7 +749,7 @@ export class KeyRing {
     }
 
     const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
-
+    // and here
     if (this.type === 'mnemonic') {
       const coinTypeModified = bip44HDPath.coinType ?? coinType;
       const path = `m/44'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
@@ -977,7 +982,7 @@ export class KeyRing {
 
       const opts: TransactionOptions = { common: customCommon } as any;
       const tx = new Transaction(finalMessage, opts);
-
+      // here
       tx.sign(Buffer.from(privKey.toBytes()));
 
       const serializedTx = tx.serialize();

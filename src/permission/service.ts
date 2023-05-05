@@ -66,8 +66,6 @@ export class PermissionService {
       chainIds = [chainIds];
     }
 
-    console.log('chainIds', chainIds);
-
     const ungrantedChainIds: string[] = [];
     for (const chainId of chainIds) {
       if (!this.hasPermisson(chainId, getBasicAccessPermissionType(), origin)) {
@@ -98,8 +96,6 @@ export class PermissionService {
       type,
       origins
     };
-
-    console.log('permissionData', permissionData, chainIds);
 
     await this.interactionService.waitApprove(
       env,
