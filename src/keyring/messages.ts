@@ -1033,6 +1033,37 @@ export class ChangeKeyRingMsg extends Message<{
   }
 }
 
+export class ConnectGoogleWalletMsg extends Message<any> {
+  public static type() {
+    return 'connect-google-wallet';
+  }
+
+  constructor(public readonly coinType: number, public readonly tKey: any) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.tKey) {
+      throw new OWalletError('keyring', 270, 'tKey not set');
+    }
+    if (this.coinType < 0) {
+      throw new OWalletError('keyring', 240, 'coin type can not be negative');
+    }
+
+    if (!Number.isInteger(this.coinType)) {
+      throw new OWalletError('keyring', 241, 'coin type should be integer');
+    }
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return ConnectGoogleWalletMsg.type();
+  }
+}
+
 export class ChangeChainMsg extends Message<{
   chainInfos?: object;
 }> {

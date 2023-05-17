@@ -50,6 +50,8 @@ import {
 import TronWeb from 'tronweb';
 import { serialize } from '@ethersproject/transactions';
 
+import { BN } from 'bn.js';
+
 export enum KeyRingStatus {
   NOTLOADED,
   EMPTY,
@@ -1561,6 +1563,17 @@ export class KeyRing {
       console.log('Error in add ledger key: ', error);
       throw new Error(error);
     }
+  }
+
+  public async connectGoogleWallet(coinType: number, tKey: any): Promise<any> {
+    const privKey = this.loadPrivKey(coinType);
+    const initTkeyAccount = await tKey.initialize({
+      importKey: new BN(privKey.toBytes(), 'hex')
+    });
+    return {
+      coinType,
+      initTkeyAccount
+    };
   }
 
   public async changeKeyStoreFromMultiKeyStore(index: number): Promise<{

@@ -793,6 +793,10 @@ export class KeyRingService {
     }
   }
 
+  public async connectGoogleWallet(coinType, tKey): Promise<void | any> {
+    return this.keyRing.connectGoogleWallet(coinType, tKey);
+  }
+
   public async changeChain(chainInfos: object = {}): Promise<void | any> {
     console.log('changeChain stores core', chainInfos);
     this.interactionService.dispatchEvent(WEBPAGE_PORT, 'keystore-changed', {
