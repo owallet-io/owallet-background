@@ -35,14 +35,12 @@ import {
   SetKeyStoreLedgerAddressMsg,
   ChangeChainMsg,
   RequestSignTronMsg,
-  GetDefaultAddressTronMsg,
-  ConnectGoogleWalletMsg
+  GetDefaultAddressTronMsg
 } from './messages';
 import { KeyRingService } from './service';
 import { Bech32Address, cosmos } from '@owallet/cosmos';
 
 import Long from 'long';
-import { SignEthereumTypedDataObject } from './types';
 
 export const getHandler: (service: KeyRingService) => Handler = (
   service: KeyRingService
@@ -144,11 +142,6 @@ export const getHandler: (service: KeyRingService) => Handler = (
         );
       case ChangeKeyRingMsg:
         return handleChangeKeyRingMsg(service)(env, msg as ChangeKeyRingMsg);
-      case ConnectGoogleWalletMsg:
-        return handleConnectGoogleAccountMsg(service)(
-          env,
-          msg as ConnectGoogleWalletMsg
-        );
       case GetIsKeyStoreCoinTypeSetMsg:
         return handleGetIsKeyStoreCoinTypeSetMsg(service)(
           env,
@@ -194,7 +187,7 @@ const handleUpdateNameKeyRingMsg: (
   service: KeyRingService
 ) => InternalHandler<UpdateNameKeyRingMsg> = (service) => {
   return async (_, msg) => {
-    return await service.updateNameKeyRing(msg.index, msg.name);
+    return await service.updateNameKeyRing(msg.index, msg.name, msg?.email);
   };
 };
 
@@ -556,14 +549,6 @@ const handleChangeKeyRingMsg: (
 ) => InternalHandler<ChangeKeyRingMsg> = (service) => {
   return async (_, msg) => {
     return await service.changeKeyStoreFromMultiKeyStore(msg.index);
-  };
-};
-
-const handleConnectGoogleAccountMsg: (
-  service: KeyRingService
-) => InternalHandler<ConnectGoogleWalletMsg> = (service) => {
-  return async (_, msg) => {
-    return await service.connectGoogleWallet(msg.coinType, msg.tKey);
   };
 };
 

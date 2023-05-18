@@ -30,8 +30,7 @@ import {
   RequestPublicKeyMsg,
   ChangeChainMsg,
   RequestSignTronMsg,
-  GetDefaultAddressTronMsg,
-  ConnectGoogleWalletMsg
+  GetDefaultAddressTronMsg
 } from './messages';
 import { ROUTE } from './constants';
 import { getHandler } from './handler';
@@ -65,7 +64,6 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(GetMultiKeyStoreInfoMsg);
   router.registerMessage(GetDefaultAddressTronMsg);
   router.registerMessage(ChangeKeyRingMsg);
-  router.registerMessage(ConnectGoogleWalletMsg);
   router.registerMessage(GetIsKeyStoreCoinTypeSetMsg);
   router.registerMessage(SetKeyStoreCoinTypeMsg);
   router.registerMessage(CheckPasswordMsg);

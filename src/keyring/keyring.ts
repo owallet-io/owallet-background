@@ -49,8 +49,8 @@ import {
 } from '@owallet/common';
 import TronWeb from 'tronweb';
 import { serialize } from '@ethersproject/transactions';
-
-import { BN } from 'bn.js';
+import { privateToAddress } from 'ethereumjs-util';
+import { ethers } from 'ethers';
 
 export enum KeyRingStatus {
   NOTLOADED,
@@ -606,7 +606,8 @@ export class KeyRing {
 
   public async updateNameKeyRing(
     index: number,
-    name: string
+    name: string,
+    email?: string
   ): Promise<MultiKeyStoreInfoWithSelected> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
@@ -618,7 +619,7 @@ export class KeyRing {
       throw new Error('Empty key store');
     }
 
-    keyStore.meta = { ...keyStore.meta, name: name };
+    keyStore.meta = { ...keyStore.meta, name: name, email: email };
 
     // If select key store and changed store are same, sync keystore
     if (
@@ -655,12 +656,14 @@ export class KeyRing {
       };
     } else {
       const privKey = this.loadPrivKey(coinType);
+
       const pubKey = privKey.getPubKey();
       if (chainId && chainId !== '') {
         const networkType = getNetworkTypeByChainId(chainId);
         if (coinType === 60 || networkType === 'evm') {
           // For Ethereum Key-Gen Only:
           const wallet = new Wallet(privKey.toBytes());
+
           const ethereumAddress = ETH.decoder(wallet.address);
 
           return {
@@ -1563,17 +1566,6 @@ export class KeyRing {
       console.log('Error in add ledger key: ', error);
       throw new Error(error);
     }
-  }
-
-  public async connectGoogleWallet(coinType: number, tKey: any): Promise<any> {
-    const privKey = this.loadPrivKey(coinType);
-    const initTkeyAccount = await tKey.initialize({
-      importKey: new BN(privKey.toBytes(), 'hex')
-    });
-    return {
-      coinType,
-      initTkeyAccount
-    };
   }
 
   public async changeKeyStoreFromMultiKeyStore(index: number): Promise<{

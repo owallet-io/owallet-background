@@ -143,11 +143,16 @@ export class KeyRingService {
 
   async updateNameKeyRing(
     index: number,
-    name: string
+    name: string,
+    email?: string
   ): Promise<{
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
-    const multiKeyStoreInfo = await this.keyRing.updateNameKeyRing(index, name);
+    const multiKeyStoreInfo = await this.keyRing.updateNameKeyRing(
+      index,
+      name,
+      email
+    );
     return {
       multiKeyStoreInfo
     };
@@ -791,10 +796,6 @@ export class KeyRingService {
         {}
       );
     }
-  }
-
-  public async connectGoogleWallet(coinType, tKey): Promise<void | any> {
-    return this.keyRing.connectGoogleWallet(coinType, tKey);
   }
 
   public async changeChain(chainInfos: object = {}): Promise<void | any> {
