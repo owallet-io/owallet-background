@@ -49,8 +49,6 @@ import {
 } from '@owallet/common';
 import TronWeb from 'tronweb';
 import { serialize } from '@ethersproject/transactions';
-import { privateToAddress } from 'ethereumjs-util';
-import { ethers } from 'ethers';
 
 export enum KeyRingStatus {
   NOTLOADED,
