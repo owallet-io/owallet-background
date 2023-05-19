@@ -85,7 +85,11 @@ export class UpdateNameKeyRingMsg extends Message<{
     return 'update-name-keyring';
   }
 
-  constructor(public readonly index: number, public readonly name: string) {
+  constructor(
+    public readonly index: number,
+    public readonly name: string,
+    public readonly email?: string
+  ) {
     super();
   }
 

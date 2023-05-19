@@ -41,7 +41,6 @@ import { KeyRingService } from './service';
 import { Bech32Address, cosmos } from '@owallet/cosmos';
 
 import Long from 'long';
-import { SignEthereumTypedDataObject } from './types';
 
 export const getHandler: (service: KeyRingService) => Handler = (
   service: KeyRingService
@@ -188,7 +187,7 @@ const handleUpdateNameKeyRingMsg: (
   service: KeyRingService
 ) => InternalHandler<UpdateNameKeyRingMsg> = (service) => {
   return async (_, msg) => {
-    return await service.updateNameKeyRing(msg.index, msg.name);
+    return await service.updateNameKeyRing(msg.index, msg.name, msg?.email);
   };
 };
 
