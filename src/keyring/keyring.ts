@@ -1003,19 +1003,38 @@ export class KeyRing {
     chainId: string,
     message: object
   ): Promise<object> {
+    if (this.status !== KeyRingStatus.UNLOCKED) {
+      throw new Error('Key ring is not unlocked');
+    }
+
+    if (!this.keyStore) {
+      throw new Error('Key Store is empty');
+    }
+    
     try {
       const privKey = this.loadPrivKey(60);
       const privKeyBuffer = Buffer.from(privKey.toBytes());
-      let encryptedData = message[0];
-      encryptedData = {
-        ciphertext: Buffer.from(encryptedData.ciphertext, 'hex'),
-        ephemPublicKey: Buffer.from(encryptedData.ephemPublicKey, 'hex'),
-        iv: Buffer.from(encryptedData.iv, 'hex'),
-        mac: Buffer.from(encryptedData.mac, 'hex')
-      };
-      const data = await eccrypto.decrypt(privKeyBuffer, encryptedData);
+
+      const response = await Promise.all(
+        message[0].map(async (data: any) => {
+          const encryptedData = {
+            ciphertext: Buffer.from(data.ciphertext, 'hex'),
+            ephemPublicKey: Buffer.from(data.ephemPublicKey, 'hex'),
+            iv: Buffer.from(data.iv, 'hex'),
+            mac: Buffer.from(data.mac, 'hex')
+          };
+
+          const decryptResponse = await eccrypto.decrypt(
+            privKeyBuffer,
+            encryptedData
+          );
+
+          return decryptResponse;
+        })
+      );
+
       return {
-        data
+        data: response
       };
     } catch (error) {
       return {
