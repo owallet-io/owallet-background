@@ -145,6 +145,76 @@ export class KeyRingService {
     }
   }
 
+  async requestSignProxyDecryptionData(
+    env: Env,
+    chainId: string,
+    data: object
+  ): Promise<object> {
+    console.log('in request sign proxy decryption data: ', chainId);
+
+    try {
+      const rpc = await this.chainsService.getChainInfo(chainId);
+      const rpcCustom = EVMOS_NETWORKS.includes(chainId)
+        ? rpc.evmRpc
+        : rpc.rest;
+      const newData = await this.estimateFeeAndWaitApprove(
+        env,
+        chainId,
+        rpcCustom,
+        data
+      );
+      const rawTxHex = await this.keyRing.signProxyDecryptionData(
+        chainId,
+        newData
+      );
+
+      return rawTxHex;
+    } catch (e) {
+      console.log('e', e.message);
+    } finally {
+      this.interactionService.dispatchEvent(
+        APP_PORT,
+        'request-sign-ethereum-end',
+        {}
+      );
+    }
+  }
+
+  async requestSignProxyReEncryptionData(
+    env: Env,
+    chainId: string,
+    data: object
+  ): Promise<object> {
+    console.log('in request sign proxy re-encryption data: ', chainId);
+
+    try {
+      const rpc = await this.chainsService.getChainInfo(chainId);
+      const rpcCustom = EVMOS_NETWORKS.includes(chainId)
+        ? rpc.evmRpc
+        : rpc.rest;
+      const newData = await this.estimateFeeAndWaitApprove(
+        env,
+        chainId,
+        rpcCustom,
+        data
+      );
+      const rawTxHex = await this.keyRing.signProxyReEncryptionData(
+        chainId,
+        newData
+      );
+
+      return rawTxHex;
+    } catch (e) {
+      console.log('e', e.message);
+    } finally {
+      this.interactionService.dispatchEvent(
+        APP_PORT,
+        'request-sign-ethereum-end',
+        {}
+      );
+    }
+  }
+
   async updateNameKeyRing(
     index: number,
     name: string,

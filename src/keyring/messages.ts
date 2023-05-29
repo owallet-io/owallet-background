@@ -931,6 +931,88 @@ export class RequestSignDecryptDataMsg extends Message<{
   }
 }
 
+export class RequestSignProxyReEncryptionDataMsg extends Message<{
+  readonly result: string; // raw tx signature to broadcast
+}> {
+  public static type() {
+    return 'request-sign-proxy-re-encryption-data';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: object // public readonly signOptions: OWalletSignOptions = {}
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+
+    // if (!this.signOptions) {
+    //   throw new Error('Sign options are null');
+    // }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignProxyReEncryptionDataMsg.type();
+  }
+}
+
+export class RequestSignProxyDecryptionDataMsg extends Message<{
+  readonly result: string; // raw tx signature to broadcast
+}> {
+  public static type() {
+    return 'request-sign-proxy-deryption-data';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: object // public readonly signOptions: OWalletSignOptions = {}
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+
+    // if (!this.signOptions) {
+    //   throw new Error('Sign options are null');
+    // }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignProxyDecryptionDataMsg.type();
+  }
+}
+
 export class RequestSignReEncryptDataMsg extends Message<{
   readonly result: string; // raw tx signature to broadcast
 }> {
