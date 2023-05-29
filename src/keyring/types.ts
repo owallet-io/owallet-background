@@ -9,7 +9,7 @@ export type BIP44HDPath = {
   addressIndex: number;
 };
 
-export type ledgerAddresses = {
+export type AddressesLedger = {
   cosmos?: string;
   eth?: string;
   trx?: string;

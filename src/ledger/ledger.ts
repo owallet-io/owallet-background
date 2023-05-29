@@ -21,8 +21,7 @@ export const ledgerProxy = async (
   switch (method) {
     case 'init':
       try {
-        const [currentMode, initArgs, ledgerType] = args;
-        console.log('args', args);
+        [currentMode, initArgs, ledgerType] = args;
         ledger = await LedgerInternal.init(currentMode, initArgs, ledgerType);
         console.log('ledger init ===', ledger);
 
@@ -50,7 +49,7 @@ if (isReactNative) {
   const channelDevice = new BroadcastChannel('device');
 
   callProxy = async (method: string, args: any[] = []): Promise<any> =>
-    new Promise((resolve) => {
+    new Promise(resolve => {
       let requestId = Date.now();
       const handler = ({ data }) => {
         if (data.requestId !== requestId) return;

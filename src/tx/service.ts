@@ -96,6 +96,7 @@ export class BackgroundTxService {
       message: 'Wait a second'
     });
 
+    // here
     const isProtoTx = Buffer.isBuffer(tx) || tx instanceof Uint8Array;
 
     const params = isProtoTx
@@ -134,7 +135,7 @@ export class BackgroundTxService {
       const txHash = Buffer.from(txResponse.txhash, 'hex');
 
       const txTracer = new TendermintTxTracer(chainInfo.rpc, '/websocket');
-      txTracer.traceTx(txHash).then((tx) => {
+      txTracer.traceTx(txHash).then(tx => {
         txTracer.close();
         BackgroundTxService.processTxResultNotification(this.notification, tx);
       });
@@ -142,6 +143,7 @@ export class BackgroundTxService {
       return txHash;
     } catch (e: any) {
       console.log(e);
+      alert(e.message);
       BackgroundTxService.processTxErrorNotification(this.notification, e);
       throw e;
     }
@@ -169,10 +171,10 @@ export class BackgroundTxService {
         if (chainInfo.coinType !== 60) return undefined;
         const chainIdOrCoinType = params.length ? parseInt(params[0]) : chainId; // default is cointype 60 for ethereum based
         const key = await this.keyRingService.getKey(chainIdOrCoinType);
-
         const ledgerCheck = await this.keyRingService.getKeyRingType();
         if (ledgerCheck === 'ledger') {
-          const addresses = await this.keyRingService.getKeyRingLedgerAddress();
+          const addresses =
+            await this.keyRingService.getKeyRingLedgerAddresses();
           return [`${addresses?.eth}`];
         }
         return [`0x${Buffer.from(key.address).toString('hex')}`];

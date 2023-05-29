@@ -6,8 +6,8 @@ import TransportWebHID from '@ledgerhq/hw-transport-webhid';
 import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
 import { signatureImport, publicKeyConvert } from 'secp256k1';
 import { Buffer } from 'buffer';
-import { fromString } from 'bip32-path';
 import { OWalletError } from '@owallet/router';
+import { stringifyPath } from '../utils/helper';
 
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 
@@ -17,24 +17,6 @@ export enum LedgerInitErrorOn {
   Unknown
 }
 
-export function stringifyPath(paths: number[]): string {
-  let stringPaths = '';
-  if (paths.length < 5) {
-    return "44'/118'/0'/0/0";
-  }
-  paths.map((path, index) => {
-    if (index < 3) {
-      stringPaths += `${path}'/`;
-    } else {
-      if (index < 4) {
-        stringPaths += `${path}/`;
-      } else {
-        stringPaths += `${path}`;
-      }
-    }
-  });
-  return stringPaths;
-}
 export class LedgerInitError extends Error {
   constructor(public readonly errorOn: LedgerInitErrorOn, message?: string) {
     super(message);
@@ -67,23 +49,18 @@ export class LedgerInternal {
   ): Promise<LedgerInternal> {
     const transportIniter = LedgerInternal.transportIniters[mode];
     console.log('transportIniter', transportIniter);
-    console.log(
-      'transportIniter type ledger 12',
-      ledgerAppType,
-      initArgs,
-      mode
-    );
+
     if (!transportIniter) {
       throw new OWalletError('ledger', 112, `Unknown mode: ${mode}`);
     }
 
     let app: CosmosApp | EthApp | TrxApp;
-    let transport;
+
+    const transport = await transportIniter(...initArgs);
+
+    console.log('transport ===', transport);
+
     try {
-      // transport = await transportIniter(...initArgs);
-      // TODO: hardcode support WEB HID
-      transport = await TransportWebHID.create(...initArgs);
-      console.log('transportIniter transport', transport);
       if (ledgerAppType === 'trx') {
         app = new TrxApp(transport);
       } else if (ledgerAppType === 'eth') {
@@ -91,6 +68,7 @@ export class LedgerInternal {
       } else {
         app = new CosmosApp(transport);
       }
+
       const ledger = new LedgerInternal(app, ledgerAppType);
 
       if (ledgerAppType === 'cosmos') {
@@ -106,7 +84,7 @@ export class LedgerInternal {
       console.log('transportIniter ledger', ledger);
       return ledger;
     } catch (e) {
-      console.log('transportIniter error', e, transport);
+      console.log(e);
       if (transport) {
         await transport.close();
       }
@@ -151,19 +129,11 @@ export class LedgerInternal {
     }
   }
 
-  private getHdPath(path: number[] | string): number[] {
-    return typeof path === 'string' ? fromString(path).toPathArray() : path;
-  }
-
-  async getPublicKey(path: number[] | string): Promise<object> {
-    console.log('getPublicKey ledger internal');
-
+  async getPublicKey(path: number[]): Promise<object> {
     if (!this.ledgerApp) {
       throw new Error(`${this.LedgerAppTypeDesc} not initialized`);
     }
 
-    const hdPath = this.getHdPath(path);
-    const stringifyhdPath = stringifyPath(hdPath);
     console.log(
       'get this.ledgerAp',
       this.ledgerApp,
@@ -175,15 +145,13 @@ export class LedgerInternal {
     if (this.ledgerApp instanceof CosmosApp) {
       // make compartible with ledger-cosmos-js
       const { publicKey, address } = await this.ledgerApp.getAddress(
-        // "44'/118'/0'/0/0",
-        stringifyhdPath,
+        stringifyPath(path),
         'cosmos'
       );
       return { publicKey: Buffer.from(publicKey, 'hex'), address };
     } else if (this.ledgerApp instanceof EthApp) {
       const { publicKey, address } = await this.ledgerApp.getAddress(
-        // "44'/60'/0'/0/0"
-        stringifyhdPath
+        stringifyPath(path)
       );
 
       console.log('get here eth ===', publicKey, address);
@@ -195,28 +163,28 @@ export class LedgerInternal {
         address
       };
     } else {
-      console.log('hdPath', hdPath);
+      console.log('get here trx === ', path, stringifyPath(path));
       const { publicKey, address } = await this.ledgerApp.getAddress(
-        // "44'/195'/0'/0/0"
-        stringifyhdPath
+        stringifyPath(path)
       );
+      console.log('get here trx  2 === ', address);
 
       // Compress the public key
+
       return { publicKey: Buffer.from(publicKey, 'hex'), address };
     }
   }
 
-  async sign(path: number[] | string, message: any): Promise<Uint8Array | any> {
+  async sign(path: number[], message: any): Promise<Uint8Array | any> {
     console.log('sign ledger === ', message, path);
+
     if (!this.ledgerApp) {
       throw new Error(`${this.LedgerAppTypeDesc} not initialized`);
     }
-    const hdPath = this.getHdPath(path);
-    const stringifyhdPath = stringifyPath(hdPath);
+
     if (this.ledgerApp instanceof CosmosApp) {
       const { signature } = await this.ledgerApp.sign(
-        // "44'/118'/0'/0/0",
-        stringifyhdPath,
+        stringifyPath(path),
         message
       );
 
@@ -224,27 +192,21 @@ export class LedgerInternal {
       return signatureImport(signature);
     } else if (this.ledgerApp instanceof EthApp) {
       const rawTxHex = Buffer.from(message).toString('hex');
+
       const signature = await this.ledgerApp.signTransaction(
-        // "44'/60'/0'/0/0",
-        stringifyhdPath,
+        stringifyPath(path),
         rawTxHex
       );
-      console.log('signature eth ===', signature);
       return signature;
+      // return convertEthSignature(signature);
     } else {
-      try {
-        console.log('message ===', message);
+      // const rawTxHex = Buffer.from(message).toString('hex');
+      const trxSignature = await this.ledgerApp.signTransactionHash(
+        stringifyPath(path),
+        message //rawTxHex
+      );
 
-        const trxSignature = await this.ledgerApp.signTransactionHash(
-          // "44'/195'/0'/0/0",
-          stringifyhdPath,
-          message
-        );
-        console.log('trxSignature', trxSignature);
-        return Buffer.from(trxSignature, 'hex');
-      } catch (error) {
-        console.log('error tx Signature: ', error);
-      }
+      return Buffer.from(trxSignature, 'hex');
     }
   }
 
