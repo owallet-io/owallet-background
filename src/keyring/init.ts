@@ -27,7 +27,6 @@ import {
   RequestSignEthereumTypedDataMsg,
   RequestSignReEncryptDataMsg,
   RequestSignDecryptDataMsg,
-  SetKeyStoreLedgerAddressMsg,
   RequestPublicKeyMsg,
   ChangeChainMsg,
   RequestSignTronMsg,

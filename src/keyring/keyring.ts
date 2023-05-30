@@ -141,11 +141,7 @@ export class KeyRing {
   public static getLedgerAddressOfKeyStore(
     keyStore: Omit<KeyStore, 'crypto'>
   ): AddressesLedger {
-    console.log('keyStore ===', keyStore);
-
-    const addresses = keyStore.addresses;
-
-    return addresses;
+    return keyStore.addresses;
   }
 
   public get addresses(): AddressesLedger {
@@ -700,8 +696,6 @@ export class KeyRing {
       if (!this.ledgerPublicKey) {
         throw new Error('Ledger public key not set');
       }
-      // goes here
-      // This need to be check by network type or cointype, cause now we support ledger with evm too, but this pubKey.getAddress() is hardcoded by cosmos address
       const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
 
       return {
@@ -870,7 +864,7 @@ export class KeyRing {
       const privKey = this.loadPrivKey(coinType);
       // Check cointype = 60 in the case that network is evmos(still cosmos but need to sign with ethereum)
       if (networkType === 'evm' || coinType === 60) {
-        // Only check coinType === 195 for Ton network, because tron is evm but had cointype = 195, not 60
+        // Only check coinType === 195 for Tron network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
           const transactionSign = TronWeb.utils.crypto.signTransaction(
             privKey.toBytes(),

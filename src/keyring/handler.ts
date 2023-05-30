@@ -83,8 +83,6 @@ export const getHandler: (service: KeyRingService) => Handler = (
         return handleUnlockKeyRingMsg(service)(env, msg as UnlockKeyRingMsg);
       case GetKeyMsg:
         return handleGetKeyMsg(service)(env, msg as GetKeyMsg);
-      case GetDefaultAddressTronMsg:
-        return handleGetDefaultAddressMsg(service)(env, msg as any);
       case RequestSignAminoMsg:
         return handleRequestSignAminoMsg(service)(
           env,
@@ -160,11 +158,6 @@ export const getHandler: (service: KeyRingService) => Handler = (
         );
       case ChangeChainMsg:
         return handleChangeChainMsg(service)(env, msg as ChangeChainMsg);
-      case RequestSignTronMsg:
-        return handleRequestSignTronMsg(service)(
-          env,
-          msg as RequestSignTronMsg
-        );
       default:
         throw new Error('Unknown msg type');
     }

@@ -523,84 +523,6 @@ export class KeyRingService {
     }
   }
 
-  async requestSignTron(
-    env: Env,
-    chainId?: string,
-    data?: object
-  ): Promise<object> {
-    const newData = (await this.interactionService.waitApprove(
-      env,
-      '/sign-tron',
-      'request-sign-tron',
-      data
-    )) as any;
-    try {
-      // sign transaction
-      if (newData?.txID) {
-        // const transactionSignTron: any = await this.keyRing.signTron(newData);
-        newData.signature = [
-          Buffer.from(
-            await this.keyRing.sign(env, chainId, 195, newData.txID)
-          ).toString('hex')
-        ];
-        return newData;
-      }
-
-      const tronWeb = new TronWeb({
-        fullHost: (await this.chainsService.getChainInfo(chainId)).rpc
-      });
-      tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
-      let transaction;
-      if (newData?.tokenTrc20) {
-        const amount = BigInt(
-          Math.trunc(
-            newData?.amount *
-              Math.pow(10, newData?.tokenTrc20?.coinDecimals ?? 6)
-          )
-        );
-
-        transaction = (
-          await tronWeb.transactionBuilder.triggerSmartContract(
-            newData.tokenTrc20.contractAddress,
-            'transfer(address,uint256)',
-            {
-              callValue: 0,
-              userFeePercentage: 100,
-              shouldPollResponse: false
-            },
-            [
-              { type: 'address', value: newData.recipient },
-              { type: 'uint256', value: amount.toString() }
-            ],
-            newData.address
-          )
-        ).transaction;
-      } else {
-        transaction = await tronWeb.transactionBuilder.sendTrx(
-          newData.recipient,
-          new Dec(Number((newData.amount ?? '0').replace(/,/g, '.'))).mul(
-            DecUtils.getTenExponentNInPrecisionRange(6)
-          ),
-          newData.address
-        );
-      }
-      // const transactionData = Buffer.from(transaction.raw_data_hex, 'hex');
-      transaction.signature = [
-        Buffer.from(
-          await this.keyRing.sign(env, chainId, 195, transaction.txID)
-        ).toString('hex')
-      ];
-      const receipt = await tronWeb.trx.sendRawTransaction(transaction);
-      return receipt;
-    } finally {
-      this.interactionService.dispatchEvent(
-        APP_PORT,
-        'request-sign-tron-end',
-        {}
-      );
-    }
-  }
-
   async requestSignEthereumTypedData(
     env: Env,
     chainId: string,
@@ -704,18 +626,6 @@ export class KeyRingService {
         {}
       );
     }
-  }
-
-  async setKeyStoreLedgerAddress(
-    env: Env,
-    bip44HDPath: string,
-    chainId: string | number
-  ): Promise<void> {
-    console.log('services setKeyStoreLedgerAddress', bip44HDPath);
-
-    await this.keyRing.setKeyStoreLedgerAddress(env, bip44HDPath, chainId);
-
-    this.interactionService.dispatchEvent(WEBPAGE_PORT, 'keystore-changed', {});
   }
 
   async estimateFeeAndWaitApprove(

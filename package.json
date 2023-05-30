@@ -55,6 +55,8 @@
     "ethereumjs-abi": "^0.6.8",
     "ethereumjs-tx": "^2.1.2",
     "ethereumjs-util": "^7.1.5",
+    "@ethersproject/wallet": "^5.7.0",
+    "@tharsis/address-converter": "^0.1.8",
     "joi": "^17.5.0",
     "long": "^4.0.0",
     "pbkdf2": "^3.1.2",
