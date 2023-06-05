@@ -46,8 +46,6 @@ import {
   splitPath
 } from '../utils/helper';
 import { serialize } from '@ethersproject/transactions';
-import { Wallet } from '@ethersproject/wallet';
-import { ETH } from '@tharsis/address-converter';
 
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
@@ -696,6 +694,8 @@ export class KeyRing {
       if (!this.ledgerPublicKey) {
         throw new Error('Ledger public key not set');
       }
+      // goes here
+      // This need to be check by network type or cointype, cause now we support ledger with evm too, but this pubKey.getAddress() is hardcoded by cosmos address
       const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
 
       return {
@@ -706,33 +706,7 @@ export class KeyRing {
       };
     } else {
       const privKey = this.loadPrivKey(coinType);
-
       const pubKey = privKey.getPubKey();
-      if (chainId && chainId !== '') {
-        const networkType = getNetworkTypeByChainId(chainId);
-        if (coinType === 60 || networkType === 'evm') {
-          // For Ethereum Key-Gen Only:
-          const wallet = new Wallet(privKey.toBytes());
-
-          const ethereumAddress = ETH.decoder(wallet.address);
-
-          return {
-            algo: 'ethsecp256k1',
-            pubKey: pubKey.toBytes(),
-            address: ethereumAddress,
-            isNanoLedger: false
-          };
-        }
-
-        if (networkType === 'cosmos') {
-          return {
-            algo: 'secp256k1',
-            pubKey: pubKey.toBytes(),
-            address: pubKey.getAddress(),
-            isNanoLedger: false
-          };
-        }
-      }
 
       const networkType = getNetworkTypeByChainId(chainId);
 
