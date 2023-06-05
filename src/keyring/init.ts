@@ -56,7 +56,6 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(RequestSignEthereumMsg);
   router.registerMessage(RequestSignTronMsg);
   router.registerMessage(RequestSignEthereumTypedDataMsg);
-  router.registerMessage(RequestSignTronMsg);
   router.registerMessage(GetDefaultAddressTronMsg);
   router.registerMessage(RequestPublicKeyMsg);
   router.registerMessage(SetKeyStoreLedgerAddressMsg);
