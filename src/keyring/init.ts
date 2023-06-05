@@ -65,11 +65,9 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(ChangeKeyRingMsg);
   router.registerMessage(GetIsKeyStoreCoinTypeSetMsg);
   router.registerMessage(SetKeyStoreCoinTypeMsg);
-  router.registerMessage(SetKeyStoreLedgerAddressMsg);
   router.registerMessage(CheckPasswordMsg);
   router.registerMessage(ExportKeyRingDatasMsg);
 
-  //
   router.registerMessage(ChangeChainMsg);
 
   router.addHandler(ROUTE, getHandler(service));
