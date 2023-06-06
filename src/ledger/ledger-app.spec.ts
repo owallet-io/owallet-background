@@ -2,10 +2,8 @@ import {
   openTransportReplayer,
   RecordStore
 } from '@ledgerhq/hw-transport-mocker';
-import Bip32Path from 'bip32-path';
 import CosmosApp from '@ledgerhq/hw-app-cosmos';
 import EthApp from '@ledgerhq/hw-app-eth';
-import { fromString } from 'bip32-path';
 
 describe('Test ledger app', () => {
   it('test ledger app type', async () => {
@@ -19,7 +17,7 @@ describe('Test ledger app', () => {
       )
     );
 
-    console.log('instance of', ethApp instanceof CosmosApp);
+    console.log('instance of', ethApp instanceof EthApp);
 
     const ethRet = await ethApp.getAddress("44'/60'/0'/0'/0");
     console.log(ethRet.address);
@@ -33,11 +31,7 @@ describe('Test ledger app', () => {
       `)
       )
     );
-    const cosmosRet = await cosmosApp.getAddress(
-      // Bip32Path.fromString("44'/118'/0'/0'/0").toPathArray(),
-      "44'/118'/0'/0'/0",
-      'orai'
-    );
+    const cosmosRet = await cosmosApp.getAddress("44'/118'/0'/0'/0", 'orai');
     console.log(cosmosRet.publicKey);
   });
 });
