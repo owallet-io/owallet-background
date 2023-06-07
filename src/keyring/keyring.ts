@@ -888,7 +888,7 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    const cType = this.computeKeyStoreCoinType(chainId, coinType);
+    // const cType = this.computeKeyStoreCoinType(chainId, coinType);
     const networkType = getNetworkTypeByChainId(chainId);
     if (networkType !== 'evm') {
       throw new Error(
