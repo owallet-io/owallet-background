@@ -7,6 +7,7 @@ describe('Test TronWeb', () => {
       'https://nile.trongrid.io'
     );
 
+    // private key for testing purpose
     const privateKey =
       '4975143b17cb704090c925ed228d76b90f4c642bcad616439c7b7daa432d9a3f';
 
@@ -34,6 +35,7 @@ describe('Test TronWeb', () => {
       'https://api.trongrid.io'
     );
 
+    // private key for testing purpose
     const privateKey =
       '4975143b17cb704090c925ed228d76b90f4c642bcad616439c7b7daa432d9a3f';
 
@@ -41,7 +43,7 @@ describe('Test TronWeb', () => {
 
     const transaction = (
       await tronWeb.transactionBuilder.triggerSmartContract(
-        'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+        'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', // USDT contract address
         'transfer(address,uint256)',
         {
           callValue: 0,
