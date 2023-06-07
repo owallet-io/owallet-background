@@ -31,8 +31,8 @@ describe('Test TronWeb', () => {
 
   it('test_tronWeb_trc20', async () => {
     const tronWeb = new TronWeb(
-      'https://api.trongrid.io',
-      'https://api.trongrid.io'
+      'https://nile.trongrid.io',
+      'https://nile.trongrid.io'
     );
 
     // private key for testing purpose

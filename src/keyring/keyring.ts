@@ -796,6 +796,8 @@ export class KeyRing {
       throw new OWalletError('keyring', 130, 'Key store is empty');
     }
 
+    console.log('message Uint8Array ===', message);
+
     const networkType = getNetworkTypeByChainId(chainId);
     const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
 
@@ -855,6 +857,36 @@ export class KeyRing {
       return privKey.sign(message);
     }
   }
+
+  // Write a new sign spec func (without env, ledger, etc...) to do testing here
+  // Note that we can get and hardcoded Uint8Array message from some hand-sign transaction
+
+  public async signSpec(
+    chainId: string,
+    defaultCoinType: number,
+    message: Uint8Array
+  ): Promise<any> {
+    if (this.status !== KeyRingStatus.UNLOCKED) {
+      throw new OWalletError('keyring', 143, 'Key ring is not unlocked');
+    }
+
+    if (!this.keyStore) {
+      throw new OWalletError('keyring', 130, 'Key store is empty');
+    }
+
+    const networkType = getNetworkTypeByChainId(chainId);
+    const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
+
+    // Sign with Evmos/Ethereum
+    const privKey = this.loadPrivKey(coinType);
+    // Check cointype = 60 in the case that network is evmos(still cosmos but need to sign with ethereum)
+    if (networkType === 'evm' || coinType === 60) {
+      return this.signEthereum(privKey, message);
+    }
+    return privKey.sign(message);
+  }
+
+  // Write a new signEthereumSpec (without env, ledger, etc...) func to do testing here
 
   validateChainId(chainId: string): number {
     // chain id example: kawaii_6886-1. If chain id input is already a number in string => parse it immediately
