@@ -796,8 +796,6 @@ export class KeyRing {
       throw new OWalletError('keyring', 130, 'Key store is empty');
     }
 
-    console.log('message Uint8Array ===', message);
-
     const networkType = getNetworkTypeByChainId(chainId);
     const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
 
