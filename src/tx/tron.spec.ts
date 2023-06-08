@@ -1,3 +1,5 @@
+import { Address } from '@owallet/crypto';
+
 (globalThis as any).TronWeb = require('tronweb');
 
 describe('Test TronWeb', () => {
@@ -66,5 +68,12 @@ describe('Test TronWeb', () => {
     );
 
     expect(transaction.signature).toEqual([signature]);
+  });
+
+  it('test_generate_tron_address', async () => {
+    const tronAddress = Address.getBase58Address(
+      '0x2c3aF9b7c1fe6dC94Fc9BeF92E35B2243d9984a8'
+    );
+    expect(tronAddress).toEqual(['TE15PBm8MsyS4cHrW7u1VTjbZDx5MXVQfs']);
   });
 });
