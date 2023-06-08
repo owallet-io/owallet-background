@@ -1,5 +1,5 @@
 import { Address } from '@owallet/crypto';
-
+import axios from 'axios';
 (globalThis as any).TronWeb = require('tronweb');
 
 describe('Test TronWeb', () => {
@@ -33,8 +33,8 @@ describe('Test TronWeb', () => {
 
   it('test_tronWeb_trc20', async () => {
     const tronWeb = new TronWeb(
-      'https://nile.trongrid.io',
-      'https://nile.trongrid.io'
+      'https://api.trongrid.io',
+      'https://api.trongrid.io'
     );
 
     // private key for testing purpose
@@ -74,6 +74,15 @@ describe('Test TronWeb', () => {
     const tronAddress = Address.getBase58Address(
       '0x2c3aF9b7c1fe6dC94Fc9BeF92E35B2243d9984a8'
     );
-    expect(tronAddress).toEqual(['TE15PBm8MsyS4cHrW7u1VTjbZDx5MXVQfs']);
+    expect(tronAddress).toEqual('TE15PBm8MsyS4cHrW7u1VTjbZDx5MXVQfs');
+  });
+
+  it('test_get_trc20_tokens', async () => {
+    const url = `v1/accounts/${'TE15PBm8MsyS4cHrW7u1VTjbZDx5MXVQfs'}`;
+    const res = await axios.get(url, {
+      baseURL: 'https://api.trongrid.io'
+    });
+
+    expect(typeof res.data?.data?.[0]?.trc20).toEqual('object');
   });
 });
