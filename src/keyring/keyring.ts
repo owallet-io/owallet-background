@@ -1,54 +1,44 @@
-import { Crypto, KeyStore } from './crypto';
-import {
-  Mnemonic,
-  PrivKeySecp256k1,
-  PubKeySecp256k1,
-  RNG
-} from '@owallet/crypto';
-import eccrypto from 'eccrypto';
-import {
-  bufferToHex,
-  ecsign,
-  keccak,
-  publicToAddress,
-  toBuffer
-} from 'ethereumjs-util';
-import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
-import { intToHex, isHexString, stripHexPrefix } from 'ethjs-util';
-import { formatNeworkTypeToLedgerAppName, KVStore } from '@owallet/common';
-import { LedgerAppType, LedgerService } from '../ledger';
-import {
-  BIP44HDPath,
-  CommonCrypto,
-  ExportKeyRingData,
-  MessageTypes,
-  SignTypedDataVersion,
-  TypedDataV1,
-  TypedMessage,
-  MessageTypeProperty,
-  ECDSASignature,
-  ledgerAddresses
-} from './types';
-import { ChainInfo } from '@owallet/types';
-import { Env, OWalletError } from '@owallet/router';
-import { Buffer } from 'buffer';
-import { ChainIdHelper } from '@owallet/cosmos';
-import { Wallet } from '@ethersproject/wallet';
-import * as BytesUtils from '@ethersproject/bytes';
-import { ETH } from '@tharsis/address-converter';
-import { keccak256 } from '@ethersproject/keccak256';
 import Common from '@ethereumjs/common';
-import { TransactionOptions, Transaction } from 'ethereumjs-tx';
-import { request } from '../tx';
-import { TYPED_MESSAGE_SCHEMA } from './constants';
+import * as BytesUtils from '@ethersproject/bytes';
+import { keccak256 } from '@ethersproject/keccak256';
+import { serialize } from '@ethersproject/transactions';
+import { Wallet } from '@ethersproject/wallet';
 import {
+  formatNeworkTypeToLedgerAppName,
   getCoinTypeByChainId,
   getNetworkTypeByBip44HDPath,
   getNetworkTypeByChainId,
+  KVStore,
   splitPath
 } from '@owallet/common';
+import { ChainIdHelper } from '@owallet/cosmos';
+import { Mnemonic, PrivKeySecp256k1, PubKeySecp256k1, RNG } from '@owallet/crypto';
+import { Env, OWalletError } from '@owallet/router';
+import { ChainInfo } from '@owallet/types';
+import { ETH } from '@tharsis/address-converter';
+import { Buffer } from 'buffer';
+import eccrypto from 'eccrypto';
+import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
+import { Transaction, TransactionOptions } from 'ethereumjs-tx';
+import { ecsign, keccak, publicToAddress, toBuffer } from 'ethereumjs-util';
+import { isHexString } from 'ethjs-util';
 import TronWeb from 'tronweb';
-import { serialize } from '@ethersproject/transactions';
+import { LedgerAppType, LedgerService } from '../ledger';
+import { request } from '../tx';
+import { TYPED_MESSAGE_SCHEMA } from './constants';
+import { Crypto, KeyStore } from './crypto';
+import {
+  BIP44HDPath,
+  CommonCrypto,
+  ECDSASignature,
+  ExportKeyRingData,
+  ledgerAddresses,
+  MessageTypeProperty,
+  MessageTypes,
+  SignTypedDataVersion,
+  TypedDataV1,
+  TypedMessage
+} from './types';
 
 export enum KeyRingStatus {
   NOTLOADED,
@@ -64,10 +54,7 @@ export interface Key {
   isNanoLedger: boolean;
 }
 
-export type MultiKeyStoreInfoElem = Pick<
-  KeyStore,
-  'version' | 'type' | 'meta' | 'bip44HDPath' | 'coinTypeForChain'
->;
+export type MultiKeyStoreInfoElem = Pick<KeyStore, 'version' | 'type' | 'meta' | 'bip44HDPath' | 'coinTypeForChain'>;
 export type MultiKeyStoreInfo = MultiKeyStoreInfoElem[];
 export type MultiKeyStoreInfoWithSelectedElem = MultiKeyStoreInfoElem & {
   selected: boolean;
@@ -86,6 +73,7 @@ export class KeyRing {
   private cached: Map<string, Uint8Array> = new Map();
 
   private loaded: boolean;
+  private loading: Promise<void>;
 
   /**
    * Keyring can have either private key or mnemonic.
@@ -113,9 +101,7 @@ export class KeyRing {
     this.multiKeyStore = [];
   }
 
-  public static getTypeOfKeyStore(
-    keyStore: Omit<KeyStore, 'crypto'>
-  ): 'mnemonic' | 'privateKey' | 'ledger' {
+  public static getTypeOfKeyStore(keyStore: Omit<KeyStore, 'crypto'>): 'mnemonic' | 'privateKey' | 'ledger' {
     const type = keyStore.type;
     if (type == null) {
       return 'mnemonic';
@@ -136,9 +122,7 @@ export class KeyRing {
     }
   }
 
-  public static getLedgerAddressOfKeyStore(
-    keyStore: Omit<KeyStore, 'crypto'>
-  ): ledgerAddresses {
+  public static getLedgerAddressOfKeyStore(keyStore: Omit<KeyStore, 'crypto'>): ledgerAddresses {
     const addresses = keyStore.addresses;
     console.log('keyStore getLedgerAddressOfKeyStore==', keyStore?.addresses);
     return addresses;
@@ -153,11 +137,7 @@ export class KeyRing {
   }
 
   public isLocked(): boolean {
-    return (
-      this.privateKey == null &&
-      this.mnemonic == null &&
-      this.ledgerPublicKey == null
-    );
+    return this.privateKey == null && this.mnemonic == null && this.ledgerPublicKey == null;
   }
 
   private get privateKey(): Uint8Array | undefined {
@@ -216,16 +196,11 @@ export class KeyRing {
       return undefined;
     }
 
-    return this.keyStore.coinTypeForChain[
-      ChainIdHelper.parse(chainId).identifier
-    ];
+    return this.keyStore.coinTypeForChain[ChainIdHelper.parse(chainId).identifier];
   }
 
   public getKey(chainId: string, defaultCoinType: number): Key {
-    return this.loadKey(
-      this.computeKeyStoreCoinType(chainId, defaultCoinType),
-      chainId
-    );
+    return this.loadKey(this.computeKeyStoreCoinType(chainId, defaultCoinType), chainId);
   }
 
   public getKeyStoreMeta(key: string): string {
@@ -236,19 +211,12 @@ export class KeyRing {
     return this.keyStore.meta[key] ?? '';
   }
 
-  public computeKeyStoreCoinType(
-    chainId: string,
-    defaultCoinType: number
-  ): number {
+  public computeKeyStoreCoinType(chainId: string, defaultCoinType: number): number {
     if (!this.keyStore) {
       throw new Error('Key Store is empty');
     }
 
-    return this.keyStore.coinTypeForChain
-      ? this.keyStore.coinTypeForChain[
-          ChainIdHelper.parse(chainId).identifier
-        ] ?? defaultCoinType
-      : defaultCoinType;
+    return this.keyStore.coinTypeForChain ? this.keyStore.coinTypeForChain[ChainIdHelper.parse(chainId).identifier] ?? defaultCoinType : defaultCoinType;
   }
 
   public getKeyFromCoinType(coinType: number): Key {
@@ -271,15 +239,7 @@ export class KeyRing {
     // }
 
     this.mnemonic = mnemonic;
-    this.keyStore = await KeyRing.CreateMnemonicKeyStore(
-      this.rng,
-      this.crypto,
-      kdf,
-      mnemonic,
-      password,
-      await this.assignKeyStoreIdMeta(meta),
-      bip44HDPath
-    );
+    this.keyStore = await KeyRing.CreateMnemonicKeyStore(this.rng, this.crypto, kdf, mnemonic, password, await this.assignKeyStoreIdMeta(meta), bip44HDPath);
     this.password = password;
     this.multiKeyStore.push(this.keyStore);
 
@@ -305,14 +265,7 @@ export class KeyRing {
     // }
 
     this.privateKey = privateKey;
-    this.keyStore = await KeyRing.CreatePrivateKeyStore(
-      this.rng,
-      this.crypto,
-      kdf,
-      privateKey,
-      password,
-      await this.assignKeyStoreIdMeta(meta)
-    );
+    this.keyStore = await KeyRing.CreatePrivateKeyStore(this.rng, this.crypto, kdf, privateKey, password, await this.assignKeyStoreIdMeta(meta));
     this.password = password;
     this.multiKeyStore.push(this.keyStore);
 
@@ -339,9 +292,7 @@ export class KeyRing {
     // }
     const ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath);
     // Get public key first
-    const { publicKey, address } =
-      (await this.ledgerKeeper.getPublicKey(env, bip44HDPath, ledgerAppType)) ||
-      {};
+    const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, bip44HDPath, ledgerAppType)) || {};
 
     console.log('publicKey---', publicKey, address);
 
@@ -372,7 +323,7 @@ export class KeyRing {
     };
   }
 
-  public lock() {
+  public async lock() {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -381,38 +332,31 @@ export class KeyRing {
     this.privateKey = undefined;
     this.ledgerPublicKey = undefined;
     this.password = '';
+    await this.kvStore.set<string>('password', '');
   }
 
-  public async unlock(password: string) {
+  public async unlock(password: string, saving = true) {
     if (!this.keyStore || this.type === 'none') {
       throw new Error('Key ring not initialized');
     }
 
     if (this.type === 'mnemonic') {
       // If password is invalid, error will be thrown.
-      this.mnemonic = Buffer.from(
-        await Crypto.decrypt(this.crypto, this.keyStore, password)
-      ).toString();
+      this.mnemonic = Buffer.from(await Crypto.decrypt(this.crypto, this.keyStore, password)).toString();
     } else if (this.type === 'privateKey') {
       // If password is invalid, error will be thrown.
-      this.privateKey = Buffer.from(
-        Buffer.from(
-          await Crypto.decrypt(this.crypto, this.keyStore, password)
-        ).toString(),
-        'hex'
-      );
+      this.privateKey = Buffer.from(Buffer.from(await Crypto.decrypt(this.crypto, this.keyStore, password)).toString(), 'hex');
     } else if (this.type === 'ledger') {
-      this.ledgerPublicKey = Buffer.from(
-        Buffer.from(
-          await Crypto.decrypt(this.crypto, this.keyStore, password)
-        ).toString(),
-        'hex'
-      );
+      this.ledgerPublicKey = Buffer.from(Buffer.from(await Crypto.decrypt(this.crypto, this.keyStore, password)).toString(), 'hex');
     } else {
       throw new Error('Unexpected type of keyring');
     }
 
     this.password = password;
+    if (saving) {
+      // store password
+      await this.kvStore.set<string>('password', password);
+    }
   }
 
   public async save() {
@@ -421,53 +365,66 @@ export class KeyRing {
   }
 
   public async restore() {
-    const keyStore = await this.kvStore.get<KeyStore>(KeyStoreKey);
-    if (!keyStore) {
-      this.keyStore = null;
-    } else {
-      this.keyStore = keyStore;
-    }
-    const multiKeyStore = await this.kvStore.get<KeyStore[]>(KeyMultiStoreKey);
-    if (!multiKeyStore) {
-      // Restore the multi keystore if key store exist but multi key store is empty.
-      // This case will occur if extension is updated from the prior version that doesn't support the multi key store.
-      // This line ensures the backward compatibility.
-      if (keyStore) {
-        keyStore.meta = await this.assignKeyStoreIdMeta({});
-        this.multiKeyStore = [keyStore];
-      } else {
-        this.multiKeyStore = [];
-      }
-      await this.save();
-    } else {
-      this.multiKeyStore = multiKeyStore;
-    }
+    if (this.loading) return this.loading;
+    this.loading = new Promise(async (resolve, reject) => {
+      try {
+        const keyStore = await this.kvStore.get<KeyStore>(KeyStoreKey);
+        if (!keyStore) {
+          this.keyStore = null;
+        } else {
+          this.keyStore = keyStore;
+          console.log('waiting for unlocking');
+          const password = await this.kvStore.get<string>('password');
+          if (password) await this.unlock(password, false);
+        }
+        const multiKeyStore = await this.kvStore.get<KeyStore[]>(KeyMultiStoreKey);
+        if (!multiKeyStore) {
+          // Restore the multi keystore if key store exist but multi key store is empty.
+          // This case will occur if extension is updated from the prior version that doesn't support the multi key store.
+          // This line ensures the backward compatibility.
+          if (keyStore) {
+            keyStore.meta = await this.assignKeyStoreIdMeta({});
+            this.multiKeyStore = [keyStore];
+          } else {
+            this.multiKeyStore = [];
+          }
+          await this.save();
+        } else {
+          this.multiKeyStore = multiKeyStore;
+        }
 
-    let hasLegacyKeyStore = false;
-    // In prior of version 1.2, bip44 path didn't tie with the keystore, and bip44 exists on the chain info.
-    // But, after some chain matures, they decided the bip44 path's coin type.
-    // So, some chain can have the multiple bip44 coin type (one is the standard coin type and other is the legacy coin type).
-    // We should support the legacy coin type, so we determined that the coin type ties with the keystore.
-    // To decrease the barrier of existing users, set the alternative coin type by force if the keystore version is prior than 1.2.
-    if (this.keyStore) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      if (this.keyStore.version === '1' || this.keyStore.version === '1.1') {
-        hasLegacyKeyStore = true;
-        this.updateLegacyKeyStore(this.keyStore);
+        let hasLegacyKeyStore = false;
+        // In prior of version 1.2, bip44 path didn't tie with the keystore, and bip44 exists on the chain info.
+        // But, after some chain matures, they decided the bip44 path's coin type.
+        // So, some chain can have the multiple bip44 coin type (one is the standard coin type and other is the legacy coin type).
+        // We should support the legacy coin type, so we determined that the coin type ties with the keystore.
+        // To decrease the barrier of existing users, set the alternative coin type by force if the keystore version is prior than 1.2.
+        if (this.keyStore) {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          if (this.keyStore.version === '1' || this.keyStore.version === '1.1') {
+            hasLegacyKeyStore = true;
+            this.updateLegacyKeyStore(this.keyStore);
+          }
+        }
+        for (const keyStore of this.multiKeyStore) {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          if (keyStore.version === '1' || keyStore.version === '1.1') {
+            hasLegacyKeyStore = true;
+            this.updateLegacyKeyStore(keyStore);
+          }
+        }
+        if (hasLegacyKeyStore) {
+          await this.save();
+        }
+        resolve();
+      } catch (ex) {
+        reject(ex);
       }
-    }
-    for (const keyStore of this.multiKeyStore) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      if (keyStore.version === '1' || keyStore.version === '1.1') {
-        hasLegacyKeyStore = true;
-        this.updateLegacyKeyStore(keyStore);
-      }
-    }
-    if (hasLegacyKeyStore) {
-      await this.save();
-    }
+    });
+
+    await this.loading;
 
     this.loaded = true;
   }
@@ -476,10 +433,7 @@ export class KeyRing {
     keyStore.version = '1.2';
     for (const chainInfo of this.embedChainInfos) {
       const coinType = (() => {
-        if (
-          chainInfo.alternativeBIP44s &&
-          chainInfo.alternativeBIP44s.length > 0
-        ) {
+        if (chainInfo.alternativeBIP44s && chainInfo.alternativeBIP44s.length > 0) {
           return chainInfo.alternativeBIP44s[0].coinType;
         } else {
           return chainInfo.bip44.coinType;
@@ -497,12 +451,7 @@ export class KeyRing {
       throw new Error('Empty key store');
     }
 
-    return (
-      this.keyStore.coinTypeForChain &&
-      this.keyStore.coinTypeForChain[
-        ChainIdHelper.parse(chainId).identifier
-      ] !== undefined
-    );
+    return this.keyStore.coinTypeForChain && this.keyStore.coinTypeForChain[ChainIdHelper.parse(chainId).identifier] !== undefined;
   }
 
   public async setKeyStoreCoinType(chainId: string, coinType: number) {
@@ -510,12 +459,7 @@ export class KeyRing {
       throw new Error('Empty key store');
     }
 
-    if (
-      this.keyStore.coinTypeForChain &&
-      this.keyStore.coinTypeForChain[
-        ChainIdHelper.parse(chainId).identifier
-      ] !== undefined
-    ) {
+    if (this.keyStore.coinTypeForChain && this.keyStore.coinTypeForChain[ChainIdHelper.parse(chainId).identifier] !== undefined) {
       throw new Error('Coin type already set');
     }
 
@@ -562,9 +506,7 @@ export class KeyRing {
       throw new Error('Empty key store');
     }
 
-    const multiKeyStore = this.multiKeyStore
-      .slice(0, index)
-      .concat(this.multiKeyStore.slice(index + 1));
+    const multiKeyStore = this.multiKeyStore.slice(0, index).concat(this.multiKeyStore.slice(index + 1));
 
     // Make sure that password is valid.
     await Crypto.decrypt(this.crypto, keyStore, password);
@@ -572,9 +514,7 @@ export class KeyRing {
     let keyStoreChanged = false;
     if (this.keyStore) {
       // If key store is currently selected key store
-      if (
-        KeyRing.getKeyStoreId(keyStore) === KeyRing.getKeyStoreId(this.keyStore)
-      ) {
+      if (KeyRing.getKeyStoreId(keyStore) === KeyRing.getKeyStoreId(this.keyStore)) {
         // If there is a key store left
         if (multiKeyStore.length > 0) {
           // Lock key store at first
@@ -602,11 +542,7 @@ export class KeyRing {
     };
   }
 
-  public async updateNameKeyRing(
-    index: number,
-    name: string,
-    email?: string
-  ): Promise<MultiKeyStoreInfoWithSelected> {
+  public async updateNameKeyRing(index: number, name: string, email?: string): Promise<MultiKeyStoreInfoWithSelected> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -620,10 +556,7 @@ export class KeyRing {
     keyStore.meta = { ...keyStore.meta, name: name, email: email };
 
     // If select key store and changed store are same, sync keystore
-    if (
-      this.keyStore &&
-      KeyRing.getKeyStoreId(this.keyStore) === KeyRing.getKeyStoreId(keyStore)
-    ) {
+    if (this.keyStore && KeyRing.getKeyStoreId(this.keyStore) === KeyRing.getKeyStoreId(keyStore)) {
       this.keyStore = keyStore;
     }
     await this.save();
@@ -706,11 +639,7 @@ export class KeyRing {
   }
 
   private loadPrivKey(coinType: number): PrivKeySecp256k1 {
-    if (
-      this.status !== KeyRingStatus.UNLOCKED ||
-      this.type === 'none' ||
-      !this.keyStore
-    ) {
+    if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
       throw new Error('Key ring is not unlocked');
     }
 
@@ -725,9 +654,7 @@ export class KeyRing {
       }
 
       if (!this.mnemonic) {
-        throw new Error(
-          'Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly'
-        );
+        throw new Error('Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly');
       }
 
       const privKey = Mnemonic.generateWalletFromMnemonic(this.mnemonic, path);
@@ -738,9 +665,7 @@ export class KeyRing {
       // If key store type is private key, path will be ignored.
 
       if (!this.privateKey) {
-        throw new Error(
-          'Key store type is private key and it is unlocked. But, private key is not loaded unexpectedly'
-        );
+        throw new Error('Key store type is private key and it is unlocked. But, private key is not loaded unexpectedly');
       }
 
       return new PrivKeySecp256k1(this.privateKey);
@@ -749,12 +674,7 @@ export class KeyRing {
     }
   }
 
-  public async sign(
-    env: Env,
-    chainId: string,
-    defaultCoinType: number,
-    message: Uint8Array
-  ): Promise<Uint8Array | any> {
+  public async sign(env: Env, chainId: string, defaultCoinType: number, message: Uint8Array): Promise<Uint8Array | any> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new OWalletError('keyring', 143, 'Key ring is not unlocked');
     }
@@ -775,46 +695,24 @@ export class KeyRing {
       const pubKey = this.ledgerPublicKey;
 
       if (!pubKey) {
-        throw new OWalletError(
-          'keyring',
-          151,
-          'Ledger public key is not initialized'
-        );
+        throw new OWalletError('keyring', 151, 'Ledger public key is not initialized');
       }
       const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
-      const path = [
-        44,
-        coinType,
-        bip44HDPath.account,
-        bip44HDPath.change,
-        bip44HDPath.addressIndex
-      ];
+      const path = [44, coinType, bip44HDPath.account, bip44HDPath.change, bip44HDPath.addressIndex];
 
-      const ledgerAppType: LedgerAppType = formatNeworkTypeToLedgerAppName(
-        networkType,
-        chainId
-      );
+      const ledgerAppType: LedgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
 
       console.log('ledgerAppType', ledgerAppType);
 
-      return await this.ledgerKeeper.sign(
-        env,
-        path,
-        pubKey,
-        message,
-        ledgerAppType
-      );
+      return await this.ledgerKeeper.sign(env, path, pubKey, message, ledgerAppType);
     } else {
       const privKey = this.loadPrivKey(coinType);
       if (networkType === 'evm' || coinType === 60) {
         // Only check coinType === 195 for Ton network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
-          const transactionSign = TronWeb.utils.crypto.signTransaction(
-            privKey.toBytes(),
-            {
-              txID: message
-            }
-          );
+          const transactionSign = TronWeb.utils.crypto.signTransaction(privKey.toBytes(), {
+            txID: message
+          });
           const signature = Buffer.from(transactionSign.signature?.[0], 'hex');
           return signature;
         }
@@ -837,17 +735,8 @@ export class KeyRing {
     return parseInt(chainId);
   }
 
-  public async signAndBroadcastEthereum(
-    env: Env,
-    chainId: string,
-    coinType: number,
-    rpc: string,
-    message: object
-  ): Promise<string> {
-    console.log(
-      '🚀 ~ file: keyring.ts ~ line 733 ~ KeyRing ~ message',
-      message
-    );
+  public async signAndBroadcastEthereum(env: Env, chainId: string, coinType: number, rpc: string, message: object): Promise<string> {
+    console.log('🚀 ~ file: keyring.ts ~ line 733 ~ KeyRing ~ message', message);
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -869,10 +758,7 @@ export class KeyRing {
       // TODO: Ethereum Ledger Integration
       const address = this.addresses;
 
-      const nonce = await request(rpc, 'eth_getTransactionCount', [
-        address?.eth,
-        'latest'
-      ]);
+      const nonce = await request(rpc, 'eth_getTransactionCount', [address?.eth, 'latest']);
       let finalMessage: any = {
         ...message,
         from: this.addresses?.eth,
@@ -890,18 +776,10 @@ export class KeyRing {
       delete finalMessage?.fees;
       delete finalMessage?.maxPriorityFeePerGas;
       delete finalMessage?.maxFeePerGas;
-      console.log(
-        '🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage',
-        finalMessage
-      );
+      console.log('🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage', finalMessage);
       const serializedTx = serialize(finalMessage).replace('0x', '');
 
-      const signature = await this.sign(
-        env,
-        chainId,
-        60,
-        Buffer.from(serializedTx, 'hex')
-      );
+      const signature = await this.sign(env, chainId, 60, Buffer.from(serializedTx, 'hex'));
 
       const signedTx = serialize(finalMessage, {
         r: `0x${signature.r}`,
@@ -924,10 +802,7 @@ export class KeyRing {
       });
 
       const signer = new Wallet(privKey.toBytes()).address;
-      const nonce = await request(rpc, 'eth_getTransactionCount', [
-        signer,
-        'latest'
-      ]);
+      const nonce = await request(rpc, 'eth_getTransactionCount', [signer, 'latest']);
 
       let finalMessage: any = {
         ...message,
@@ -936,10 +811,7 @@ export class KeyRing {
         nonce
       };
 
-      console.log(
-        '🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage',
-        finalMessage
-      );
+      console.log('🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage', finalMessage);
 
       const opts: TransactionOptions = { common: customCommon } as any;
       const tx = new Transaction(finalMessage, opts);
@@ -953,26 +825,17 @@ export class KeyRing {
     }
   }
 
-  public async signEthereum(
-    privKey: PrivKeySecp256k1,
-    message: Uint8Array
-  ): Promise<Uint8Array> {
+  public async signEthereum(privKey: PrivKeySecp256k1, message: Uint8Array): Promise<Uint8Array> {
     const ethWallet = new Wallet(privKey.toBytes());
 
     const signature = ethWallet._signingKey().signDigest(keccak256(message));
     const splitSignature = BytesUtils.splitSignature(signature);
-    return BytesUtils.arrayify(
-      BytesUtils.concat([splitSignature.r, splitSignature.s])
-    );
+    return BytesUtils.arrayify(BytesUtils.concat([splitSignature.r, splitSignature.s]));
   }
 
   public async signTron(transaction): Promise<object> {
     let privateKey;
-    if (
-      this.status !== KeyRingStatus.UNLOCKED ||
-      this.type === 'none' ||
-      !this.keyStore
-    ) {
+    if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
       throw new Error('Key ring is not unlocked');
     }
 
@@ -988,10 +851,7 @@ export class KeyRing {
     const bufferPrivaKey = Buffer.from(privateKey).toString('hex');
 
     try {
-      const signedtxn = TronWeb.utils.crypto.signTransaction(
-        bufferPrivaKey,
-        transaction
-      );
+      const signedtxn = TronWeb.utils.crypto.signTransaction(bufferPrivaKey, transaction);
       return signedtxn;
     } catch (error) {
       console.log('error', error);
@@ -999,10 +859,7 @@ export class KeyRing {
     }
   }
 
-  public async signDecryptData(
-    chainId: string,
-    message: object
-  ): Promise<object> {
+  public async signDecryptData(chainId: string, message: object): Promise<object> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -1010,7 +867,7 @@ export class KeyRing {
     if (!this.keyStore) {
       throw new Error('Key Store is empty');
     }
-    
+
     try {
       const privKey = this.loadPrivKey(60);
       const privKeyBuffer = Buffer.from(privKey.toBytes());
@@ -1024,10 +881,7 @@ export class KeyRing {
             mac: Buffer.from(data.mac, 'hex')
           };
 
-          const decryptResponse = await eccrypto.decrypt(
-            privKeyBuffer,
-            encryptedData
-          );
+          const decryptResponse = await eccrypto.decrypt(privKeyBuffer, encryptedData);
 
           return decryptResponse;
         })
@@ -1044,10 +898,7 @@ export class KeyRing {
   }
 
   // thang7
-  public async signReEncryptData(
-    chainId: string,
-    message: object
-  ): Promise<object> {
+  public async signReEncryptData(chainId: string, message: object): Promise<object> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -1066,17 +917,9 @@ export class KeyRing {
             iv: Buffer.from(data.iv, 'hex'),
             mac: Buffer.from(data.mac, 'hex')
           };
-          const decryptedData = await eccrypto.decrypt(
-            privKeyBuffer,
-            encryptedData
-          );
-          const reEncryptedData = await eccrypto.encrypt(
-            Buffer.from(data.publicKey, 'hex'),
-            Buffer.from(decryptedData.toString(), 'utf-8')
-          );
-          const address = Buffer.from(
-            publicToAddress(Buffer.from(data.publicKey, 'hex'), true)
-          ).toString('hex');
+          const decryptedData = await eccrypto.decrypt(privKeyBuffer, encryptedData);
+          const reEncryptedData = await eccrypto.encrypt(Buffer.from(data.publicKey, 'hex'), Buffer.from(decryptedData.toString(), 'utf-8'));
+          const address = Buffer.from(publicToAddress(Buffer.from(data.publicKey, 'hex'), true)).toString('hex');
           return {
             ...reEncryptedData,
             address
@@ -1110,10 +953,7 @@ export class KeyRing {
     return pubKeyHex;
   }
 
-  public signEthereumTypedData<
-    V extends SignTypedDataVersion,
-    T extends MessageTypes
-  >({
+  public signEthereumTypedData<V extends SignTypedDataVersion, T extends MessageTypes>({
     typedMessage,
     version,
     chainId,
@@ -1134,9 +974,7 @@ export class KeyRing {
       const networkType = getNetworkTypeByChainId(chainId);
       // if (coinType !== 60) {
       if (networkType !== 'evm') {
-        throw new Error(
-          'Invalid coin type passed in to Ethereum signing (expected 60)'
-        );
+        throw new Error('Invalid coin type passed in to Ethereum signing (expected 60)');
       }
 
       const privateKey = this.loadPrivKey(coinType).toBytes();
@@ -1144,14 +982,8 @@ export class KeyRing {
       const messageHash =
         version === SignTypedDataVersion.V1
           ? this._typedSignatureHash(typedMessage as TypedDataV1)
-          : this.eip712Hash(
-              typedMessage as TypedMessage<T>,
-              version as SignTypedDataVersion.V3 | SignTypedDataVersion.V4
-            );
-      console.log(
-        '🚀 ~ file: keyring.ts ~ line 868 ~ KeyRing ~ messageHash',
-        messageHash
-      );
+          : this.eip712Hash(typedMessage as TypedMessage<T>, version as SignTypedDataVersion.V3 | SignTypedDataVersion.V4);
+      console.log('🚀 ~ file: keyring.ts ~ line 868 ~ KeyRing ~ messageHash', messageHash);
       const sig = ecsign(messageHash, Buffer.from(privateKey));
       console.log('🚀 ~ file: keyring.ts ~ line 876 ~ KeyRing ~ sig', sig);
       return sig;
@@ -1172,11 +1004,7 @@ export class KeyRing {
 
   private _typedSignatureHash(typedData: TypedDataV1): Buffer {
     const error = new Error('Expect argument to be non-empty array');
-    if (
-      typeof typedData !== 'object' ||
-      !('length' in typedData) ||
-      !typedData.length
-    ) {
+    if (typeof typedData !== 'object' || !('length' in typedData) || !typedData.length) {
       throw error;
     }
 
@@ -1185,9 +1013,7 @@ export class KeyRing {
         return e.value;
       }
 
-      return typeof e.value === 'string' && !isHexString(e.value)
-        ? Buffer.from(e.value)
-        : toBuffer(e.value);
+      return typeof e.value === 'string' && !isHexString(e.value) ? Buffer.from(e.value) : toBuffer(e.value);
     });
     const types = typedData.map(function (e) {
       return e.type;
@@ -1199,34 +1025,15 @@ export class KeyRing {
       return `${e.type} ${e.name}`;
     });
 
-    return soliditySHA3(
-      ['bytes32', 'bytes32'],
-      [
-        soliditySHA3(new Array(typedData.length).fill('string'), schema),
-        soliditySHA3(types, data)
-      ]
-    );
+    return soliditySHA3(['bytes32', 'bytes32'], [soliditySHA3(new Array(typedData.length).fill('string'), schema), soliditySHA3(types, data)]);
   }
 
-  private eip712Hash<T extends MessageTypes>(
-    typedData: TypedMessage<T>,
-    version: SignTypedDataVersion.V3 | SignTypedDataVersion.V4
-  ): Buffer {
-    this.validateVersion(version, [
-      SignTypedDataVersion.V3,
-      SignTypedDataVersion.V4
-    ]);
+  private eip712Hash<T extends MessageTypes>(typedData: TypedMessage<T>, version: SignTypedDataVersion.V3 | SignTypedDataVersion.V4): Buffer {
+    this.validateVersion(version, [SignTypedDataVersion.V3, SignTypedDataVersion.V4]);
 
     const sanitizedData = this.sanitizeData(typedData);
     const parts = [Buffer.from('1901', 'hex')];
-    parts.push(
-      this.hashStruct(
-        'EIP712Domain',
-        sanitizedData.domain,
-        sanitizedData.types,
-        version
-      )
-    );
+    parts.push(this.hashStruct('EIP712Domain', sanitizedData.domain, sanitizedData.types, version));
 
     if (sanitizedData.primaryType !== 'EIP712Domain') {
       parts.push(
@@ -1243,9 +1050,7 @@ export class KeyRing {
     return keccak(Buffer.concat(parts));
   }
 
-  private sanitizeData<T extends MessageTypes>(
-    data: TypedMessage<T>
-  ): TypedMessage<T> {
+  private sanitizeData<T extends MessageTypes>(data: TypedMessage<T>): TypedMessage<T> {
     const sanitizedData: Partial<TypedMessage<T>> = {};
     for (const key in TYPED_MESSAGE_SCHEMA.properties) {
       if (data[key]) {
@@ -1265,10 +1070,7 @@ export class KeyRing {
     types: Record<string, MessageTypeProperty[]>,
     version: SignTypedDataVersion.V3 | SignTypedDataVersion.V4
   ): Buffer {
-    this.validateVersion(version, [
-      SignTypedDataVersion.V3,
-      SignTypedDataVersion.V4
-    ]);
+    this.validateVersion(version, [SignTypedDataVersion.V3, SignTypedDataVersion.V4]);
 
     return keccak(this.encodeData(primaryType, data, types, version));
   }
@@ -1279,28 +1081,16 @@ export class KeyRing {
     types: Record<string, MessageTypeProperty[]>,
     version: SignTypedDataVersion.V3 | SignTypedDataVersion.V4
   ): Buffer {
-    this.validateVersion(version, [
-      SignTypedDataVersion.V3,
-      SignTypedDataVersion.V4
-    ]);
+    this.validateVersion(version, [SignTypedDataVersion.V3, SignTypedDataVersion.V4]);
 
     const encodedTypes = ['bytes32'];
     const encodedValues: unknown[] = [this.hashType(primaryType, types)];
 
     for (const field of types[primaryType]) {
-      if (
-        version === SignTypedDataVersion.V3 &&
-        data[field.name] === undefined
-      ) {
+      if (version === SignTypedDataVersion.V3 && data[field.name] === undefined) {
         continue;
       }
-      const [type, value] = this.encodeField(
-        types,
-        field.name,
-        field.type,
-        data[field.name],
-        version
-      );
+      const [type, value] = this.encodeField(types, field.name, field.type, data[field.name], version);
       encodedTypes.push(type);
       encodedValues.push(value);
     }
@@ -1315,10 +1105,7 @@ export class KeyRing {
     value: any,
     version: SignTypedDataVersion.V3 | SignTypedDataVersion.V4
   ): [type: string, value: any] {
-    this.validateVersion(version, [
-      SignTypedDataVersion.V3,
-      SignTypedDataVersion.V4
-    ]);
+    this.validateVersion(version, [SignTypedDataVersion.V3, SignTypedDataVersion.V4]);
 
     if (types[type] !== undefined) {
       return [
@@ -1347,14 +1134,10 @@ export class KeyRing {
 
     if (type.lastIndexOf(']') === type.length - 1) {
       if (version === SignTypedDataVersion.V3) {
-        throw new Error(
-          'Arrays are unimplemented in encodeData; use V4 extension'
-        );
+        throw new Error('Arrays are unimplemented in encodeData; use V4 extension');
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map((item) =>
-        this.encodeField(types, name, parsedType, item, version)
-      );
+      const typeValuePairs = value.map((item) => this.encodeField(types, name, parsedType, item, version));
       return [
         'bytes32',
         keccak(
@@ -1369,17 +1152,11 @@ export class KeyRing {
     return [type, value];
   }
 
-  private hashType(
-    primaryType: string,
-    types: Record<string, MessageTypeProperty[]>
-  ): Buffer {
+  private hashType(primaryType: string, types: Record<string, MessageTypeProperty[]>): Buffer {
     return keccak(Buffer.from(this.encodeType(primaryType, types)));
   }
 
-  private encodeType(
-    primaryType: string,
-    types: Record<string, MessageTypeProperty[]>
-  ): string {
+  private encodeType(primaryType: string, types: Record<string, MessageTypeProperty[]>): string {
     let result = '';
     const unsortedDeps = this.findTypeDependencies(primaryType, types);
     unsortedDeps.delete(primaryType);
@@ -1391,19 +1168,13 @@ export class KeyRing {
         throw new Error(`No type definition specified: ${type}`);
       }
 
-      result += `${type}(${types[type]
-        .map(({ name, type: t }) => `${t} ${name}`)
-        .join(',')})`;
+      result += `${type}(${types[type].map(({ name, type: t }) => `${t} ${name}`).join(',')})`;
     }
 
     return result;
   }
 
-  private findTypeDependencies(
-    primaryType: string,
-    types: Record<string, MessageTypeProperty[]>,
-    results: Set<string> = new Set()
-  ): Set<string> {
+  private findTypeDependencies(primaryType: string, types: Record<string, MessageTypeProperty[]>, results: Set<string> = new Set()): Set<string> {
     [primaryType] = primaryType.match(/^\w*/u);
     if (results.has(primaryType) || types[primaryType] === undefined) {
       return results;
@@ -1417,18 +1188,11 @@ export class KeyRing {
     return results;
   }
 
-  private validateVersion(
-    version: SignTypedDataVersion,
-    allowedVersions?: SignTypedDataVersion[]
-  ) {
+  private validateVersion(version: SignTypedDataVersion, allowedVersions?: SignTypedDataVersion[]) {
     if (!Object.keys(SignTypedDataVersion).includes(version)) {
       throw new Error(`Invalid version: '${version}'`);
     } else if (allowedVersions && !allowedVersions.includes(version)) {
-      throw new Error(
-        `SignTypedDataVersion not allowed: '${version}'. Allowed versions are: ${allowedVersions.join(
-          ', '
-        )}`
-      );
+      throw new Error(`SignTypedDataVersion not allowed: '${version}'. Allowed versions are: ${allowedVersions.join(', ')}`);
     }
   }
 
@@ -1450,14 +1214,10 @@ export class KeyRing {
 
     if (keyStore.type === 'mnemonic') {
       // If password is invalid, error will be thrown.
-      return Buffer.from(
-        await Crypto.decrypt(this.crypto, keyStore, password)
-      ).toString();
+      return Buffer.from(await Crypto.decrypt(this.crypto, keyStore, password)).toString();
     } else {
       // If password is invalid, error will be thrown.
-      return Buffer.from(
-        await Crypto.decrypt(this.crypto, keyStore, password)
-      ).toString();
+      return Buffer.from(await Crypto.decrypt(this.crypto, keyStore, password)).toString();
     }
   }
 
@@ -1474,11 +1234,7 @@ export class KeyRing {
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
     if (this.password == '') {
-      throw new OWalletError(
-        'keyring',
-        141,
-        'Key ring is locked or not initialized'
-      );
+      throw new OWalletError('keyring', 141, 'Key ring is locked or not initialized');
     }
 
     const keyStore = await KeyRing.CreateMnemonicKeyStore(
@@ -1506,21 +1262,10 @@ export class KeyRing {
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
     if (this.password == '') {
-      throw new OWalletError(
-        'keyring',
-        141,
-        'Key ring is locked or not initialized'
-      );
+      throw new OWalletError('keyring', 141, 'Key ring is locked or not initialized');
     }
 
-    const keyStore = await KeyRing.CreatePrivateKeyStore(
-      this.rng,
-      this.crypto,
-      kdf,
-      privateKey,
-      this.password,
-      await this.assignKeyStoreIdMeta(meta)
-    );
+    const keyStore = await KeyRing.CreatePrivateKeyStore(this.rng, this.crypto, kdf, privateKey, this.password, await this.assignKeyStoreIdMeta(meta));
     this.multiKeyStore.push(keyStore);
 
     await this.save();
@@ -1539,21 +1284,12 @@ export class KeyRing {
   }> {
     try {
       if (this.password == '') {
-        throw new OWalletError(
-          'keyring',
-          141,
-          'Key ring is locked or not initialized'
-        );
+        throw new OWalletError('keyring', 141, 'Key ring is locked or not initialized');
       }
       console.log('HERE');
 
       // Get public key first
-      const { publicKey, address } =
-        (await this.ledgerKeeper.getPublicKey(
-          env,
-          bip44HDPath,
-          getNetworkTypeByBip44HDPath(bip44HDPath)
-        )) || {};
+      const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, bip44HDPath, getNetworkTypeByBip44HDPath(bip44HDPath))) || {};
       console.log('bip44HDPath: ', bip44HDPath);
 
       console.log(publicKey, 'pubkey hre');
@@ -1589,11 +1325,7 @@ export class KeyRing {
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
     if (this.password == '') {
-      throw new OWalletError(
-        'keyring',
-        141,
-        'Key ring is locked or not initialized'
-      );
+      throw new OWalletError('keyring', 141, 'Key ring is locked or not initialized');
     }
 
     const keyStore = this.multiKeyStore[index];
@@ -1622,10 +1354,7 @@ export class KeyRing {
         meta: keyStore.meta,
         coinTypeForChain: keyStore.coinTypeForChain,
         bip44HDPath: keyStore.bip44HDPath,
-        selected: this.keyStore
-          ? KeyRing.getKeyStoreId(keyStore) ===
-            KeyRing.getKeyStoreId(this.keyStore)
-          : false
+        selected: this.keyStore ? KeyRing.getKeyStoreId(keyStore) === KeyRing.getKeyStoreId(this.keyStore) : false
       });
     }
 
@@ -1656,9 +1385,7 @@ export class KeyRing {
 
       switch (type) {
         case 'mnemonic': {
-          const mnemonic = Buffer.from(
-            await Crypto.decrypt(this.crypto, keyStore, password)
-          ).toString();
+          const mnemonic = Buffer.from(await Crypto.decrypt(this.crypto, keyStore, password)).toString();
 
           result.push({
             bip44HDPath: keyStore.bip44HDPath ?? {
@@ -1675,9 +1402,7 @@ export class KeyRing {
           break;
         }
         case 'privateKey': {
-          const privateKey = Buffer.from(
-            await Crypto.decrypt(this.crypto, keyStore, password)
-          ).toString();
+          const privateKey = Buffer.from(await Crypto.decrypt(this.crypto, keyStore, password)).toString();
 
           result.push({
             bip44HDPath: keyStore.bip44HDPath ?? {
@@ -1708,16 +1433,7 @@ export class KeyRing {
     meta: Record<string, string>,
     bip44HDPath: BIP44HDPath
   ): Promise<KeyStore> {
-    return await Crypto.encrypt(
-      rng,
-      crypto,
-      kdf,
-      'mnemonic',
-      mnemonic,
-      password,
-      meta,
-      bip44HDPath
-    );
+    return await Crypto.encrypt(rng, crypto, kdf, 'mnemonic', mnemonic, password, meta, bip44HDPath);
   }
 
   private static async CreatePrivateKeyStore(
@@ -1728,22 +1444,10 @@ export class KeyRing {
     password: string,
     meta: Record<string, string>
   ): Promise<KeyStore> {
-    return await Crypto.encrypt(
-      rng,
-      crypto,
-      kdf,
-      'privateKey',
-      Buffer.from(privateKey).toString('hex'),
-      password,
-      meta
-    );
+    return await Crypto.encrypt(rng, crypto, kdf, 'privateKey', Buffer.from(privateKey).toString('hex'), password, meta);
   }
 
-  public async setKeyStoreLedgerAddress(
-    env: Env,
-    bip44HDPath: string,
-    chainId: string | number
-  ) {
+  public async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string, chainId: string | number) {
     if (!this.keyStore) {
       throw new Error('Empty key store');
     }
@@ -1757,12 +1461,7 @@ export class KeyRing {
 
     // Update ledger address here with this function below
 
-    const { publicKey, address } =
-      (await this.ledgerKeeper.getPublicKey(
-        env,
-        splitPath(bip44HDPath),
-        ledgerAppType
-      )) || {};
+    const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
 
     console.log('address 3> ===', address, publicKey);
 
@@ -1797,17 +1496,7 @@ export class KeyRing {
     bip44HDPath: BIP44HDPath,
     addresses?: ledgerAddresses
   ): Promise<KeyStore> {
-    return await Crypto.encrypt(
-      rng,
-      crypto,
-      kdf,
-      'ledger',
-      Buffer.from(publicKey).toString('hex'),
-      password,
-      meta,
-      bip44HDPath,
-      addresses
-    );
+    return await Crypto.encrypt(rng, crypto, kdf, 'ledger', Buffer.from(publicKey).toString('hex'), password, meta, bip44HDPath, addresses);
   }
 
   private async assignKeyStoreIdMeta(meta: { [key: string]: string }): Promise<{
@@ -1845,17 +1534,11 @@ export class KeyRing {
       throw new Error('Invalid account in hd path');
     }
 
-    if (
-      !Number.isInteger(bip44Path.change) ||
-      !(bip44Path.change === 0 || bip44Path.change === 1)
-    ) {
+    if (!Number.isInteger(bip44Path.change) || !(bip44Path.change === 0 || bip44Path.change === 1)) {
       throw new Error('Invalid change in hd path');
     }
 
-    if (
-      !Number.isInteger(bip44Path.addressIndex) ||
-      bip44Path.addressIndex < 0
-    ) {
+    if (!Number.isInteger(bip44Path.addressIndex) || bip44Path.addressIndex < 0) {
       throw new Error('Invalid address index in hd path');
     }
   }
