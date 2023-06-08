@@ -887,6 +887,55 @@ export class KeyRing {
   }
 
   // Write a new signEthereumSpec (without env, ledger, etc...) func to do testing here
+  public async signEthereumSpec(
+    chainId: string,
+    defaultCoinType: number,
+    message: Uint8Array
+  ): Promise<any> {
+    const privKey = this.loadPrivKey(defaultCoinType);
+    const chainIdNumber = this.validateChainId(chainId);
+    const rpc = ''; // get rpc from chain id
+
+    // For Ethereum Key-Gen Only:
+    const ethereumAddress = privateToAddress(Buffer.from(privKey.toBytes()));
+
+    const customCommon = Common.custom({
+      name: chainId,
+      networkId: chainIdNumber,
+      chainId: chainIdNumber
+    });
+
+    const nonce = await request(rpc, 'eth_getTransactionCount', [
+      '0x' + Buffer.from(ethereumAddress).toString('hex'),
+      'latest'
+    ]);
+
+    let finalMessage: any = {
+      ...message,
+      gas: (message as any)?.gasLimit,
+      gasPrice: (message as any)?.gasPrice,
+      nonce,
+      chainId
+    };
+
+    delete finalMessage?.from;
+    delete finalMessage?.type;
+    console.log(
+      '🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage',
+      finalMessage
+    );
+
+    const opts: TransactionOptions = { common: customCommon } as any;
+    const tx = new Transaction(finalMessage, opts);
+    // here
+    tx.sign(Buffer.from(privKey.toBytes()));
+
+    const serializedTx = tx.serialize();
+    const rawTxHex = '0x' + serializedTx.toString('hex');
+    // TODO: Find a way to compare 2 sigature
+    const response = await request(rpc, 'eth_sendRawTransaction', [rawTxHex]);
+    return response;
+  }
 
   validateChainId(chainId: string): number {
     // chain id example: kawaii_6886-1. If chain id input is already a number in string => parse it immediately
