@@ -332,10 +332,9 @@ export class KeyRing {
     this.privateKey = undefined;
     this.ledgerPublicKey = undefined;
     this.password = '';
-    await this.kvStore.set<string>('password', '');
   }
 
-  public async unlock(password: string, saving = true) {
+  public async unlock(password: string) {
     if (!this.keyStore || this.type === 'none') {
       throw new Error('Key ring not initialized');
     }
@@ -351,11 +350,8 @@ export class KeyRing {
     } else {
       throw new Error('Unexpected type of keyring');
     }
-    if (saving) {
-      // store password
-      this.password = password;
-      await this.kvStore.set<string>('password', password);
-    }
+
+    this.password = password;
   }
 
   public async save() {
@@ -372,11 +368,6 @@ export class KeyRing {
           this.keyStore = null;
         } else {
           this.keyStore = keyStore;
-
-          if (!this.password && (this.password = await this.kvStore.get<string>('password'))) {
-            console.log('waiting for unlocking');
-            await this.unlock(this.password, false);
-          }
         }
         const multiKeyStore = await this.kvStore.get<KeyStore[]>(KeyMultiStoreKey);
         if (!multiKeyStore) {
