@@ -425,7 +425,7 @@ export class KeyRing {
     });
 
     await this.loading;
-
+    this.loading = undefined;
     this.loaded = true;
   }
 
