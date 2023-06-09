@@ -6,7 +6,8 @@ import {
   KeyRingStatus,
   KeyStoreKey,
   MultiKeyStoreInfoWithSelected,
-  KeyMultiStoreKey
+  KeyMultiStoreKey,
+  AddressesLedger
 } from './types';
 
 export class MockIsLocked {
@@ -73,7 +74,107 @@ export class MockCreateMnemonicKeyStore {
     );
   }
 }
+export class MockCreateLedgerKeyStore {
+  static async CreateLedgerKeyStore(
+    rng: RNG,
+    crypto: CommonCrypto,
+    kdf: 'scrypt' | 'sha256' | 'pbkdf2',
+    publicKey: Uint8Array,
+    password: string,
+    meta: Record<string, string>,
+    bip44HDPath: BIP44HDPath,
+    addresses?: AddressesLedger
+  ): Promise<KeyStore> {
+    return await Crypto.encrypt(
+      rng,
+      crypto,
+      kdf,
+      'ledger',
+      Buffer.from(publicKey).toString('hex'),
+      password,
+      meta,
+      bip44HDPath,
+      addresses
+    );
+  }
+}
+export class MockCreatePrivateKeyStore {
+  static async CreatePrivateKeyStore(
+    rng: RNG,
+    crypto: CommonCrypto,
+    kdf: 'scrypt' | 'sha256' | 'pbkdf2',
+    privateKey: Uint8Array,
+    password: string,
+    meta: Record<string, string>
+  ): Promise<KeyStore> {
+    return await Crypto.encrypt(
+      rng,
+      crypto,
+      kdf,
+      'privateKey',
+      Buffer.from(privateKey).toString('hex'),
+      password,
+      meta
+    );
+  }
+}
 
+export class MockCreatePrivateKey {
+  privateKey?: Uint8Array;
+  keyStore: KeyStore | null;
+  rng: RNG;
+  password: string = '';
+  crypto: CommonCrypto;
+  multiKeyStore: KeyStore[];
+  public async createPrivateKey(
+    kdf: 'scrypt' | 'sha256' | 'pbkdf2',
+    privateKey: Uint8Array,
+    password: string,
+    meta: Record<string, string>
+  ): Promise<{
+    status: KeyRingStatus;
+    multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
+  }> {
+    // if (this.status !== KeyRingStatus.EMPTY) {
+    //   throw new Error('Key ring is not loaded or not empty');
+    // }
+
+    this.privateKey = privateKey;
+    this.keyStore = await this.CreatePrivateKeyStore(
+      this.rng,
+      this.crypto,
+      kdf,
+      privateKey,
+      password,
+      await this.assignKeyStoreIdMeta(meta)
+    );
+    this.password = password;
+    this.multiKeyStore.push(this.keyStore);
+
+    await this.save();
+
+    return {
+      status: this.status,
+      multiKeyStoreInfo: this.getMultiKeyStoreInfo()
+    };
+  }
+
+  async save(): Promise<boolean> {
+    return true;
+  }
+  get status() {
+    return KeyRingStatus.UNLOCKED;
+  }
+  getMultiKeyStoreInfo(): any {
+    return null;
+  }
+  async assignKeyStoreIdMeta(meta: { [key: string]: string }): Promise<{
+    [key: string]: string;
+  }> {
+    return null;
+  }
+  async CreatePrivateKeyStore(p1, p2, p3, p4, p5, p6): Promise<any> {}
+}
 export class MockCreateMnemonicKey {
   mnemonic?: string;
   keyStore: KeyStore | null;
@@ -113,7 +214,7 @@ export class MockCreateMnemonicKey {
 
     return {
       status: this.status,
-      multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
+      multiKeyStoreInfo: this.getMultiKeyStoreInfo()
     };
   }
   async save(): Promise<boolean> {
@@ -122,7 +223,7 @@ export class MockCreateMnemonicKey {
   get status() {
     return KeyRingStatus.UNLOCKED;
   }
-  async getMultiKeyStoreInfo(): Promise<any> {
+  getMultiKeyStoreInfo(): any {
     return null;
   }
   async assignKeyStoreIdMeta(meta: { [key: string]: string }): Promise<{

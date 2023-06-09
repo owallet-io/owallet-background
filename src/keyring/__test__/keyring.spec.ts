@@ -3,8 +3,11 @@ import { CommonCrypto, AddressesLedger, ScryptParams } from '../types';
 import { KeyStore } from '../crypto';
 import { Crypto } from '../crypto';
 import {
+  MockCreateLedgerKeyStore,
   MockCreateMnemonicKey,
   MockCreateMnemonicKeyStore,
+  MockCreatePrivateKey,
+  MockCreatePrivateKeyStore,
   MockFnHelper,
   MockIsLocked,
   MockMultiKeyStore,
@@ -18,6 +21,14 @@ import {
   KeyMultiStoreKey
 } from '../__mocks__/types';
 const mockMnemonic = 'example mnemonic';
+const mockPrivateKey =
+  '4c985e1bb3d14094ca13e3f69d49f2e28cdef6c49b71a27ab1eecf6b0d8c4f71';
+const mockPublicKey =
+  '0407e5b99e7849b4c2f6af0ee7e7f094b8859f1109962ad6e94fa3672fc8003a301c28c6ba894f7a08c3ca761abf39285c46614d7d8727b1ecd67b2c33d1ee81c1';
+const mockAddress = '0xD906B8F9FE7DCFBDFFC13451BBFC8DAAFFA988C7';
+
+const mockPrivateKeyHex = Buffer.from(mockPrivateKey, 'hex');
+const mockPublicKeyHex = Buffer.from(mockPublicKey, 'hex');
 const mockPassword = 'password';
 const mockMeta = { name: 'orai' };
 const scryptMock = jest.fn(
@@ -467,6 +478,151 @@ describe('Keyring', () => {
       expect(result).toEqual(mockEncryptedData);
     });
   });
+  describe('CreateLedgerKeyStore', () => {
+    beforeEach(() => {
+      jest.spyOn(Crypto, 'encrypt').mockClear();
+    });
+
+    it('should call Crypto.encrypt with the correct arguments', async () => {
+      // Chuỗi mnemonic và mật khẩu
+      // Gọi hàm CreateMnemonicKeyStore
+      const result = await MockCreateLedgerKeyStore.CreateLedgerKeyStore(
+        rngMock,
+        cryptoMock,
+        'scrypt',
+        mockPublicKeyHex,
+        password,
+        meta,
+        mockBip44HDPath,
+        {
+          cosmos: mockAddress
+        }
+      );
+      // console.log('result: ', result);
+
+      // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
+      expect(Crypto.encrypt).toHaveBeenCalledWith(
+        rngMock,
+        cryptoMock,
+        'scrypt',
+        'ledger',
+        Buffer.from(mockPublicKeyHex).toString('hex'),
+        password,
+        meta,
+        mockBip44HDPath,
+        {
+          cosmos: mockAddress
+        }
+      );
+    });
+
+    it('should return the result from Crypto.encrypt', async () => {
+      // Kết quả trả về từ Crypto.encrypt
+      const mockEncryptedData: KeyStore = {
+        version: '1.2',
+        type: 'ledger',
+        coinTypeForChain: {},
+        bip44HDPath: undefined,
+        meta: { key: 'value' },
+        crypto: {
+          cipher: 'aes-128-ctr',
+          cipherparams: { iv: '00000000000000000000000000000000' },
+          ciphertext: 'eca1f04fc775ebb0942d952ca6bd42b3303deccda62306dccc54d1c6a2fb4abfac9f780874065a5f3777fce58892f92e175937ac56951c43e3c496b6453606efee7a804b7f72824d2389611d736a01967779a8d2e2da4806501d7f8598350827e5a7bb451799195357f194d773a60591d9cc2d86f7ac944ed58f7857313b259cc8cb',
+          kdf: 'scrypt',
+          kdfparams: {
+            salt: '0000000000000000000000000000000000000000000000000000000000000000',
+            dklen: 32,
+            n: 131072,
+            r: 8,
+            p: 1
+          },
+          mac: 'ae30e52b59b97e8b078a6771983a3bc9686e968c776e6e504bde5470e83f0901'
+        },
+        addresses: undefined
+      };
+
+      // Gọi hàm CreateMnemonicKeyStore
+      const result = await MockCreateLedgerKeyStore.CreateLedgerKeyStore(
+        rngMock,
+        cryptoMock,
+        'scrypt',
+        mockPublicKeyHex,
+        password,
+        meta,
+        mockBip44HDPath
+      );
+      // Kiểm tra xem kết quả trả về là đúng
+      expect(result).toEqual(mockEncryptedData);
+    });
+  });
+  describe('CreatePrivateKeyStore', () => {
+    beforeEach(() => {
+      jest.spyOn(Crypto, 'encrypt').mockClear();
+    });
+    it('should call Crypto.encrypt with the correct arguments', async () => {
+      // Chuỗi mnemonic và mật khẩu
+      // Gọi hàm CreateMnemonicKeyStore
+      const result = await MockCreatePrivateKeyStore.CreatePrivateKeyStore(
+        rngMock,
+        cryptoMock,
+        'scrypt',
+        mockPrivateKeyHex,
+        password,
+        meta
+      );
+      console.log('result: ', result);
+
+      // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
+      expect(Crypto.encrypt).toHaveBeenCalledWith(
+        rngMock,
+        cryptoMock,
+        'scrypt',
+        'privateKey',
+        Buffer.from(mockPrivateKeyHex).toString('hex'),
+        password,
+        meta
+      );
+    });
+
+    it('should return the result from Crypto.encrypt', async () => {
+      // Kết quả trả về từ Crypto.encrypt
+      const mockEncryptedData: KeyStore = {
+        version: '1.2',
+        type: 'privateKey',
+        coinTypeForChain: {},
+        bip44HDPath: undefined,
+        meta: { key: 'value' },
+        crypto: {
+          cipher: 'aes-128-ctr',
+          cipherparams: { iv: '00000000000000000000000000000000' },
+          ciphertext:
+            'e8f6f9409725b8ebcf7bc625a6b419b3306ebbc8a276508f900780c8a2f916b9f6c424582b56085a3e2cf2e2dbc1aa79105166af54c01c16e1c6cded416002bf',
+          kdf: 'scrypt',
+          kdfparams: {
+            salt: '0000000000000000000000000000000000000000000000000000000000000000',
+            dklen: 32,
+            n: 131072,
+            r: 8,
+            p: 1
+          },
+          mac: '5fb2bc5b7f626f23e6a1fb324942a03fe4d56650a51741495d08dc85909ae7e4'
+        },
+        addresses: undefined
+      };
+
+      // Gọi hàm CreateMnemonicKeyStore
+      const result = await MockCreatePrivateKeyStore.CreatePrivateKeyStore(
+        rngMock,
+        cryptoMock,
+        'scrypt',
+        mockPrivateKeyHex,
+        password,
+        meta
+      );
+      // Kiểm tra xem kết quả trả về là đúng
+      expect(result).toEqual(mockEncryptedData);
+    });
+  });
 });
 describe('save', () => {
   it('should save keyStore and multiKeyStore', async () => {
@@ -620,7 +776,7 @@ describe('MockCreateMnemonicKey', () => {
         .mockResolvedValue(mockKeyStore);
       jest
         .spyOn(instance, 'getMultiKeyStoreInfo')
-        .mockResolvedValue(mockMultiKeyStoreInfo);
+        .mockReturnValue(mockMultiKeyStoreInfo);
       jest
         .spyOn(instance, 'assignKeyStoreIdMeta')
         .mockResolvedValue({ name: 'orai', __id__: '1' });
@@ -650,6 +806,58 @@ describe('MockCreateMnemonicKey', () => {
         mockPassword,
         await instance.assignKeyStoreIdMeta(mockMeta),
         mockBip44HDPath
+      );
+      expect(instance.assignKeyStoreIdMeta).toHaveBeenCalled();
+      expect(instance.save).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('MockCreatePrivateKey', () => {
+  describe('createPrivateKey', () => {
+    it('should create private key and update keyStore and multiKeyStore', async () => {
+      // Tạo instance của lớp MockCreatePrivateKey
+      const instance = new MockCreatePrivateKey();
+      // Gán giá trị cho các thuộc tính
+      instance.privateKey = null;
+      instance.keyStore = null;
+      instance.multiKeyStore = mockMultiKeyStore;
+      instance.rng = rngMock;
+      instance.crypto = cryptoMock;
+      // Mock các phương thức liên quan
+      jest
+        .spyOn(instance, 'CreatePrivateKeyStore')
+        .mockResolvedValue(mockKeyStore);
+      jest
+        .spyOn(instance, 'getMultiKeyStoreInfo')
+        .mockReturnValue(mockMultiKeyStoreInfo);
+      jest
+        .spyOn(instance, 'assignKeyStoreIdMeta')
+        .mockResolvedValue({ name: 'orai', __id__: '1' });
+      jest.spyOn(instance, 'save').mockResolvedValue(true);
+
+      // Gọi phương thức createMnemonicKey()
+      const result = await instance.createPrivateKey(
+        'scrypt',
+        mockPrivateKeyHex,
+        mockPassword,
+        mockMeta
+      );
+
+      // Kiểm tra kết quả
+      expect(result.status).toBe(KeyRingStatus.UNLOCKED);
+      expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
+      expect(instance.privateKey).toBe(mockPrivateKeyHex);
+      expect(instance.keyStore).toBe(mockKeyStore);
+      expect(instance.password).toBe(mockPassword);
+      // expect(instance.multiKeyStore).toEqual(mockMultiKeyStore);
+      expect(instance.CreatePrivateKeyStore).toHaveBeenCalledWith(
+        instance.rng,
+        instance.crypto,
+        'scrypt',
+        mockPrivateKeyHex,
+        mockPassword,
+        await instance.assignKeyStoreIdMeta(mockMeta)
       );
       expect(instance.assignKeyStoreIdMeta).toHaveBeenCalled();
       expect(instance.save).toHaveBeenCalled();
