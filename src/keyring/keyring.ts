@@ -351,10 +351,9 @@ export class KeyRing {
     } else {
       throw new Error('Unexpected type of keyring');
     }
-
-    this.password = password;
     if (saving) {
       // store password
+      this.password = password;
       await this.kvStore.set<string>('password', password);
     }
   }
@@ -373,9 +372,11 @@ export class KeyRing {
           this.keyStore = null;
         } else {
           this.keyStore = keyStore;
-          console.log('waiting for unlocking');
-          const password = await this.kvStore.get<string>('password');
-          if (password) await this.unlock(password, false);
+
+          if (!this.password && (this.password = await this.kvStore.get<string>('password'))) {
+            console.log('waiting for unlocking');
+            await this.unlock(this.password, false);
+          }
         }
         const multiKeyStore = await this.kvStore.get<KeyStore[]>(KeyMultiStoreKey);
         if (!multiKeyStore) {
