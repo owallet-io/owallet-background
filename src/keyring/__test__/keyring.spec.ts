@@ -3,6 +3,7 @@ import { CommonCrypto, AddressesLedger, ScryptParams } from '../types';
 import { KeyStore } from '../crypto';
 import { Crypto } from '../crypto';
 import {
+  MockCreateLedgerKey,
   MockCreateLedgerKeyStore,
   MockCreateMnemonicKey,
   MockCreateMnemonicKeyStore,
@@ -20,6 +21,7 @@ import {
   KeyStoreKey,
   KeyMultiStoreKey
 } from '../__mocks__/types';
+import { Env } from '@owallet/router';
 const mockMnemonic = 'example mnemonic';
 const mockPrivateKey =
   '4c985e1bb3d14094ca13e3f69d49f2e28cdef6c49b71a27ab1eecf6b0d8c4f71';
@@ -527,7 +529,8 @@ describe('Keyring', () => {
         crypto: {
           cipher: 'aes-128-ctr',
           cipherparams: { iv: '00000000000000000000000000000000' },
-          ciphertext: 'eca1f04fc775ebb0942d952ca6bd42b3303deccda62306dccc54d1c6a2fb4abfac9f780874065a5f3777fce58892f92e175937ac56951c43e3c496b6453606efee7a804b7f72824d2389611d736a01967779a8d2e2da4806501d7f8598350827e5a7bb451799195357f194d773a60591d9cc2d86f7ac944ed58f7857313b259cc8cb',
+          ciphertext:
+            'eca1f04fc775ebb0942d952ca6bd42b3303deccda62306dccc54d1c6a2fb4abfac9f780874065a5f3777fce58892f92e175937ac56951c43e3c496b6453606efee7a804b7f72824d2389611d736a01967779a8d2e2da4806501d7f8598350827e5a7bb451799195357f194d773a60591d9cc2d86f7ac944ed58f7857313b259cc8cb',
           kdf: 'scrypt',
           kdfparams: {
             salt: '0000000000000000000000000000000000000000000000000000000000000000',
@@ -861,6 +864,79 @@ describe('MockCreatePrivateKey', () => {
       );
       expect(instance.assignKeyStoreIdMeta).toHaveBeenCalled();
       expect(instance.save).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('MockCreateLedgerKey', () => {
+  const mockNetworkTypeByBip44HDPath = 'cosmos';
+  describe('createLedgerKey', () => {
+    it('should create ledger key and update keyStore and multiKeyStore', async () => {
+      // Tạo instance của lớp MockCreateLedgerKey
+      const instance = new MockCreateLedgerKey();
+      // Gán giá trị cho các thuộc tính
+      instance.ledgerPublicKey = null;
+      instance.keyStore = null;
+      instance.multiKeyStore = mockMultiKeyStore;
+      instance.rng = rngMock;
+      instance.crypto = cryptoMock;
+      instance.ledgerKeeper = {
+        getPublicKey: jest.fn().mockResolvedValue({
+          publicKey: mockPublicKeyHex,
+          address: mockAddress
+        })
+      };
+
+      // Mock các phương thức liên quan
+      jest
+        .spyOn(instance, 'CreateLedgerKeyStore')
+        .mockResolvedValue(mockKeyStore);
+      jest
+        .spyOn(instance, 'getNetworkTypeByBip44HDPath')
+        .mockReturnValue(mockNetworkTypeByBip44HDPath);
+      jest
+        .spyOn(instance, 'getMultiKeyStoreInfo')
+        .mockReturnValue(mockMultiKeyStoreInfo);
+      jest
+        .spyOn(instance, 'assignKeyStoreIdMeta')
+        .mockResolvedValue({ name: 'orai', __id__: '1' });
+      jest.spyOn(instance, 'save').mockResolvedValue(true);
+      const mockEnv: Env = {
+        isInternalMsg: false,
+        requestInteraction: jest.fn()
+      };
+      // Gọi phương thức createMnemonicKey()
+      const result = await instance.createLedgerKey(
+        mockEnv,
+        'scrypt',
+        mockPassword,
+        mockMeta,
+        mockBip44HDPath
+      );
+
+      // Kiểm tra kết quả
+      expect(result.status).toBe(KeyRingStatus.UNLOCKED);
+      expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
+      expect(instance.ledgerPublicKey).toBe(mockPublicKeyHex);
+      expect(instance.keyStore).toBe(mockKeyStore);
+      expect(instance.password).toBe(mockPassword);
+      // expect(instance.multiKeyStore).toEqual(mockMultiKeyStore);
+      expect(instance.CreateLedgerKeyStore).toHaveBeenCalledWith(
+        instance.rng,
+        instance.crypto,
+        'scrypt',
+        mockPublicKeyHex,
+        mockPassword,
+        await instance.assignKeyStoreIdMeta(mockMeta),
+        mockBip44HDPath,
+        {
+          [mockNetworkTypeByBip44HDPath]: mockAddress
+        }
+      );
+      expect(instance.assignKeyStoreIdMeta).toHaveBeenCalled();
+      expect(instance.save).toHaveBeenCalled();
+      expect(instance.getNetworkTypeByBip44HDPath).toHaveBeenCalled();
+      expect(instance.ledgerKeeper.getPublicKey).toHaveBeenCalled();
     });
   });
 });

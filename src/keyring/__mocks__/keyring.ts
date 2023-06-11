@@ -9,6 +9,7 @@ import {
   KeyMultiStoreKey,
   AddressesLedger
 } from './types';
+import { Env } from '@owallet/router';
 
 export class MockIsLocked {
   privateKey?: Uint8Array;
@@ -174,6 +175,89 @@ export class MockCreatePrivateKey {
     return null;
   }
   async CreatePrivateKeyStore(p1, p2, p3, p4, p5, p6): Promise<any> {}
+}
+export class MockCreateLedgerKey {
+  keyStore: KeyStore | null;
+  rng: RNG;
+  password: string = '';
+  crypto: CommonCrypto;
+  multiKeyStore: KeyStore[];
+  ledgerKeeper:any;
+  ledgerPublicKey?: Uint8Array;
+  public async createLedgerKey(
+    env: Env,
+    kdf: 'scrypt' | 'sha256' | 'pbkdf2',
+    password: string,
+    meta: Record<string, string>,
+    bip44HDPath: BIP44HDPath
+  ): Promise<{
+    status: KeyRingStatus;
+    multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
+  }> {
+    // if (this.status !== KeyRingStatus.EMPTY) {
+    //   throw new Error('Key ring is not loaded or not empty');
+    // }
+    const ledgerAppType = this.getNetworkTypeByBip44HDPath(bip44HDPath);
+
+    console.log('bip44HDPath', bip44HDPath);
+
+    // detect network type here when create ledger
+    // Get public key first
+    const { publicKey, address } =
+      (await this.ledgerKeeper.getPublicKey(env, bip44HDPath, ledgerAppType)) ||
+      {};
+
+    console.log('publicKey---', publicKey, address);
+
+    this.ledgerPublicKey = publicKey;
+
+    console.log('ledgerPublicKey ===', this.ledgerPublicKey);
+
+    const keyStore = await this.CreateLedgerKeyStore(
+      this.rng,
+      this.crypto,
+      kdf,
+      this.ledgerPublicKey,
+      password,
+      await this.assignKeyStoreIdMeta(meta),
+      bip44HDPath,
+      {
+        [ledgerAppType]: address
+      }
+    );
+
+    this.password = password;
+    this.keyStore = keyStore;
+    this.multiKeyStore.push(this.keyStore);
+
+    await this.save();
+
+    return {
+      status: this.status,
+      multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
+    };
+  }
+
+  async save(): Promise<boolean> {
+    return true;
+  }
+  get status() {
+    return KeyRingStatus.UNLOCKED;
+  }
+  CreateLedgerKeyStore(p1,p2,p3,p4,p5,p6,p7,p8):any{
+    return null;
+  }
+   getNetworkTypeByBip44HDPath(bip44:any):any{
+    return 'cosmos'
+  }
+  getMultiKeyStoreInfo(): any {
+    return null;
+  }
+  async assignKeyStoreIdMeta(meta: { [key: string]: string }): Promise<{
+    [key: string]: string;
+  }> {
+    return null;
+  }
 }
 export class MockCreateMnemonicKey {
   mnemonic?: string;
