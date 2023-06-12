@@ -161,7 +161,7 @@ describe('keyring', () => {
     });
 
     it('should return KeyRingStatus.UNLOCKED when keyRing.isLocked() returns false', () => {
-      // Gán giá trị null cho thuộc tính keyStore
+      // Gán giá trị cho thuộc tính keyStore
       Object.defineProperty(keyRing, 'keyStore', {
         value: mockKeyStore,
         writable: true
@@ -181,22 +181,25 @@ describe('keyring', () => {
       expect(result).toBe(KeyRingStatus.UNLOCKED);
     });
 
-    // it('should return KeyRingStatus.LOCKED when all conditions are false', () => {
-    //   // Tạo instance của lớp MockStatus
-    //   const instance = new MockStatus();
-    //   instance.keyStore = mockKeyStore;
-    //   // Gán giá trị true cho thuộc tính loaded
-    //   instance.loaded = true;
+    it('should return KeyRingStatus.LOCKED when all conditions are false', () => {
+      // Gán giá trị cho thuộc tính keyStore
+      Object.defineProperty(keyRing, 'keyStore', {
+        value: mockKeyStore,
+        writable: true
+      });
+      // Monkey patch the loaded property
+      Object.defineProperty(keyRing, 'loaded', {
+        value: true,
+        writable: true
+      });
+      // Mock MockIsLocked.isLocked() để trả về true
+      jest.spyOn(keyRing, 'isLocked').mockReturnValue(true);
 
-    //   // Mock MockIsLocked.isLocked() để trả về true
-    //   jest.spyOn(MockStatus.prototype, 'isLocked').mockReturnValue(true);
-
-    //   // Gọi phương thức status
-    //   const result = instance.status;
-
-    //   // Kiểm tra kết quả
-    //   expect(result).toBe(KeyRingStatus.LOCKED);
-    // });
+      // Gọi phương thức status
+      const result = keyRing.status;
+      // Kiểm tra kết quả
+      expect(result).toBe(KeyRingStatus.LOCKED);
+    });
   });
   describe('lock', () => {
     it('should lock the key ring if it is unlocked', () => {
