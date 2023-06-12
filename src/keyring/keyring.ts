@@ -838,8 +838,6 @@ export class KeyRing {
     } else {
       // Sign with Evmos/Ethereum
       const privKey = this.loadPrivKey(coinType);
-      console.log('coinType ===', coinType);
-
       // Check cointype = 60 in the case that network is evmos(still cosmos but need to sign with ethereum)
       if (networkType === 'evm' || coinType === 60) {
         // Only check coinType === 195 for Tron network, because tron is evm but had cointype = 195, not 60
@@ -853,10 +851,8 @@ export class KeyRing {
 
           return Buffer.from(transactionSign?.signature?.[0], 'hex');
         }
-        console.log('should ger hrere ===', privKey);
         return this.signEthereum(privKey, message);
       }
-      console.log(' not should ger hrere ===', privKey);
       return privKey.sign(message);
     }
   }
@@ -1079,7 +1075,6 @@ export class KeyRing {
     message: Uint8Array
   ): Promise<Uint8Array> {
     const ethWallet = new Wallet(privKey.toBytes());
-
     const signature = ethWallet._signingKey().signDigest(keccak256(message));
     const splitSignature = BytesUtils.splitSignature(signature);
     return BytesUtils.arrayify(
@@ -1675,7 +1670,6 @@ export class KeyRing {
           'Key ring is locked or not initialized'
         );
       }
-      console.log('HERE');
       const ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath);
       const { publicKey, address } =
         (await this.ledgerKeeper.getPublicKey(
@@ -1684,7 +1678,7 @@ export class KeyRing {
           ledgerAppType
         )) || {};
 
-      console.log('address ==1', address);
+      console.log('address ===', address);
 
       const keyStore = await KeyRing.CreateLedgerKeyStore(
         this.rng,
@@ -1699,13 +1693,10 @@ export class KeyRing {
         }
       );
 
-      console.log(keyStore, 'keystore here');
-
       this.multiKeyStore.push(keyStore);
 
       await this.save();
 
-      console.log(this.getMultiKeyStoreInfo, 'multi here');
       return {
         multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
       };
