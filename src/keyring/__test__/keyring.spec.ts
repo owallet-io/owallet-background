@@ -256,53 +256,97 @@ describe('keyring', () => {
       // Arrange
       const keyStore: Omit<KeyStore, 'crypto'> = {
         ...mockKeyStore,
-        type: null,
+        type: null
       };
-  
+
       // Act
       const result = KeyRing.getTypeOfKeyStore(keyStore);
-  
+
       // Assert
       expect(result).toBe('mnemonic');
     });
-  
+
     it('should return the correct type if type is valid', () => {
       // Arrange
       const mnemonicKeyStore: Omit<KeyStore, 'crypto'> = {
         ...mockKeyStore,
-        type: 'mnemonic',
+        type: 'mnemonic'
       };
-  
+
       const privateKeyKeyStore: Omit<KeyStore, 'crypto'> = {
         ...mockKeyStore,
-        type: 'privateKey',
+        type: 'privateKey'
       };
-  
+
       const ledgerKeyStore: Omit<KeyStore, 'crypto'> = {
         ...mockKeyStore,
-        type: 'ledger',
+        type: 'ledger'
       };
-  
+
       // Act
       const mnemonicResult = KeyRing.getTypeOfKeyStore(mnemonicKeyStore);
       const privateKeyResult = KeyRing.getTypeOfKeyStore(privateKeyKeyStore);
       const ledgerResult = KeyRing.getTypeOfKeyStore(ledgerKeyStore);
-  
+
       // Assert
       expect(mnemonicResult).toBe('mnemonic');
       expect(privateKeyResult).toBe('privateKey');
       expect(ledgerResult).toBe('ledger');
     });
-  
+
     it('should throw an error if type is invalid', () => {
       // Arrange
       const invalidKeyStore: Omit<KeyStore, 'crypto'> = {
         ...mockKeyStore,
-        type: 'invalid' as any,
+        type: 'invalid' as any
       };
-  
+
       // Act & Assert
-      expect(() => KeyRing.getTypeOfKeyStore(invalidKeyStore)).toThrowError('Invalid type of key store');
+      expect(() => KeyRing.getTypeOfKeyStore(invalidKeyStore)).toThrowError(
+        'Invalid type of key store'
+      );
+    });
+    describe('type', () => {
+      it('should return "none" if keyStore is null or undefined', () => {
+        // Arrange
+        Object.defineProperty(keyRing, 'keyStore', {
+          value: null,
+          writable: true
+        });
+        // Act
+        const result = keyRing.type;
+        // Assert
+        expect(result).toBe('none');
+      });
+
+      // it('should return the correct type if keyStore is not null or undefined', () => {
+      //   // Arrange
+      //   const mnemonicKeyStore: Omit<KeyStore, 'crypto'> = {
+      //     type: 'mnemonic',
+      //   };
+
+      //   const privateKeyKeyStore: Omit<KeyStore, 'crypto'> = {
+      //     type: 'privateKey',
+      //   };
+
+      //   const ledgerKeyStore: Omit<KeyStore, 'crypto'> = {
+      //     type: 'ledger',
+      //   };
+
+      //   const keyRing1 = new KeyRing(mnemonicKeyStore);
+      //   const keyRing2 = new KeyRing(privateKeyKeyStore);
+      //   const keyRing3 = new KeyRing(ledgerKeyStore);
+
+      //   // Act
+      //   const result1 = keyRing1.type;
+      //   const result2 = keyRing2.type;
+      //   const result3 = keyRing3.type;
+
+      //   // Assert
+      //   expect(result1).toBe('mnemonic');
+      //   expect(result2).toBe('privateKey');
+      //   expect(result3).toBe('ledger');
+      // });
     });
   });
 });
