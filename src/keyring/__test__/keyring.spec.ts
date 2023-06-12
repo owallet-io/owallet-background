@@ -130,7 +130,11 @@ describe('keyring', () => {
     rngMock,
     cryptoMock
   );
+
   describe('status', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
     it('should return KeyRingStatus.NOTLOADED when loaded is false', () => {
       // Monkey patch the loaded property
       Object.defineProperty(keyRing, 'loaded', {
@@ -203,6 +207,9 @@ describe('keyring', () => {
     });
   });
   describe('lock', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
     it('should lock the key ring if it is unlocked', () => {
       // Arrange
       const spyOnStatus = jest.spyOn(keyRing, 'status', 'get');
@@ -252,6 +259,9 @@ describe('keyring', () => {
     });
   });
   describe('getTypeOfKeyStore', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
     it('should return "mnemonic" if type is null', () => {
       // Arrange
       const keyStore: Omit<KeyStore, 'crypto'> = {
@@ -307,6 +317,9 @@ describe('keyring', () => {
       );
     });
     describe('type', () => {
+      beforeEach(() => {
+        jest.clearAllMocks();
+      });
       it('should return "none" if keyStore is null or undefined', () => {
         // Arrange
         Object.defineProperty(keyRing, 'keyStore', {
@@ -325,12 +338,10 @@ describe('keyring', () => {
           ...mockKeyStore,
           type: 'mnemonic'
         };
-
         const privateKeyKeyStore: Omit<KeyStore, 'crypto'> = {
           ...mockKeyStore,
           type: 'privateKey'
         };
-
         const ledgerKeyStore: Omit<KeyStore, 'crypto'> = {
           ...mockKeyStore,
           type: 'ledger'
@@ -355,5 +366,114 @@ describe('keyring', () => {
         expect(result3).toBe('ledger');
       });
     });
+  });
+  describe('unlock', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+    it('should throw an error if keyStore is not initialized', async () => {
+      // Arrange
+      Object.defineProperty(keyRing, 'keyStore', {
+        value: null,
+        writable: true
+      });
+      const password = mockPassword;
+      // Act and Assert
+      await expect(keyRing.unlock(password)).rejects.toThrow(
+        'Key ring not initialized'
+      );
+    });
+
+    // it('should decrypt and set mnemonic if keyStore type is "mnemonic"', async () => {
+    //   // Arrange
+    //   const keyStore = {
+    //     type: 'mnemonic',
+    //   };
+
+    //   const crypto = 'crypto';
+    //   const decryptedData = 'decryptedData';
+    //   const decryptedBuffer = Buffer.from(decryptedData);
+
+    //   const decryptMock = Crypto.decrypt as jest.Mock;
+    //   decryptMock.mockResolvedValue(decryptedBuffer);
+
+    //   const keyRing = new KeyRing(keyStore, crypto);
+    //   const password = 'password';
+
+    //   // Act
+    //   await keyRing.unlock(password);
+
+    //   // Assert
+    //   expect(decryptMock).toHaveBeenCalledWith(crypto, keyStore, password);
+    //   expect(keyRing.mnemonic).toBe(decryptedData);
+    //   expect(keyRing.password).toBe(password);
+    // });
+
+    // it('should decrypt and set privateKey if keyStore type is "privateKey"', async () => {
+    //   // Arrange
+    //   const keyStore = {
+    //     type: 'privateKey',
+    //   };
+
+    //   const crypto = 'crypto';
+    //   const decryptedData = 'decryptedData';
+    //   const decryptedHex = Buffer.from(decryptedData).toString('hex');
+    //   const decryptedBuffer = Buffer.from(decryptedHex, 'hex');
+
+    //   const decryptMock = Crypto.decrypt as jest.Mock;
+    //   decryptMock.mockResolvedValue(decryptedBuffer);
+
+    //   const keyRing = new KeyRing(keyStore, crypto);
+    //   const password = 'password';
+
+    //   // Act
+    //   await keyRing.unlock(password);
+
+    //   // Assert
+    //   expect(decryptMock).toHaveBeenCalledWith(crypto, keyStore, password);
+    //   expect(keyRing.privateKey).toEqual(decryptedBuffer);
+    //   expect(keyRing.password).toBe(password);
+    // });
+
+    // it('should decrypt and set ledgerPublicKey if keyStore type is "ledger"', async () => {
+    //   // Arrange
+    //   const keyStore = {
+    //     type: 'ledger',
+    //   };
+
+    //   const crypto = 'crypto';
+    //   const decryptedData = 'decryptedData';
+    //   const decryptedHex = Buffer.from(decryptedData).toString('hex');
+    //   const decryptedBuffer = Buffer.from(decryptedHex, 'hex');
+
+    //   const decryptMock = Crypto.decrypt as jest.Mock;
+    //   decryptMock.mockResolvedValue(decryptedBuffer);
+
+    //   const keyRing = new KeyRing(keyStore, crypto);
+    //   const password = 'password';
+
+    //   // Act
+    //   await keyRing.unlock(password);
+
+    //   // Assert
+    //   expect(decryptMock).toHaveBeenCalledWith(crypto, keyStore, password);
+    //   expect(keyRing.ledgerPublicKey).toEqual(decryptedBuffer);
+    //   expect(keyRing.password).toBe(password);
+    // });
+
+    // it('should throw an error for unexpected keyStore type', async () => {
+    //   // Arrange
+    //   const keyStore = {
+    //     type: 'unexpectedType',
+    //   };
+
+    //   const keyRing = new KeyRing(keyStore);
+    //   const password = 'password';
+
+    //   // Act and Assert
+    //   await expect(keyRing.unlock(password)).rejects.toThrow(
+    //     'Unexpected type of keyring'
+    //   );
+    // });
   });
 });
