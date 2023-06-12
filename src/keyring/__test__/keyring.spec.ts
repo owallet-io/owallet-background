@@ -319,34 +319,41 @@ describe('keyring', () => {
         expect(result).toBe('none');
       });
 
-      // it('should return the correct type if keyStore is not null or undefined', () => {
-      //   // Arrange
-      //   const mnemonicKeyStore: Omit<KeyStore, 'crypto'> = {
-      //     type: 'mnemonic',
-      //   };
+      it('should return the correct type if keyStore is not null or undefined', () => {
+        // Arrange
+        const mnemonicKeyStore: Omit<KeyStore, 'crypto'> = {
+          ...mockKeyStore,
+          type: 'mnemonic'
+        };
 
-      //   const privateKeyKeyStore: Omit<KeyStore, 'crypto'> = {
-      //     type: 'privateKey',
-      //   };
+        const privateKeyKeyStore: Omit<KeyStore, 'crypto'> = {
+          ...mockKeyStore,
+          type: 'privateKey'
+        };
 
-      //   const ledgerKeyStore: Omit<KeyStore, 'crypto'> = {
-      //     type: 'ledger',
-      //   };
-
-      //   const keyRing1 = new KeyRing(mnemonicKeyStore);
-      //   const keyRing2 = new KeyRing(privateKeyKeyStore);
-      //   const keyRing3 = new KeyRing(ledgerKeyStore);
-
-      //   // Act
-      //   const result1 = keyRing1.type;
-      //   const result2 = keyRing2.type;
-      //   const result3 = keyRing3.type;
-
-      //   // Assert
-      //   expect(result1).toBe('mnemonic');
-      //   expect(result2).toBe('privateKey');
-      //   expect(result3).toBe('ledger');
-      // });
+        const ledgerKeyStore: Omit<KeyStore, 'crypto'> = {
+          ...mockKeyStore,
+          type: 'ledger'
+        };
+        Object.defineProperty(keyRing, 'keyStore', {
+          value: mnemonicKeyStore,
+          writable: true
+        });
+        const result1 = keyRing.type;
+        expect(result1).toBe('mnemonic');
+        Object.defineProperty(keyRing, 'keyStore', {
+          value: privateKeyKeyStore,
+          writable: true
+        });
+        const result2 = keyRing.type;
+        expect(result2).toBe('privateKey');
+        Object.defineProperty(keyRing, 'keyStore', {
+          value: ledgerKeyStore,
+          writable: true
+        });
+        const result3 = keyRing.type;
+        expect(result3).toBe('ledger');
+      });
     });
   });
 });
