@@ -15,6 +15,29 @@ export const mockKeyCosmos = {
   publicKeyHex: Buffer.from(publicKeyTest, 'hex')
 };
 export const mockPassword = 'password';
+export const mockKeyStore: KeyStore = {
+  version: '1.2',
+  type: 'mnemonic',
+  coinTypeForChain: {},
+  bip44HDPath: undefined,
+  meta: { key: 'value', __id__: '12345' },
+  crypto: {
+    cipher: 'aes-128-ctr',
+    cipherparams: { iv: '00000000000000000000000000000000' },
+    ciphertext: 'b9eda115d22ceca9c026c779fdea49e4',
+    kdf: 'scrypt',
+    kdfparams: {
+      salt: '0000000000000000000000000000000000000000000000000000000000000000',
+      dklen: 32,
+      n: 131072,
+      r: 8,
+      p: 1
+    },
+    mac: '349eb4397e0a2b2394a85bfb7340b9dd46ca5d5502733fd364ccce56c3528363'
+  },
+  addresses: undefined
+};
+
 
 import { KVStore } from '@owallet/common';
 import { RNG } from '@owallet/crypto';

@@ -102,7 +102,11 @@ jest.mock('tronweb', () => ({
 import { KeyRing, KeyRingStatus } from '../keyring';
 import { LedgerService } from '../../ledger';
 import { ScryptParams, CommonCrypto } from '../types';
-import { mockKeyCosmos, mockPassword } from '../__mocks__/keyring';
+import {
+  mockKeyCosmos,
+  mockKeyStore,
+  mockPassword
+} from '../__mocks__/keyring';
 const rngMock = jest.fn(async (array) => array);
 const scryptMock = jest.fn(
   async (text: string, params: ScryptParams) => new Uint8Array(params.dklen)
@@ -156,22 +160,26 @@ describe('keyring', () => {
       expect(result).toBe(KeyRingStatus.EMPTY);
     });
 
-    // it('should return KeyRingStatus.UNLOCKED when MockStatus.isLocked() returns false', () => {
-    //   // Tạo instance của lớp MockStatus
-    //   const instance = new MockStatus();
+    it('should return KeyRingStatus.UNLOCKED when keyRing.isLocked() returns false', () => {
+      // Gán giá trị null cho thuộc tính keyStore
+      Object.defineProperty(keyRing, 'keyStore', {
+        value: mockKeyStore,
+        writable: true
+      });
+      // Monkey patch the loaded property
+      Object.defineProperty(keyRing, 'loaded', {
+        value: true,
+        writable: true
+      });
 
-    //   // Gán giá trị true cho thuộc tính loaded
-    //   instance.loaded = true;
-    //   instance.keyStore = mockKeyStore;
-    //   // Mock MockIsLocked.isLocked() để trả về false
-    //   jest.spyOn(MockStatus.prototype, 'isLocked').mockReturnValue(false);
+      // Mock keyRing.isLocked() để trả về false
+      jest.spyOn(keyRing, 'isLocked').mockReturnValue(false);
 
-    //   // Gọi phương thức status
-    //   const result = instance.status;
-
-    //   // Kiểm tra kết quả
-    //   expect(result).toBe(KeyRingStatus.UNLOCKED);
-    // });
+      // Gọi phương thức status
+      const result = keyRing.status;
+      // Kiểm tra kết quả
+      expect(result).toBe(KeyRingStatus.UNLOCKED);
+    });
 
     // it('should return KeyRingStatus.LOCKED when all conditions are false', () => {
     //   // Tạo instance của lớp MockStatus
