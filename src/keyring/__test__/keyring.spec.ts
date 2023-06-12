@@ -294,14 +294,15 @@ describe('keyring', () => {
       expect(ledgerResult).toBe('ledger');
     });
   
-    // it('should throw an error if type is invalid', () => {
-    //   // Arrange
-    //   const invalidKeyStore: Omit<KeyStore, 'crypto'> = {
-    //     type: 'invalid',
-    //   };
+    it('should throw an error if type is invalid', () => {
+      // Arrange
+      const invalidKeyStore: Omit<KeyStore, 'crypto'> = {
+        ...mockKeyStore,
+        type: 'invalid' as any,
+      };
   
-    //   // Act & Assert
-    //   expect(() => MyClass.getTypeOfKeyStore(invalidKeyStore)).toThrowError('Invalid type of key store');
-    // });
+      // Act & Assert
+      expect(() => KeyRing.getTypeOfKeyStore(invalidKeyStore)).toThrowError('Invalid type of key store');
+    });
   });
 });
