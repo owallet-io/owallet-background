@@ -107,6 +107,7 @@ import {
   mockKeyStore,
   mockPassword
 } from '../__mocks__/keyring';
+import { KeyStore } from '../crypto';
 const rngMock = jest.fn(async (array) => array);
 const scryptMock = jest.fn(
   async (text: string, params: ScryptParams) => new Uint8Array(params.dklen)
@@ -249,5 +250,55 @@ describe('keyring', () => {
         keyRing.lock();
       }).toThrow(Error('Key ring is not unlocked'));
     });
+  });
+  describe('getTypeOfKeyStore', () => {
+    it('should return "mnemonic" if type is null', () => {
+      // Arrange
+      const keyStore: Omit<KeyStore, 'crypto'> = {
+        ...mockKeyStore,
+        type: null,
+      };
+  
+      // Act
+      const result = KeyRing.getTypeOfKeyStore(keyStore);
+  
+      // Assert
+      expect(result).toBe('mnemonic');
+    });
+  
+    // it('should return the correct type if type is valid', () => {
+    //   // Arrange
+    //   const mnemonicKeyStore: Omit<KeyStore, 'crypto'> = {
+    //     type: 'mnemonic',
+    //   };
+  
+    //   const privateKeyKeyStore: Omit<KeyStore, 'crypto'> = {
+    //     type: 'privateKey',
+    //   };
+  
+    //   const ledgerKeyStore: Omit<KeyStore, 'crypto'> = {
+    //     type: 'ledger',
+    //   };
+  
+    //   // Act
+    //   const mnemonicResult = MyClass.getTypeOfKeyStore(mnemonicKeyStore);
+    //   const privateKeyResult = MyClass.getTypeOfKeyStore(privateKeyKeyStore);
+    //   const ledgerResult = MyClass.getTypeOfKeyStore(ledgerKeyStore);
+  
+    //   // Assert
+    //   expect(mnemonicResult).toBe('mnemonic');
+    //   expect(privateKeyResult).toBe('privateKey');
+    //   expect(ledgerResult).toBe('ledger');
+    // });
+  
+    // it('should throw an error if type is invalid', () => {
+    //   // Arrange
+    //   const invalidKeyStore: Omit<KeyStore, 'crypto'> = {
+    //     type: 'invalid',
+    //   };
+  
+    //   // Act & Assert
+    //   expect(() => MyClass.getTypeOfKeyStore(invalidKeyStore)).toThrowError('Invalid type of key store');
+    // });
   });
 });
