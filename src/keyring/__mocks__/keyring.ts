@@ -1,3 +1,21 @@
+//key cosmos example
+const mockAddressCosmos = 'cosmos1eu2ecyzedvkvsfcd5vfht4whgx3uf22fjj9a4n';
+const mnemonicCosmos =
+  'sure tragic expand guess girl boy settle pull monster bleak daughter butter';
+const privateKeyCosmos =
+  '0xae0e3814fad957fb1fdca450a9795f5e64b46061a8618cc4029fcbbfdf215221';
+const publicKeyTest =
+  '0407e5b99e7849b4c2f6af0ee7e7f094b8859f1109962ad6e94fa3672fc8003a301c28c6ba894f7a08c3ca761abf39285c46614d7d8727b1ecd67b2c33d1ee81c1';
+export const mockKeyCosmos = {
+  address: mockAddressCosmos,
+  mnemonic: mnemonicCosmos,
+  privateKey: privateKeyCosmos,
+  privateKeyHex: Buffer.from(privateKeyCosmos, 'hex'),
+  publicKey: publicKeyTest,
+  publicKeyHex: Buffer.from(publicKeyTest, 'hex')
+};
+export const mockPassword = 'password';
+
 import { KVStore } from '@owallet/common';
 import { RNG } from '@owallet/crypto';
 import { BIP44HDPath, CommonCrypto } from '../types';
@@ -182,7 +200,7 @@ export class MockCreateLedgerKey {
   password: string = '';
   crypto: CommonCrypto;
   multiKeyStore: KeyStore[];
-  ledgerKeeper:any;
+  ledgerKeeper: any;
   ledgerPublicKey?: Uint8Array;
   public async createLedgerKey(
     env: Env,
@@ -244,11 +262,11 @@ export class MockCreateLedgerKey {
   get status() {
     return KeyRingStatus.UNLOCKED;
   }
-  CreateLedgerKeyStore(p1,p2,p3,p4,p5,p6,p7,p8):any{
+  CreateLedgerKeyStore(p1, p2, p3, p4, p5, p6, p7, p8): any {
     return null;
   }
-   getNetworkTypeByBip44HDPath(bip44:any):any{
-    return 'cosmos'
+  getNetworkTypeByBip44HDPath(bip44: any): any {
+    return 'cosmos';
   }
   getMultiKeyStoreInfo(): any {
     return null;
@@ -378,7 +396,7 @@ export class MockAddLedgerKey {
   password: string = '';
   crypto: CommonCrypto;
   multiKeyStore: KeyStore[];
-  ledgerKeeper:any;
+  ledgerKeeper: any;
   ledgerPublicKey?: Uint8Array;
   public async addLedgerKey(
     env: Env,
@@ -442,11 +460,11 @@ export class MockAddLedgerKey {
   get status() {
     return KeyRingStatus.UNLOCKED;
   }
-  CreateLedgerKeyStore(p1,p2,p3,p4,p5,p6,p7,p8):any{
+  CreateLedgerKeyStore(p1, p2, p3, p4, p5, p6, p7, p8): any {
     return null;
   }
-   getNetworkTypeByBip44HDPath(bip44:any):any{
-    return 'cosmos'
+  getNetworkTypeByBip44HDPath(bip44: any): any {
+    return 'cosmos';
   }
   getMultiKeyStoreInfo(): any {
     return null;
