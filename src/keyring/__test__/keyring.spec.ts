@@ -138,20 +138,23 @@ describe('keyring', () => {
       expect(result).toBe(KeyRingStatus.NOTLOADED);
     });
 
-    // it('should return KeyRingStatus.EMPTY when keyStore is null', () => {
-    //   // Tạo instance của lớp MockStatus
-    //   const instance = new MockStatus();
+    it('should return KeyRingStatus.EMPTY when keyStore is null', () => {
+      // Gán giá trị null cho thuộc tính keyStore
+      Object.defineProperty(keyRing, 'keyStore', {
+        value: null,
+        writable: true
+      });
+      // Monkey patch the loaded property
+      Object.defineProperty(keyRing, 'loaded', {
+        value: true,
+        writable: true
+      });
 
-    //   // Gán giá trị null cho thuộc tính keyStore
-    //   instance.keyStore = null;
-    //   instance.loaded = true;
-
-    //   // Gọi phương thức status
-    //   const result = instance.status;
-
-    //   // Kiểm tra kết quả
-    //   expect(result).toBe(KeyRingStatus.EMPTY);
-    // });
+      // Gọi phương thức status
+      const result = keyRing.status;
+      // Kiểm tra kết quả
+      expect(result).toBe(KeyRingStatus.EMPTY);
+    });
 
     // it('should return KeyRingStatus.UNLOCKED when MockStatus.isLocked() returns false', () => {
     //   // Tạo instance của lớp MockStatus
