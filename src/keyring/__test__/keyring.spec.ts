@@ -102,6 +102,7 @@ jest.mock('tronweb', () => ({
 import { KeyRing, KeyRingStatus } from '../keyring';
 import { LedgerService } from '../../ledger';
 import { ScryptParams, CommonCrypto } from '../types';
+import { mockKeyCosmos, mockPassword } from '../__mocks__/keyring';
 const rngMock = jest.fn(async (array) => array);
 const scryptMock = jest.fn(
   async (text: string, params: ScryptParams) => new Uint8Array(params.dklen)
@@ -130,20 +131,20 @@ describe('keyring', () => {
       const spyOnStatus = jest.spyOn(keyRing, 'status', 'get');
       spyOnStatus.mockReturnValue(KeyRingStatus.UNLOCKED);
       Object.defineProperty(keyRing, '_privateKey', {
-        value: 'private key',
+        value: mockKeyCosmos.privateKeyHex,
         writable: true
       });
       Object.defineProperty(keyRing, '_mnemonic', {
-        value: 'test mnemonic',
+        value: mockKeyCosmos.mnemonic,
         writable: true
       });
       Object.defineProperty(keyRing, '_ledgerPublicKey', {
-        value: 'test _ledgerPublicKey',
+        value: mockKeyCosmos.publicKeyHex,
         writable: true
       });
       // Monkey patch the password property
       Object.defineProperty(keyRing, 'password', {
-        value: 'oraitest',
+        value: mockPassword,
         writable: true
       });
       // Act
