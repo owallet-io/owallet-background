@@ -14,7 +14,9 @@ import {
   toBuffer,
   publicToAddress
 } from 'ethereumjs-util';
-
+import * as BytesUtils from '@ethersproject/bytes';
+import { keccak256 } from '@ethersproject/keccak256';
+import { Wallet } from '@ethersproject/wallet';
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
 import { KVStore } from '@owallet/common';
 import { LedgerAppType, LedgerService } from '../ledger';
@@ -836,6 +838,8 @@ export class KeyRing {
     } else {
       // Sign with Evmos/Ethereum
       const privKey = this.loadPrivKey(coinType);
+      console.log('coinType ===', coinType);
+
       // Check cointype = 60 in the case that network is evmos(still cosmos but need to sign with ethereum)
       if (networkType === 'evm' || coinType === 60) {
         // Only check coinType === 195 for Tron network, because tron is evm but had cointype = 195, not 60
@@ -849,9 +853,10 @@ export class KeyRing {
 
           return Buffer.from(transactionSign?.signature?.[0], 'hex');
         }
+        console.log('should ger hrere ===', privKey);
         return this.signEthereum(privKey, message);
       }
-
+      console.log(' not should ger hrere ===', privKey);
       return privKey.sign(message);
     }
   }
@@ -1069,17 +1074,17 @@ export class KeyRing {
     }
   }
 
-  private async signEthereum(
+  public async signEthereum(
     privKey: PrivKeySecp256k1,
     message: Uint8Array
   ): Promise<Uint8Array> {
-    // Use ether js to sign Ethereum tx
-    const signature = ecsign(
-      Buffer.from(message),
-      Buffer.from(privKey.toBytes())
-    );
+    const ethWallet = new Wallet(privKey.toBytes());
 
-    return Buffer.concat([signature.r, signature.s, Buffer.from('1b', 'hex')]);
+    const signature = ethWallet._signingKey().signDigest(keccak256(message));
+    const splitSignature = BytesUtils.splitSignature(signature);
+    return BytesUtils.arrayify(
+      BytesUtils.concat([splitSignature.r, splitSignature.s])
+    );
   }
 
   public async signProxyDecryptionData(
