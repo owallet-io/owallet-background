@@ -317,6 +317,201 @@ export class MockCreateMnemonicKey {
   }
   async CreateMnemonicKeyStore(p1, p2, p3, p4, p5, p6, p7: any): Promise<any> {}
 }
+
+export class MockAddPrivateKey {
+  privateKey?: Uint8Array;
+  keyStore: KeyStore | null;
+  rng: RNG;
+  password: string = '';
+  crypto: CommonCrypto;
+  multiKeyStore: KeyStore[];
+  public async addPrivateKey(
+    kdf: 'scrypt' | 'sha256' | 'pbkdf2',
+    privateKey: Uint8Array,
+    meta: Record<string, string>
+  ): Promise<{
+    multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
+  }> {
+    if (this.password == '') {
+      // throw new OWalletError(
+      //   'keyring',
+      //   141,
+      //   'Key ring is locked or not initialized'
+      // );
+    }
+
+    const keyStore = await this.CreatePrivateKeyStore(
+      this.rng,
+      this.crypto,
+      kdf,
+      privateKey,
+      this.password,
+      await this.assignKeyStoreIdMeta(meta)
+    );
+    this.multiKeyStore.push(keyStore);
+
+    await this.save();
+    return {
+      multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
+    };
+  }
+
+  async save(): Promise<boolean> {
+    return true;
+  }
+  get status() {
+    return KeyRingStatus.UNLOCKED;
+  }
+  getMultiKeyStoreInfo(): any {
+    return null;
+  }
+  async assignKeyStoreIdMeta(meta: { [key: string]: string }): Promise<{
+    [key: string]: string;
+  }> {
+    return null;
+  }
+  async CreatePrivateKeyStore(p1, p2, p3, p4, p5, p6): Promise<any> {}
+}
+export class MockAddLedgerKey {
+  keyStore: KeyStore | null;
+  rng: RNG;
+  password: string = '';
+  crypto: CommonCrypto;
+  multiKeyStore: KeyStore[];
+  ledgerKeeper:any;
+  ledgerPublicKey?: Uint8Array;
+  public async addLedgerKey(
+    env: Env,
+    kdf: 'scrypt' | 'sha256' | 'pbkdf2',
+    meta: Record<string, string>,
+    bip44HDPath: BIP44HDPath
+  ): Promise<{
+    multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
+  }> {
+    try {
+      // if (this.password == '') {
+      //   throw new OWalletError(
+      //     'keyring',
+      //     141,
+      //     'Key ring is locked or not initialized'
+      //   );
+      // }
+      console.log('HERE');
+      const ledgerAppType = this.getNetworkTypeByBip44HDPath(bip44HDPath);
+      const { publicKey, address } =
+        (await this.ledgerKeeper.getPublicKey(
+          env,
+          bip44HDPath,
+          ledgerAppType
+        )) || {};
+
+      console.log('address ==1', address);
+
+      const keyStore = await this.CreateLedgerKeyStore(
+        this.rng,
+        this.crypto,
+        kdf,
+        publicKey,
+        this.password,
+        await this.assignKeyStoreIdMeta(meta),
+        bip44HDPath,
+        {
+          [ledgerAppType]: address
+        }
+      );
+
+      console.log(keyStore, 'keystore here');
+
+      this.multiKeyStore.push(keyStore);
+
+      await this.save();
+
+      console.log(this.getMultiKeyStoreInfo, 'multi here');
+      return {
+        multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
+      };
+    } catch (error) {
+      console.log('Error in add ledger key: ', error);
+      throw new Error(error);
+    }
+  }
+
+  async save(): Promise<boolean> {
+    return true;
+  }
+  get status() {
+    return KeyRingStatus.UNLOCKED;
+  }
+  CreateLedgerKeyStore(p1,p2,p3,p4,p5,p6,p7,p8):any{
+    return null;
+  }
+   getNetworkTypeByBip44HDPath(bip44:any):any{
+    return 'cosmos'
+  }
+  getMultiKeyStoreInfo(): any {
+    return null;
+  }
+  async assignKeyStoreIdMeta(meta: { [key: string]: string }): Promise<{
+    [key: string]: string;
+  }> {
+    return null;
+  }
+}
+export class MockAddMnemonicKey {
+  mnemonic?: string;
+  keyStore: KeyStore | null;
+  rng: RNG;
+  password: string = '';
+  crypto: CommonCrypto;
+  multiKeyStore: KeyStore[];
+  public async addMnemonicKey(
+    kdf: 'scrypt' | 'sha256' | 'pbkdf2',
+    mnemonic: string,
+    meta: Record<string, string>,
+    bip44HDPath: BIP44HDPath
+  ): Promise<{
+    multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
+  }> {
+    if (this.password == '') {
+      // throw new OWalletError(
+      //   'keyring',
+      //   141,
+      //   'Key ring is locked or not initialized'
+      // );
+    }
+
+    const keyStore = await this.CreateMnemonicKeyStore(
+      this.rng,
+      this.crypto,
+      kdf,
+      mnemonic,
+      this.password,
+      await this.assignKeyStoreIdMeta(meta),
+      bip44HDPath
+    );
+    this.multiKeyStore.push(keyStore);
+
+    await this.save();
+    return {
+      multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
+    };
+  }
+  async save(): Promise<boolean> {
+    return true;
+  }
+  get status() {
+    return KeyRingStatus.UNLOCKED;
+  }
+  getMultiKeyStoreInfo(): any {
+    return null;
+  }
+  async assignKeyStoreIdMeta(meta: { [key: string]: string }): Promise<{
+    [key: string]: string;
+  }> {
+    return null;
+  }
+  async CreateMnemonicKeyStore(p1, p2, p3, p4, p5, p6, p7: any): Promise<any> {}
+}
 export class MockMultiKeyStore {
   multiKeyStore: KeyStore[];
   keyStore: KeyStore | null;

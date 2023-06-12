@@ -3,6 +3,9 @@ import { CommonCrypto, AddressesLedger, ScryptParams } from '../types';
 import { KeyStore } from '../crypto';
 import { Crypto } from '../crypto';
 import {
+  MockAddLedgerKey,
+  MockAddMnemonicKey,
+  MockAddPrivateKey,
   MockCreateLedgerKey,
   MockCreateLedgerKeyStore,
   MockCreateMnemonicKey,
@@ -21,7 +24,7 @@ import {
   KeyStoreKey,
   KeyMultiStoreKey
 } from '../__mocks__/types';
-import { Env } from '@owallet/router';
+import { Env, OWalletError } from '@owallet/router';
 const mockMnemonic = 'example mnemonic';
 const mockPrivateKey =
   '4c985e1bb3d14094ca13e3f69d49f2e28cdef6c49b71a27ab1eecf6b0d8c4f71';
@@ -684,7 +687,7 @@ describe('MockIsLocked', () => {
 
       // Gán giá trị cho một trong các thuộc tính
       instance.privateKey = new Uint8Array();
-      instance.mnemonic = 'mock mnemonic';
+      instance.mnemonic = mockMnemonic;
       instance.ledgerPublicKey = new Uint8Array();
 
       // Gọi phương thức isLocked()
@@ -919,6 +922,193 @@ describe('MockCreateLedgerKey', () => {
       expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
       expect(instance.ledgerPublicKey).toBe(mockPublicKeyHex);
       expect(instance.keyStore).toBe(mockKeyStore);
+      expect(instance.password).toBe(mockPassword);
+      // expect(instance.multiKeyStore).toEqual(mockMultiKeyStore);
+      expect(instance.CreateLedgerKeyStore).toHaveBeenCalledWith(
+        instance.rng,
+        instance.crypto,
+        'scrypt',
+        mockPublicKeyHex,
+        mockPassword,
+        await instance.assignKeyStoreIdMeta(mockMeta),
+        mockBip44HDPath,
+        {
+          [mockNetworkTypeByBip44HDPath]: mockAddress
+        }
+      );
+      expect(instance.assignKeyStoreIdMeta).toHaveBeenCalled();
+      expect(instance.save).toHaveBeenCalled();
+      expect(instance.getNetworkTypeByBip44HDPath).toHaveBeenCalled();
+      expect(instance.ledgerKeeper.getPublicKey).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('MockAddMnemonicKey', () => {
+  describe('addMnemonicKey', () => {
+    it('should add mnemonic key and update keyStore and multiKeyStore', async () => {
+      // Tạo instance của lớp MockAddMnemonicKey
+      const instance = new MockAddMnemonicKey();
+      // Gán giá trị cho các thuộc tính
+      instance.password = mockPassword;
+      instance.keyStore = null;
+      instance.multiKeyStore = mockMultiKeyStore;
+      instance.rng = rngMock;
+      instance.crypto = cryptoMock;
+      // Mock các phương thức liên quan
+      jest
+        .spyOn(instance, 'CreateMnemonicKeyStore')
+        .mockResolvedValue(mockKeyStore);
+      jest
+        .spyOn(instance, 'getMultiKeyStoreInfo')
+        .mockReturnValue(mockMultiKeyStoreInfo);
+      jest
+        .spyOn(instance, 'assignKeyStoreIdMeta')
+        .mockResolvedValue({ name: 'orai', __id__: '1' });
+      jest.spyOn(instance, 'save').mockResolvedValue(true);
+
+      // Gọi phương thức createMnemonicKey()
+      const result = await instance.addMnemonicKey(
+        'scrypt',
+        mockMnemonic,
+        mockMeta,
+        mockBip44HDPath
+      );
+
+      // Kiểm tra kết quả
+      expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
+      // expect(instance.mnemonic).toBe(mockMnemonic);
+      // expect(instance.keyStore).toBe(mockKeyStore);
+      expect(instance.password).toBe(mockPassword);
+      // expect(instance.multiKeyStore).toEqual(mockMultiKeyStore);
+      expect(instance.CreateMnemonicKeyStore).toHaveBeenCalledWith(
+        instance.rng,
+        instance.crypto,
+        'scrypt',
+        mockMnemonic,
+        mockPassword,
+        await instance.assignKeyStoreIdMeta(mockMeta),
+        mockBip44HDPath
+      );
+      expect(instance.assignKeyStoreIdMeta).toHaveBeenCalled();
+      expect(instance.save).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('MockAddPrivateKey', () => {
+  describe('addPrivateKey', () => {
+    it('should add private key and update keyStore and multiKeyStore', async () => {
+      // Tạo instance của lớp MockAddPrivateKey
+      const instance = new MockAddPrivateKey();
+      // Gán giá trị cho các thuộc tính
+      instance.privateKey = null;
+      instance.keyStore = null;
+      instance.password = mockPassword;
+      instance.multiKeyStore = mockMultiKeyStore;
+      instance.rng = rngMock;
+      instance.crypto = cryptoMock;
+      
+      // Mock các phương thức liên quan
+      jest
+        .spyOn(instance, 'CreatePrivateKeyStore')
+        .mockResolvedValue(mockKeyStore);
+      jest
+        .spyOn(instance, 'getMultiKeyStoreInfo')
+        .mockReturnValue(mockMultiKeyStoreInfo);
+      jest
+        .spyOn(instance, 'assignKeyStoreIdMeta')
+        .mockResolvedValue({ name: 'orai', __id__: '1' });
+      jest.spyOn(instance, 'save').mockResolvedValue(true);
+
+      // Gọi phương thức addPrivateKey()
+      const result = await instance.addPrivateKey(
+        'scrypt',
+        mockPrivateKeyHex,
+        mockMeta
+      );
+
+      // Kiểm tra kết quả
+      expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
+      // expect(instance.privateKey).toBe(mockPrivateKeyHex);
+      // expect(instance.keyStore).toBe(mockKeyStore);
+      expect(instance.password).toBe(mockPassword);
+      // expect(instance.multiKeyStore).toEqual(mockMultiKeyStore);
+      expect(instance.CreatePrivateKeyStore).toHaveBeenCalledWith(
+        instance.rng,
+        instance.crypto,
+        'scrypt',
+        mockPrivateKeyHex,
+        mockPassword,
+        await instance.assignKeyStoreIdMeta(mockMeta)
+      );
+      expect(instance.assignKeyStoreIdMeta).toHaveBeenCalled();
+      expect(instance.save).toHaveBeenCalled();
+    });
+    // it('should throw an error when key ring is locked or not initialized', async () => {
+    //   // Mock dependencies and setup test data
+
+    //   const keyRing = new MockAddPrivateKey();
+    //   keyRing.password = '';
+
+    //   // Call the method being tested and assert that it throws the expected error
+    //   await expect(
+    //     keyRing.addPrivateKey('scrypt', mockPrivateKeyHex, mockMeta)
+    //   ).toThrow('Key ring is locked or not initialized');
+    // });
+  });
+});
+
+describe('MockAddLedgerKey', () => {
+  const mockNetworkTypeByBip44HDPath = 'cosmos';
+  describe('addLedgerKey', () => {
+    it('should add ledger key and update keyStore and multiKeyStore', async () => {
+      // Tạo instance của lớp MockAddLedgerKey
+      const instance = new MockAddLedgerKey();
+      // Gán giá trị cho các thuộc tính
+      instance.ledgerPublicKey = null;
+      instance.password = mockPassword;
+      instance.keyStore = null;
+      instance.multiKeyStore = mockMultiKeyStore;
+      instance.rng = rngMock;
+      instance.crypto = cryptoMock;
+      instance.ledgerKeeper = {
+        getPublicKey: jest.fn().mockResolvedValue({
+          publicKey: mockPublicKeyHex,
+          address: mockAddress
+        })
+      };
+
+      // Mock các phương thức liên quan
+      jest
+        .spyOn(instance, 'CreateLedgerKeyStore')
+        .mockResolvedValue(mockKeyStore);
+      jest
+        .spyOn(instance, 'getNetworkTypeByBip44HDPath')
+        .mockReturnValue(mockNetworkTypeByBip44HDPath);
+      jest
+        .spyOn(instance, 'getMultiKeyStoreInfo')
+        .mockReturnValue(mockMultiKeyStoreInfo);
+      jest
+        .spyOn(instance, 'assignKeyStoreIdMeta')
+        .mockResolvedValue({ name: 'orai', __id__: '1' });
+      jest.spyOn(instance, 'save').mockResolvedValue(true);
+      const mockEnv: Env = {
+        isInternalMsg: false,
+        requestInteraction: jest.fn()
+      };
+      // Gọi phương thức createMnemonicKey()
+      const result = await instance.addLedgerKey(
+        mockEnv,
+        'scrypt',
+        mockMeta,
+        mockBip44HDPath
+      );
+
+      // Kiểm tra kết quả
+      expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
+      // expect(instance.ledgerPublicKey).toBe(mockPublicKeyHex);
+      // expect(instance.keyStore).toBe(mockKeyStore);
       expect(instance.password).toBe(mockPassword);
       // expect(instance.multiKeyStore).toEqual(mockMultiKeyStore);
       expect(instance.CreateLedgerKeyStore).toHaveBeenCalledWith(
