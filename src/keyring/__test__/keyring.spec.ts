@@ -266,30 +266,33 @@ describe('keyring', () => {
       expect(result).toBe('mnemonic');
     });
   
-    // it('should return the correct type if type is valid', () => {
-    //   // Arrange
-    //   const mnemonicKeyStore: Omit<KeyStore, 'crypto'> = {
-    //     type: 'mnemonic',
-    //   };
+    it('should return the correct type if type is valid', () => {
+      // Arrange
+      const mnemonicKeyStore: Omit<KeyStore, 'crypto'> = {
+        ...mockKeyStore,
+        type: 'mnemonic',
+      };
   
-    //   const privateKeyKeyStore: Omit<KeyStore, 'crypto'> = {
-    //     type: 'privateKey',
-    //   };
+      const privateKeyKeyStore: Omit<KeyStore, 'crypto'> = {
+        ...mockKeyStore,
+        type: 'privateKey',
+      };
   
-    //   const ledgerKeyStore: Omit<KeyStore, 'crypto'> = {
-    //     type: 'ledger',
-    //   };
+      const ledgerKeyStore: Omit<KeyStore, 'crypto'> = {
+        ...mockKeyStore,
+        type: 'ledger',
+      };
   
-    //   // Act
-    //   const mnemonicResult = MyClass.getTypeOfKeyStore(mnemonicKeyStore);
-    //   const privateKeyResult = MyClass.getTypeOfKeyStore(privateKeyKeyStore);
-    //   const ledgerResult = MyClass.getTypeOfKeyStore(ledgerKeyStore);
+      // Act
+      const mnemonicResult = KeyRing.getTypeOfKeyStore(mnemonicKeyStore);
+      const privateKeyResult = KeyRing.getTypeOfKeyStore(privateKeyKeyStore);
+      const ledgerResult = KeyRing.getTypeOfKeyStore(ledgerKeyStore);
   
-    //   // Assert
-    //   expect(mnemonicResult).toBe('mnemonic');
-    //   expect(privateKeyResult).toBe('privateKey');
-    //   expect(ledgerResult).toBe('ledger');
-    // });
+      // Assert
+      expect(mnemonicResult).toBe('mnemonic');
+      expect(privateKeyResult).toBe('privateKey');
+      expect(ledgerResult).toBe('ledger');
+    });
   
     // it('should throw an error if type is invalid', () => {
     //   // Arrange
