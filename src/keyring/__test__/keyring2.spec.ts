@@ -198,7 +198,7 @@ describe('getIncrementalNumber', () => {
       // Giá trị trả về từ getIncrementalNumber
       // const mockIncrementalNumber = 1;
       const mockIncrementalNumber = await mockAssignKey.getIncrementalNumber();
-      console.log('mockIncrementalNumber: ', mockIncrementalNumber);
+      
       // Mock implementation cho getIncrementalNumber
       jest
         .spyOn(mockAssignKey, 'getIncrementalNumber')
@@ -206,7 +206,7 @@ describe('getIncrementalNumber', () => {
 
       // Gọi hàm assignKeyStoreIdMeta
       const result = await mockAssignKey.assignKeyStoreIdMeta(initialMeta);
-      console.log('mockAssignKey: ', result);
+      
 
       // Kiểm tra xem getIncrementalNumber đã được gọi
       expect(mockAssignKey.getIncrementalNumber).toHaveBeenCalled();
@@ -323,7 +323,7 @@ describe('Keyring', () => {
         mockBip44HDPath,
         addresses
       );
-      // console.log('result: ', result);
+      
       keyStoreEncrypted = result;
       expect(rngMock).toHaveBeenCalledTimes(2);
       expect(scryptMock).toHaveBeenCalledTimes(1);
@@ -429,7 +429,7 @@ describe('Keyring', () => {
         meta,
         mockBip44HDPath
       );
-      // console.log('result: ', result);
+      
 
       // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
       expect(Crypto.encrypt).toHaveBeenCalledWith(
@@ -503,7 +503,7 @@ describe('Keyring', () => {
           cosmos: mockAddress
         }
       );
-      // console.log('result: ', result);
+      
 
       // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
       expect(Crypto.encrypt).toHaveBeenCalledWith(
@@ -576,7 +576,7 @@ describe('Keyring', () => {
         password,
         meta
       );
-      console.log('result: ', result);
+      
 
       // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
       expect(Crypto.encrypt).toHaveBeenCalledWith(

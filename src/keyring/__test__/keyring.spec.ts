@@ -125,6 +125,68 @@ describe('keyring', () => {
     rngMock,
     cryptoMock
   );
+  describe('status', () => {
+    it('should return KeyRingStatus.NOTLOADED when loaded is false', () => {
+      // Monkey patch the loaded property
+      Object.defineProperty(keyRing, 'loaded', {
+        value: false,
+        writable: true
+      });
+      // Gọi phương thức status
+      const result = keyRing.status;
+      // Kiểm tra kết quả
+      expect(result).toBe(KeyRingStatus.NOTLOADED);
+    });
+
+    // it('should return KeyRingStatus.EMPTY when keyStore is null', () => {
+    //   // Tạo instance của lớp MockStatus
+    //   const instance = new MockStatus();
+
+    //   // Gán giá trị null cho thuộc tính keyStore
+    //   instance.keyStore = null;
+    //   instance.loaded = true;
+
+    //   // Gọi phương thức status
+    //   const result = instance.status;
+
+    //   // Kiểm tra kết quả
+    //   expect(result).toBe(KeyRingStatus.EMPTY);
+    // });
+
+    // it('should return KeyRingStatus.UNLOCKED when MockStatus.isLocked() returns false', () => {
+    //   // Tạo instance của lớp MockStatus
+    //   const instance = new MockStatus();
+
+    //   // Gán giá trị true cho thuộc tính loaded
+    //   instance.loaded = true;
+    //   instance.keyStore = mockKeyStore;
+    //   // Mock MockIsLocked.isLocked() để trả về false
+    //   jest.spyOn(MockStatus.prototype, 'isLocked').mockReturnValue(false);
+
+    //   // Gọi phương thức status
+    //   const result = instance.status;
+
+    //   // Kiểm tra kết quả
+    //   expect(result).toBe(KeyRingStatus.UNLOCKED);
+    // });
+
+    // it('should return KeyRingStatus.LOCKED when all conditions are false', () => {
+    //   // Tạo instance của lớp MockStatus
+    //   const instance = new MockStatus();
+    //   instance.keyStore = mockKeyStore;
+    //   // Gán giá trị true cho thuộc tính loaded
+    //   instance.loaded = true;
+
+    //   // Mock MockIsLocked.isLocked() để trả về true
+    //   jest.spyOn(MockStatus.prototype, 'isLocked').mockReturnValue(true);
+
+    //   // Gọi phương thức status
+    //   const result = instance.status;
+
+    //   // Kiểm tra kết quả
+    //   expect(result).toBe(KeyRingStatus.LOCKED);
+    // });
+  });
   describe('lock', () => {
     it('should lock the key ring if it is unlocked', () => {
       // Arrange
