@@ -1,4 +1,4 @@
-import { Hash } from '@owallet/crypto';
+// jest.enableAutomock();
 
 describe('Test Keyring', () => {
   it('test_sign', async () => {});

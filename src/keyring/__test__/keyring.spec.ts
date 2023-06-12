@@ -64,6 +64,74 @@ const mockMultiKeyStoreInfo = [
   }
 ];
 const mockBip44HDPath: BIP44HDPath = undefined;
+const mockMultiKeyStore: KeyStore[] = [
+  {
+    version: '1.2',
+    type: 'mnemonic',
+    coinTypeForChain: {},
+    bip44HDPath: undefined,
+    meta: { key: 'value', __id__: '12345' },
+    crypto: {
+      cipher: 'aes-128-ctr',
+      cipherparams: { iv: '00000000000000000000000000000000' },
+      ciphertext: 'b9eda115d22ceca9c026c779fdea49e4',
+      kdf: 'scrypt',
+      kdfparams: {
+        salt: '0000000000000000000000000000000000000000000000000000000000000000',
+        dklen: 32,
+        n: 131072,
+        r: 8,
+        p: 1
+      },
+      mac: '349eb4397e0a2b2394a85bfb7340b9dd46ca5d5502733fd364ccce56c3528363'
+    },
+    addresses: undefined
+  },
+  {
+    version: '1.2',
+    type: 'mnemonic',
+    coinTypeForChain: {},
+    bip44HDPath: undefined,
+    meta: { key: 'value', __id__: '1111' },
+    crypto: {
+      cipher: 'aes-128-ctr',
+      cipherparams: { iv: '00000000000000000000000000000000' },
+      ciphertext: 'b9eda115d22ceca9c026c779fdea49e4',
+      kdf: 'scrypt',
+      kdfparams: {
+        salt: '0000000000000000000000000000000000000000000000000000000000000000',
+        dklen: 32,
+        n: 131072,
+        r: 8,
+        p: 1
+      },
+      mac: '349eb4397e0a2b2394a85bfb7340b9dd46ca5d5502733fd364ccce56c3528363'
+    },
+    addresses: undefined
+  }
+];
+const mockKeyStore: KeyStore = {
+  version: '1.2',
+  type: 'mnemonic',
+  coinTypeForChain: {},
+  bip44HDPath: undefined,
+  meta: { key: 'value', __id__: '12345' },
+  crypto: {
+    cipher: 'aes-128-ctr',
+    cipherparams: { iv: '00000000000000000000000000000000' },
+    ciphertext: 'b9eda115d22ceca9c026c779fdea49e4',
+    kdf: 'scrypt',
+    kdfparams: {
+      salt: '0000000000000000000000000000000000000000000000000000000000000000',
+      dklen: 32,
+      n: 131072,
+      r: 8,
+      p: 1
+    },
+    mac: '349eb4397e0a2b2394a85bfb7340b9dd46ca5d5502733fd364ccce56c3528363'
+  },
+  addresses: undefined
+};
 describe('getIncrementalNumber', () => {
   test('should return the correct incremental number', async () => {
     // Mock kvStore
@@ -206,74 +274,7 @@ describe('getKeyStoreId', () => {
     );
   });
 });
-const mockMultiKeyStore: KeyStore[] = [
-  {
-    version: '1.2',
-    type: 'mnemonic',
-    coinTypeForChain: {},
-    bip44HDPath: undefined,
-    meta: { key: 'value', __id__: '12345' },
-    crypto: {
-      cipher: 'aes-128-ctr',
-      cipherparams: { iv: '00000000000000000000000000000000' },
-      ciphertext: 'b9eda115d22ceca9c026c779fdea49e4',
-      kdf: 'scrypt',
-      kdfparams: {
-        salt: '0000000000000000000000000000000000000000000000000000000000000000',
-        dklen: 32,
-        n: 131072,
-        r: 8,
-        p: 1
-      },
-      mac: '349eb4397e0a2b2394a85bfb7340b9dd46ca5d5502733fd364ccce56c3528363'
-    },
-    addresses: undefined
-  },
-  {
-    version: '1.2',
-    type: 'mnemonic',
-    coinTypeForChain: {},
-    bip44HDPath: undefined,
-    meta: { key: 'value', __id__: '1111' },
-    crypto: {
-      cipher: 'aes-128-ctr',
-      cipherparams: { iv: '00000000000000000000000000000000' },
-      ciphertext: 'b9eda115d22ceca9c026c779fdea49e4',
-      kdf: 'scrypt',
-      kdfparams: {
-        salt: '0000000000000000000000000000000000000000000000000000000000000000',
-        dklen: 32,
-        n: 131072,
-        r: 8,
-        p: 1
-      },
-      mac: '349eb4397e0a2b2394a85bfb7340b9dd46ca5d5502733fd364ccce56c3528363'
-    },
-    addresses: undefined
-  }
-];
-const mockKeyStore: KeyStore = {
-  version: '1.2',
-  type: 'mnemonic',
-  coinTypeForChain: {},
-  bip44HDPath: undefined,
-  meta: { key: 'value', __id__: '12345' },
-  crypto: {
-    cipher: 'aes-128-ctr',
-    cipherparams: { iv: '00000000000000000000000000000000' },
-    ciphertext: 'b9eda115d22ceca9c026c779fdea49e4',
-    kdf: 'scrypt',
-    kdfparams: {
-      salt: '0000000000000000000000000000000000000000000000000000000000000000',
-      dklen: 32,
-      n: 131072,
-      r: 8,
-      p: 1
-    },
-    mac: '349eb4397e0a2b2394a85bfb7340b9dd46ca5d5502733fd364ccce56c3528363'
-  },
-  addresses: undefined
-};
+
 describe('MockMultiKeyStore', () => {
   describe('getMultiKeyStoreInfo', () => {
     it('should return the correct multiKeyStoreInfo', () => {
@@ -295,7 +296,6 @@ describe('MockMultiKeyStore', () => {
 });
 describe('Keyring', () => {
   let keyStoreEncrypted: KeyStore;
-
   const text = 'This is a test';
   const password = mockPassword;
   const meta = { key: 'value' };
@@ -818,7 +818,6 @@ describe('MockCreateMnemonicKey', () => {
     });
   });
 });
-
 describe('MockCreatePrivateKey', () => {
   describe('createPrivateKey', () => {
     it('should create private key and update keyStore and multiKeyStore', async () => {
@@ -870,7 +869,6 @@ describe('MockCreatePrivateKey', () => {
     });
   });
 });
-
 describe('MockCreateLedgerKey', () => {
   const mockNetworkTypeByBip44HDPath = 'cosmos';
   describe('createLedgerKey', () => {
@@ -943,7 +941,6 @@ describe('MockCreateLedgerKey', () => {
     });
   });
 });
-
 describe('MockAddMnemonicKey', () => {
   describe('addMnemonicKey', () => {
     it('should add mnemonic key and update keyStore and multiKeyStore', async () => {
@@ -995,7 +992,6 @@ describe('MockAddMnemonicKey', () => {
     });
   });
 });
-
 describe('MockAddPrivateKey', () => {
   describe('addPrivateKey', () => {
     it('should add private key and update keyStore and multiKeyStore', async () => {
@@ -1058,7 +1054,6 @@ describe('MockAddPrivateKey', () => {
     // });
   });
 });
-
 describe('MockAddLedgerKey', () => {
   const mockNetworkTypeByBip44HDPath = 'cosmos';
   describe('addLedgerKey', () => {
