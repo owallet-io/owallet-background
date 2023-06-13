@@ -1,5 +1,6 @@
 import { RNG } from '@owallet/crypto';
 import {
+    mockAddressLedger,
   mockBip44HDPath,
   mockCrypto,
   mockKdfExtension,
@@ -215,18 +216,19 @@ describe('Crypto', () => {
           mockRng,
           mockCrypto,
           mockKdfExtension,
-          'mnemonic',
-          mockKeyCosmos.mnemonic,
+          'ledger',
+          Buffer.from(mockKeyCosmos.publicKeyHex).toString('hex'),
           mockPassword,
           metaHasId,
-          mockBip44HDPath
+          mockBip44HDPath,
+          mockAddressLedger
         );
 
         expect(mockRng).toHaveBeenCalled();
         expect(mockRng).toBeCalledTimes(2);
         expect(scryptSpy).toHaveBeenCalledWith(mockPassword, scryptParams);
         expect(result.version).toBe('1.2');
-        expect(result.type).toBe('mnemonic');
+        expect(result.type).toBe('ledger');
         expect(result.coinTypeForChain).toEqual({});
         expect(result.bip44HDPath).toBe(mockBip44HDPath);
         expect(result.meta).toBe(metaHasId);
@@ -236,7 +238,7 @@ describe('Crypto', () => {
         expect(result.crypto.kdf).toBe(mockKdfExtension);
         expect(result.crypto.kdfparams).toEqual(scryptParams);
         expect(result.crypto.mac).toEqual(expect.any(String));
-        expect(result.addresses).toBe(undefined);
+        expect(result.addresses).toBe(mockAddressLedger);
       });
 
       it('should encrypt with sha256 and return a KeyStore object', async () => {
@@ -245,17 +247,18 @@ describe('Crypto', () => {
           mockRng,
           mockCrypto,
           'sha256',
-          'mnemonic',
-          mockKeyCosmos.mnemonic,
+          'ledger',
+          Buffer.from(mockKeyCosmos.publicKeyHex).toString('hex'),
           mockPassword,
           metaHasId,
-          mockBip44HDPath
+          mockBip44HDPath,
+          mockAddressLedger
         );
         expect(mockRng).toHaveBeenCalled();
         expect(mockRng).toBeCalledTimes(2);
         expect(scryptSpy).not.toHaveBeenCalled();
         expect(result.version).toBe('1.2');
-        expect(result.type).toBe('mnemonic');
+        expect(result.type).toBe('ledger');
         expect(result.coinTypeForChain).toEqual({});
         expect(result.bip44HDPath).toBe(mockBip44HDPath);
         expect(result.meta).toBe(metaHasId);
@@ -265,7 +268,7 @@ describe('Crypto', () => {
         expect(result.crypto.kdf).toBe('sha256');
         expect(result.crypto.kdfparams).toEqual(scryptParams);
         expect(result.crypto.mac).toEqual(expect.any(String));
-        expect(result.addresses).toBe(undefined);
+        expect(result.addresses).toBe(mockAddressLedger);
       });
 
       it('should encrypt with pbkdf2 and return a KeyStore object', async () => {
@@ -275,17 +278,18 @@ describe('Crypto', () => {
           mockRng,
           mockCrypto,
           mockKdfMobile,
-          'mnemonic',
-          mockKeyCosmos.mnemonic,
+          'ledger',
+          Buffer.from(mockKeyCosmos.publicKeyHex).toString('hex'),
           mockPassword,
           metaHasId,
-          mockBip44HDPath
+          mockBip44HDPath,
+          mockAddressLedger
         );
         expect(mockRng).toHaveBeenCalled();
         expect(mockRng).toBeCalledTimes(2);
         expect(scryptSpy).not.toHaveBeenCalled();
         expect(result.version).toBe('1.2');
-        expect(result.type).toBe('mnemonic');
+        expect(result.type).toBe('ledger');
         expect(result.coinTypeForChain).toEqual({});
         expect(result.bip44HDPath).toBe(mockBip44HDPath);
         expect(result.meta).toBe(metaHasId);
@@ -295,7 +299,7 @@ describe('Crypto', () => {
         expect(result.crypto.kdf).toBe(mockKdfMobile);
         expect(result.crypto.kdfparams).toEqual(scryptParams);
         expect(result.crypto.mac).toEqual(expect.any(String));
-        expect(result.addresses).toBe(undefined);
+        expect(result.addresses).toBe(mockAddressLedger);
       });
     });
   });

@@ -15,6 +15,9 @@ export const mockKeyCosmos = {
   publicKey: publicKeyTest,
   publicKeyHex: Buffer.from(publicKeyTest, 'hex')
 };
+export const mockAddressLedger = {
+  cosmos: mockKeyCosmos.address
+};
 export const mockPassword = '12345678';
 export const mockBip44HDPath: BIP44HDPath = {
   coinType: 118,
@@ -25,7 +28,7 @@ export const mockBip44HDPath: BIP44HDPath = {
 export const rng = (array) => {
   return Promise.resolve(crypto.getRandomValues(array));
 };
-export const mockRng = jest.fn().mockImplementation(rng)
+export const mockRng = jest.fn().mockImplementation(rng);
 export const mockKdfMobile = 'pbkdf2';
 export const mockKdfExtension = 'scrypt';
 export const mockMeta = { name: 'orai' };
