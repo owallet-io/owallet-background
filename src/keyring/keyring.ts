@@ -12,10 +12,11 @@ import {
   splitPath
 } from '@owallet/common';
 import { ChainIdHelper } from '@owallet/cosmos';
-import { Mnemonic, PrivKeySecp256k1, PubKeySecp256k1, RNG } from '@owallet/crypto';
+import { Mnemonic, PrivKeySecp256k1, PubKeySecp256k1, RNG, Hash } from '@owallet/crypto';
 import { Env, OWalletError } from '@owallet/router';
 import { ChainInfo } from '@owallet/types';
 import { ETH } from '@tharsis/address-converter';
+import AES from 'aes-js';
 import { Buffer } from 'buffer';
 import eccrypto from 'eccrypto';
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
@@ -88,17 +89,20 @@ export class KeyRing {
   private multiKeyStore: KeyStore[];
 
   private password: string = '';
+  private _iv: string;
 
   constructor(
     private readonly embedChainInfos: ChainInfo[],
     private readonly kvStore: KVStore,
     private readonly ledgerKeeper: LedgerService,
     private readonly rng: RNG,
-    private readonly crypto: CommonCrypto
+    private readonly crypto: CommonCrypto,
+    private readonly seed: number[] = [87, 235, 226, 143, 100, 250, 250, 208, 174, 131, 56, 214]
   ) {
     this.loaded = false;
     this.keyStore = null;
     this.multiKeyStore = [];
+    this._iv = Buffer.from(Hash.sha256(Uint8Array.from(this.seed))).toString('hex');
   }
 
   public static getTypeOfKeyStore(keyStore: Omit<KeyStore, 'crypto'>): 'mnemonic' | 'privateKey' | 'ledger' {
@@ -332,9 +336,10 @@ export class KeyRing {
     this.privateKey = undefined;
     this.ledgerPublicKey = undefined;
     this.password = '';
+    await this.kvStore.set('passcode', null);
   }
 
-  public async unlock(password: string) {
+  public async unlock(password: string, saving = true) {
     if (!this.keyStore || this.type === 'none') {
       throw new Error('Key ring not initialized');
     }
@@ -351,12 +356,31 @@ export class KeyRing {
       throw new Error('Unexpected type of keyring');
     }
 
-    this.password = password;
+    if (saving) {
+      this.password = password;
+      const key = this.getKeyExpired();
+      const aesCtr = new AES.ModeOfOperation.ctr(key);
+      const prefix = Buffer.alloc(password.length);
+      // add prefix to make passcode more obfuscated
+      crypto.getRandomValues(prefix);
+      const encryptedBytes = aesCtr.encrypt(Buffer.from(this._iv + password));
+
+      await this.kvStore.set('passcode', Buffer.from(encryptedBytes).toString('base64'));
+      console.log(encryptedBytes, await this.kvStore.get<string>('passcode'));
+    }
   }
 
   public async save() {
     await this.kvStore.set<KeyStore>(KeyStoreKey, this.keyStore);
     await this.kvStore.set<KeyStore[]>(KeyMultiStoreKey, this.multiKeyStore);
+  }
+
+  // default expired is 1 hour, seed is gen using crypto.randomBytes(12)
+  private getKeyExpired(expired = 3_600_000) {
+    const key = Buffer.allocUnsafe(16);
+    key.writeUInt32BE((Date.now() / expired) >> 1);
+    key.set(this.seed, 4);
+    return key;
   }
 
   public async restore() {
@@ -368,6 +392,28 @@ export class KeyRing {
           this.keyStore = null;
         } else {
           this.keyStore = keyStore;
+          if (!this.password) {
+            const key = this.getKeyExpired();
+            // The counter is optional, and if omitted will begin at 1
+            const aesCtr = new AES.ModeOfOperation.ctr(key);
+            try {
+              // decode encrypted password
+              const encryptedBytes = Buffer.from(await this.kvStore.get<string>('passcode'), 'base64');
+              const decryptedBytes = aesCtr.decrypt(encryptedBytes);
+              // hex length = 2 * length password
+              const decryptedStr = Buffer.from(decryptedBytes).toString();
+              if (!decryptedStr.startsWith(this._iv)) {
+                throw new Error('Passcode is expired');
+              }
+              this.password = decryptedStr.substring(this._iv.length);
+              // unlock with store password
+              if (this.password) {
+                await this.unlock(this.password, false);
+              }
+            } catch {
+              await this.kvStore.set('passcode', null);
+            }
+          }
         }
         const multiKeyStore = await this.kvStore.get<KeyStore[]>(KeyMultiStoreKey);
         if (!multiKeyStore) {
