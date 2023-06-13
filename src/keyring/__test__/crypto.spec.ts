@@ -312,21 +312,31 @@ describe('Crypto', () => {
       jest.clearAllMocks();
     });
 
-    test('should decrypt with scrypt kdf', async () => {
-      const result = await Crypto.decrypt(
-        mockCrypto,
-        mockKeyStore.mnemonic.pbkdf2,
-        mockPassword
-      );
-      expect(result.toString().trim()).toBe(mockKeyCosmos.mnemonic);
-    });
-    test('should decrypt with scrypt kdf', async () => {
-      const result = await Crypto.decrypt(
-        mockCrypto,
-        mockKeyStore.mnemonic.pbkdf2,
-        mockPassword
-      );
-      expect(result.toString().trim()).toBe(mockKeyCosmos.mnemonic);
+    describe('mnemonic', () => {
+      test('should decrypt with scrypt kdf', async () => {
+        const result = await Crypto.decrypt(
+          mockCrypto,
+          mockKeyStore.mnemonic.scrypt,
+          mockPassword
+        );
+        expect(result.toString().trim()).toBe(mockKeyCosmos.mnemonic);
+      });
+      test('should decrypt with pbkdf2 kdf', async () => {
+        const result = await Crypto.decrypt(
+          mockCrypto,
+          mockKeyStore.mnemonic.pbkdf2,
+          mockPassword
+        );
+        expect(result.toString().trim()).toBe(mockKeyCosmos.mnemonic);
+      });
+      test('should decrypt with sha256 kdf', async () => {
+        const result = await Crypto.decrypt(
+          mockCrypto,
+          mockKeyStore.mnemonic.sha256,
+          mockPassword
+        );
+        expect(result.toString().trim()).toBe(mockKeyCosmos.mnemonic);
+      });
     });
   });
 });
