@@ -1,6 +1,8 @@
 // Mock Crypto module
 jest.mock('../crypto', () => ({
-  Crypto: jest.fn(),
+  Crypto: {
+    decrypt: jest.fn()
+  },
   KeyStore: jest.fn()
 }));
 
@@ -50,10 +52,10 @@ jest.mock('@owallet/router', () => ({
   OWalletError: jest.fn()
 }));
 
-// Mock buffer module
-jest.mock('buffer', () => ({
-  Buffer: jest.fn()
-}));
+// // Mock buffer module
+// jest.mock('buffer', () => ({
+//   Buffer: jest.fn()
+// }));
 
 // Mock @owallet/types module
 jest.mock('@owallet/types', () => ({
@@ -373,64 +375,66 @@ describe('keyring', () => {
         value: null,
         writable: true
       });
-      const password = mockPassword;
+
       // Act and Assert
-      await expect(keyRing.unlock(password)).rejects.toThrow(
+      await expect(keyRing.unlock(mockPassword)).rejects.toThrow(
         'Key ring not initialized'
       );
     });
 
-    // it('should decrypt and set mnemonic if keyStore type is "mnemonic"', async () => {
-    //   // Arrange
-    //   const keyStore = {
-    //     ...mockKeyStore.mnemonic.pbkdf2,
-    //     type: 'mnemonic',
-    //   };
+    it('should decrypt and set mnemonic if keyStore type is "mnemonic"', async () => {
+      jest
+        .spyOn(Crypto, 'decrypt')
+        .mockResolvedValue(Buffer.from(mockKeyCosmos.mnemonic));
+      // Arrange
+      Object.defineProperty(keyRing, 'keyStore', {
+        value: mockKeyStore.mnemonic.pbkdf2,
+        writable: true
+      });
+      const spySetMnemonic = jest.spyOn(keyRing as any, 'mnemonic', 'set');
+      // Act
+      await keyRing.unlock(mockPassword);
+      const mnemonic = Reflect.get(keyRing, 'mnemonic');
+      const passwordReflect = Reflect.get(keyRing, 'password');
 
-    //   // const crypto = 'crypto';
-    //   const decryptedData = 'decryptedData';
-    //   const decryptedBuffer = Buffer.from(decryptedData);
+      // Assert
+      expect(spySetMnemonic).toHaveBeenCalled();
+      expect(spySetMnemonic).toBeCalledTimes(1);
+      expect(Crypto.decrypt).toHaveBeenCalledWith(
+        mockCrypto,
+        mockKeyStore.mnemonic.pbkdf2,
+        mockPassword
+      );
+      expect(mnemonic).toBe(mockKeyCosmos.mnemonic);
+      expect(passwordReflect).toBe(mockPassword);
+    });
 
-    //   const decryptMock = Crypto.decrypt as jest.Mock;
-    //   decryptMock.mockResolvedValue(decryptedBuffer);
+    it('should decrypt and set privateKey if keyStore type is "privateKey"', async () => {
+      jest
+        .spyOn(Crypto, 'decrypt')
+        .mockResolvedValue(Buffer.from(mockKeyCosmos.privateKey));
+      // Arrange
+      Object.defineProperty(keyRing, 'keyStore', {
+        value: mockKeyStore.privateKey.pbkdf2,
+        writable: true
+      });
+      const spySetPrivateKey = jest.spyOn(keyRing as any, 'privateKey', 'set');
+      // Act
+      await keyRing.unlock(mockPassword);
+      const privateKey = Reflect.get(keyRing, 'privateKey');
+      const passwordReflect = Reflect.get(keyRing, 'password');
 
-    //   // const keyRing = new KeyRing(keyStore, crypto);
-    //   const password = mockPassword;
-
-    //   // Act
-    //   await keyRing.unlock(password);
-
-    //   // Assert
-    //   expect(decryptMock).toHaveBeenCalledWith(crypto, keyStore, password);
-    //   expect(keyRing.mnemonic).toBe(decryptedData);
-    //   expect(keyRing.password).toBe(password);
-    // });
-
-    // it('should decrypt and set privateKey if keyStore type is "privateKey"', async () => {
-    //   // Arrange
-    //   const keyStore = {
-    //     type: 'privateKey',
-    //   };
-
-    //   const crypto = 'crypto';
-    //   const decryptedData = 'decryptedData';
-    //   const decryptedHex = Buffer.from(decryptedData).toString('hex');
-    //   const decryptedBuffer = Buffer.from(decryptedHex, 'hex');
-
-    //   const decryptMock = Crypto.decrypt as jest.Mock;
-    //   decryptMock.mockResolvedValue(decryptedBuffer);
-
-    //   const keyRing = new KeyRing(keyStore, crypto);
-    //   const password = 'password';
-
-    //   // Act
-    //   await keyRing.unlock(password);
-
-    //   // Assert
-    //   expect(decryptMock).toHaveBeenCalledWith(crypto, keyStore, password);
-    //   expect(keyRing.privateKey).toEqual(decryptedBuffer);
-    //   expect(keyRing.password).toBe(password);
-    // });
+      // Assert
+      expect(spySetPrivateKey).toHaveBeenCalled();
+      expect(spySetPrivateKey).toBeCalledTimes(1);
+      expect(Crypto.decrypt).toHaveBeenCalledWith(
+        mockCrypto,
+        mockKeyStore.privateKey.pbkdf2,
+        mockPassword
+      );
+      expect(privateKey.toString('hex')).toBe(mockKeyCosmos.privateKey);
+      expect(passwordReflect).toBe(mockPassword);
+    });
 
     // it('should decrypt and set ledgerPublicKey if keyStore type is "ledger"', async () => {
     //   // Arrange
@@ -456,21 +460,6 @@ describe('keyring', () => {
     //   expect(decryptMock).toHaveBeenCalledWith(crypto, keyStore, password);
     //   expect(keyRing.ledgerPublicKey).toEqual(decryptedBuffer);
     //   expect(keyRing.password).toBe(password);
-    // });
-
-    // it('should throw an error for unexpected keyStore type', async () => {
-    //   // Arrange
-    //   const keyStore = {
-    //     type: 'unexpectedType',
-    //   };
-
-    //   const keyRing = new KeyRing(keyStore);
-    //   const password = 'password';
-
-    //   // Act and Assert
-    //   await expect(keyRing.unlock(password)).rejects.toThrow(
-    //     'Unexpected type of keyring'
-    //   );
     // });
   });
 });

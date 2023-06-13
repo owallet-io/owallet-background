@@ -1,4 +1,3 @@
-import { RNG } from '@owallet/crypto';
 import {
   mockAddressLedger,
   mockBip44HDPath,
@@ -365,30 +364,30 @@ describe('Crypto', () => {
       });
     });
     describe('ledger', () => {
-        test('should decrypt with scrypt kdf', async () => {
-          const result = await Crypto.decrypt(
-            mockCrypto,
-            mockKeyStore.ledger.scrypt,
-            mockPassword
-          );
-          expect(result.toString().trim()).toBe(mockKeyCosmos.publicKey);
-        });
-        test('should decrypt with pbkdf2 kdf', async () => {
-          const result = await Crypto.decrypt(
-            mockCrypto,
-            mockKeyStore.ledger.pbkdf2,
-            mockPassword
-          );
-          expect(result.toString().trim()).toBe(mockKeyCosmos.publicKey);
-        });
-        test('should decrypt with sha256 kdf', async () => {
-          const result = await Crypto.decrypt(
-            mockCrypto,
-            mockKeyStore.ledger.sha256,
-            mockPassword
-          );
-          expect(result.toString().trim()).toBe(mockKeyCosmos.publicKey);
-        });
+      test('should decrypt with scrypt kdf', async () => {
+        const result = await Crypto.decrypt(
+          mockCrypto,
+          mockKeyStore.ledger.scrypt,
+          mockPassword
+        );
+        expect(result.toString().trim()).toBe(mockKeyCosmos.publicKey);
       });
+      test('should decrypt with pbkdf2 kdf', async () => {
+        const result = await Crypto.decrypt(
+          mockCrypto,
+          mockKeyStore.ledger.pbkdf2,
+          mockPassword
+        );
+        expect(result.toString().trim()).toBe(mockKeyCosmos.publicKey);
+      });
+      test('should decrypt with sha256 kdf', async () => {
+        const result = await Crypto.decrypt(
+          mockCrypto,
+          mockKeyStore.ledger.sha256,
+          mockPassword
+        );
+        expect(result.toString().trim()).toBe(mockKeyCosmos.publicKey);
+      });
+    });
   });
 });
