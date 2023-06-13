@@ -101,53 +101,34 @@ describe('Crypto', () => {
       expect(result.addresses).toBe(undefined);
     });
 
-    // it('should encrypt with pbkdf2 and return a KeyStore object', async () => {
-    //   // Mock the pbkdf2 function to return the derived key
-    //   const derivedKey = new Uint8Array(32);
-    //   const pbkdf2Mock = jest.fn().mockImplementationOnce((_, __, ___, ____, _____, callback) => {
-    //     callback(null, derivedKey);
-    //   });
-    //   jest.mock('pbkdf2', () => ({
-    //     pbkdf2: pbkdf2Mock,
-    //   }));
-
-    //   const expectedKeyStore: KeyStore = {
-    //     version: '1.2',
-    //     type: 'mnemonic',
-    //     coinTypeForChain: {},
-    //     bip44HDPath: undefined,
-    //     meta: {},
-    //     crypto: {
-    //       cipher: 'aes-128-ctr',
-    //       cipherparams: {
-    //         iv: '00000000000000000000000000000000',
-    //       },
-    //       ciphertext: 'abcdef1234567890',
-    //       kdf: 'pbkdf2',
-    //       kdfparams: {
-    //         salt: 'abcdef',
-    //         dklen: 32,
-    //         n: 131072,
-    //         r: 8,
-    //         p: 1,
-    //       },
-    //       mac: 'abcdef1234567890abcdef1234567890',
-    //     },
-    //     addresses: undefined,
-    //   };
-
-    //   const result = await encrypt({ ...defaultParams, kdf: 'pbkdf2' });
-
-    //   expect(pbkdf2Mock).toHaveBeenCalledWith(
-    //     'password',
-    //     'abcdef',
-    //     4000,
-    //     32,
-    //     'sha256',
-    //     expect.any(Function)
-    //   );
-
-    //   expect(result).toEqual(expectedKeyStore);
-    // });
+    it('should encrypt with pbkdf2 and return a KeyStore object', async () => {
+      jest.clearAllMocks();
+      const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
+      const result = await Crypto.encrypt(
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        'mnemonic',
+        mockKeyCosmos.mnemonic,
+        mockPassword,
+        metaHasId,
+        mockBip44HDPath
+      );
+      expect(mockRng).toHaveBeenCalled();
+      expect(mockRng).toBeCalledTimes(2);
+      expect(scryptSpy).not.toHaveBeenCalled();
+      expect(result.version).toBe('1.2');
+      expect(result.type).toBe('mnemonic');
+      expect(result.coinTypeForChain).toEqual({});
+      expect(result.bip44HDPath).toBe(mockBip44HDPath);
+      expect(result.meta).toBe(metaHasId);
+      expect(result.crypto.cipher).toBe('aes-128-ctr');
+      expect(result.crypto.cipherparams.iv).toEqual(expect.any(String));
+      expect(result.crypto.ciphertext).toEqual(expect.any(String));
+      expect(result.crypto.kdf).toBe(mockKdfMobile);
+      expect(result.crypto.kdfparams).toEqual(scryptParams);
+      expect(result.crypto.mac).toEqual(expect.any(String));
+      expect(result.addresses).toBe(undefined);
+    });
   });
 });
