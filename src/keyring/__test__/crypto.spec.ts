@@ -6,6 +6,7 @@ import {
   mockKdfExtension,
   mockKdfMobile,
   mockKeyCosmos,
+  mockKeyStore,
   mockMeta,
   mockPassword,
   mockRng
@@ -70,6 +71,7 @@ describe('Crypto', () => {
           metaHasId,
           mockBip44HDPath
         );
+
         expect(mockRng).toHaveBeenCalled();
         expect(mockRng).toBeCalledTimes(2);
         expect(scryptSpy).not.toHaveBeenCalled();
@@ -161,6 +163,7 @@ describe('Crypto', () => {
           metaHasId,
           mockBip44HDPath
         );
+
         expect(mockRng).toHaveBeenCalled();
         expect(mockRng).toBeCalledTimes(2);
         expect(scryptSpy).not.toHaveBeenCalled();
@@ -254,6 +257,7 @@ describe('Crypto', () => {
           mockBip44HDPath,
           mockAddressLedger
         );
+
         expect(mockRng).toHaveBeenCalled();
         expect(mockRng).toBeCalledTimes(2);
         expect(scryptSpy).not.toHaveBeenCalled();
@@ -301,6 +305,28 @@ describe('Crypto', () => {
         expect(result.crypto.mac).toEqual(expect.any(String));
         expect(result.addresses).toBe(mockAddressLedger);
       });
+    });
+  });
+  describe('decrypt', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('should decrypt with scrypt kdf', async () => {
+      const result = await Crypto.decrypt(
+        mockCrypto,
+        mockKeyStore.mnemonic.pbkdf2,
+        mockPassword
+      );
+      expect(result.toString().trim()).toBe(mockKeyCosmos.mnemonic);
+    });
+    test('should decrypt with scrypt kdf', async () => {
+      const result = await Crypto.decrypt(
+        mockCrypto,
+        mockKeyStore.mnemonic.pbkdf2,
+        mockPassword
+      );
+      expect(result.toString().trim()).toBe(mockKeyCosmos.mnemonic);
     });
   });
 });
