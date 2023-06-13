@@ -393,22 +393,24 @@ export class KeyRing {
         } else {
           this.keyStore = keyStore;
           if (!this.password) {
-            const key = this.getKeyExpired();
-            // The counter is optional, and if omitted will begin at 1
-            const aesCtr = new AES.ModeOfOperation.ctr(key);
             try {
-              // decode encrypted password
+              // check and try decode encrypted password
               const encryptedBytes = Buffer.from(await this.kvStore.get<string>('passcode'), 'base64');
-              const decryptedBytes = aesCtr.decrypt(encryptedBytes);
-              // hex length = 2 * length password
-              const decryptedStr = Buffer.from(decryptedBytes).toString();
-              if (!decryptedStr.startsWith(this._iv)) {
-                throw new Error('Passcode is expired');
-              }
-              this.password = decryptedStr.substring(this._iv.length);
-              // unlock with store password
-              if (this.password) {
-                await this.unlock(this.password, false);
+              if (encryptedBytes.length) {
+                const key = this.getKeyExpired();
+                // The counter is optional, and if omitted will begin at 1
+                const aesCtr = new AES.ModeOfOperation.ctr(key);
+                const decryptedBytes = aesCtr.decrypt(encryptedBytes);
+                // hex length = 2 * length password
+                const decryptedStr = Buffer.from(decryptedBytes).toString();
+                if (!decryptedStr.startsWith(this._iv)) {
+                  throw new Error('Passcode is expired');
+                }
+                this.password = decryptedStr.substring(this._iv.length);
+                // unlock with store password
+                if (this.password) {
+                  await this.unlock(this.password, false);
+                }
               }
             } catch {
               await this.kvStore.set('passcode', null);
