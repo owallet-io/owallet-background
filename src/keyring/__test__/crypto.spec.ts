@@ -33,19 +33,17 @@ describe('Crypto', () => {
     afterEach(() => {
       jest.clearAllMocks();
     });
-
+    const scryptSpy = jest.spyOn(mockCrypto, 'scrypt');
+    const scryptParams = {
+      salt: expect.any(String),
+      dklen: 32,
+      n: 131072,
+      r: 8,
+      p: 1
+    };
     it('should encrypt with scrypt and return a KeyStore object', async () => {
       // Mock the scrypt function to return the derived key
       const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
-      const scryptParams = {
-        salt: expect.any(String),
-        dklen: 32,
-        n: 131072,
-        r: 8,
-        p: 1
-      };
-      const scryptSpy = jest.spyOn(mockCrypto, 'scrypt');
-      // const scryptSpy = jest.spyOn(mockRng);
       const result = await Crypto.encrypt(
         mockRng,
         mockCrypto,
@@ -74,38 +72,34 @@ describe('Crypto', () => {
       expect(result.addresses).toBe(undefined);
     });
 
-    // it('should encrypt with sha256 and return a KeyStore object', async () => {
-    //   const expectedKeyStore: KeyStore = {
-    //     version: '1.2',
-    //     type: 'mnemonic',
-    //     coinTypeForChain: {},
-    //     bip44HDPath: undefined,
-    //     meta: {},
-    //     crypto: {
-    //       cipher: 'aes-128-ctr',
-    //       cipherparams: {
-    //         iv: '00000000000000000000000000000000',
-    //       },
-    //       ciphertext: 'abcdef1234567890',
-    //       kdf: 'sha256',
-    //       kdfparams: {
-    //         salt: 'abcdef',
-    //         dklen: 32,
-    //         n: 131072,
-    //         r: 8,
-    //         p: 1,
-    //       },
-    //       mac: 'abcdef1234567890abcdef1234567890',
-    //     },
-    //     addresses: undefined,
-    //   };
-
-    //   const result = await encrypt({ ...defaultParams, kdf: 'sha256' });
-
-    //   expect(cryptoMock.scrypt).not.toHaveBeenCalled();
-
-    //   expect(result).toEqual(expectedKeyStore);
-    // });
+    it('should encrypt with sha256 and return a KeyStore object', async () => {
+      const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
+      const result = await Crypto.encrypt(
+        mockRng,
+        mockCrypto,
+        'sha256',
+        'mnemonic',
+        mockKeyCosmos.mnemonic,
+        mockPassword,
+        metaHasId,
+        mockBip44HDPath
+      );
+      expect(mockRng).toHaveBeenCalled();
+      expect(mockRng).toBeCalledTimes(2);
+      expect(scryptSpy).not.toHaveBeenCalled();
+      expect(result.version).toBe('1.2');
+      expect(result.type).toBe('mnemonic');
+      expect(result.coinTypeForChain).toEqual({});
+      expect(result.bip44HDPath).toBe(mockBip44HDPath);
+      expect(result.meta).toBe(metaHasId);
+      expect(result.crypto.cipher).toBe('aes-128-ctr');
+      expect(result.crypto.cipherparams.iv).toEqual(expect.any(String));
+      expect(result.crypto.ciphertext).toEqual(expect.any(String));
+      expect(result.crypto.kdf).toBe('sha256');
+      expect(result.crypto.kdfparams).toEqual(scryptParams);
+      expect(result.crypto.mac).toEqual(expect.any(String));
+      expect(result.addresses).toBe(undefined);
+    });
 
     // it('should encrypt with pbkdf2 and return a KeyStore object', async () => {
     //   // Mock the pbkdf2 function to return the derived key
