@@ -436,30 +436,35 @@ describe('keyring', () => {
       expect(passwordReflect).toBe(mockPassword);
     });
 
-    // it('should decrypt and set ledgerPublicKey if keyStore type is "ledger"', async () => {
-    //   // Arrange
-    //   const keyStore = {
-    //     type: 'ledger',
-    //   };
+    it('should decrypt and set ledgerPublicKey if keyStore type is "ledger"', async () => {
+      jest
+        .spyOn(Crypto, 'decrypt')
+        .mockResolvedValue(Buffer.from(mockKeyCosmos.publicKey));
+      // Arrange
+      Object.defineProperty(keyRing, 'keyStore', {
+        value: mockKeyStore.ledger.pbkdf2,
+        writable: true
+      });
+      const spySetLedgerPublicKey = jest.spyOn(
+        keyRing as any,
+        'ledgerPublicKey',
+        'set'
+      );
+      // Act
+      await keyRing.unlock(mockPassword);
+      const ledgerPublicKey = Reflect.get(keyRing, 'ledgerPublicKey');
+      const passwordReflect = Reflect.get(keyRing, 'password');
 
-    //   const crypto = 'crypto';
-    //   const decryptedData = 'decryptedData';
-    //   const decryptedHex = Buffer.from(decryptedData).toString('hex');
-    //   const decryptedBuffer = Buffer.from(decryptedHex, 'hex');
-
-    //   const decryptMock = Crypto.decrypt as jest.Mock;
-    //   decryptMock.mockResolvedValue(decryptedBuffer);
-
-    //   const keyRing = new KeyRing(keyStore, crypto);
-    //   const password = 'password';
-
-    //   // Act
-    //   await keyRing.unlock(password);
-
-    //   // Assert
-    //   expect(decryptMock).toHaveBeenCalledWith(crypto, keyStore, password);
-    //   expect(keyRing.ledgerPublicKey).toEqual(decryptedBuffer);
-    //   expect(keyRing.password).toBe(password);
-    // });
+      // Assert
+      expect(spySetLedgerPublicKey).toHaveBeenCalled();
+      expect(spySetLedgerPublicKey).toBeCalledTimes(1);
+      expect(Crypto.decrypt).toHaveBeenCalledWith(
+        mockCrypto,
+        mockKeyStore.ledger.pbkdf2,
+        mockPassword
+      );
+      expect(ledgerPublicKey.toString('hex')).toBe(mockKeyCosmos.publicKey);
+      expect(passwordReflect).toBe(mockPassword);
+    });
   });
 });
