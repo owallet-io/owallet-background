@@ -1,6 +1,6 @@
 import { RNG } from '@owallet/crypto';
 import {
-    mockAddressLedger,
+  mockAddressLedger,
   mockBip44HDPath,
   mockCrypto,
   mockKdfExtension,

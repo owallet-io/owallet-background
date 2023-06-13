@@ -3,8 +3,9 @@ import { scrypt } from 'scrypt-js';
 const mockAddressCosmos = 'cosmos1eu2ecyzedvkvsfcd5vfht4whgx3uf22fjj9a4n';
 const mnemonicCosmos =
   'sure tragic expand guess girl boy settle pull monster bleak daughter butter';
-const privateKeyCosmos =
-  '0xae0e3814fad957fb1fdca450a9795f5e64b46061a8618cc4029fcbbfdf215221';
+//add "0x" before privateKeyCosmos
+  const privateKeyCosmos =
+  'ae0e3814fad957fb1fdca450a9795f5e64b46061a8618cc4029fcbbfdf215221';
 const publicKeyTest =
   '0407e5b99e7849b4c2f6af0ee7e7f094b8859f1109962ad6e94fa3672fc8003a301c28c6ba894f7a08c3ca761abf39285c46614d7d8727b1ecd67b2c33d1ee81c1';
 export const mockKeyCosmos = {
@@ -45,25 +46,72 @@ export const mockCrypto: CommonCrypto = {
     );
   }
 };
-export const mockKeyStore: KeyStore = {
+export const mockKeyStoreLedger: KeyStore = {
   version: '1.2',
-  type: 'mnemonic',
+  type: 'ledger',
   coinTypeForChain: {},
-  bip44HDPath: undefined,
-  meta: { key: 'value', __id__: '12345' },
+  bip44HDPath: { coinType: 118, account: 0, change: 0, addressIndex: 0 },
+  meta: { name: 'orai', __id__: '1' },
   crypto: {
     cipher: 'aes-128-ctr',
-    cipherparams: { iv: '00000000000000000000000000000000' },
-    ciphertext: 'b9eda115d22ceca9c026c779fdea49e4',
-    kdf: 'scrypt',
+    cipherparams: { iv: '59cfeeb1626d58817efaaddfedcd69fc' },
+    ciphertext:
+      'ab2c01ebc8dc07b7a71e8a46cfdd2f0ffceadfb7fb283d7a2f0f780785279f01d49a989d4cb5206340d8527936f1144e7cf33ef2c92f1add7648c86357bfaa3c96c69a187ada634008744fa62fc22cb1bf3a5a67f458ab3797fcd6b0a45e5b93d1df97ba006489677de8279475c7054628616b214e61c441f013279c32110368ffb8',
+    kdf: 'pbkdf2',
     kdfparams: {
-      salt: '0000000000000000000000000000000000000000000000000000000000000000',
+      salt: '2fba644184603574d748555250e23eb9a3a222e3ff1a9c703d1294c5ce3b1618',
       dklen: 32,
       n: 131072,
       r: 8,
       p: 1
     },
-    mac: '349eb4397e0a2b2394a85bfb7340b9dd46ca5d5502733fd364ccce56c3528363'
+    mac: '7d218b5b1b7b58e8632b15dd9820f75d4819a40dc8051e44035f64aad8e82633'
+  },
+  addresses: { cosmos: 'cosmos1eu2ecyzedvkvsfcd5vfht4whgx3uf22fjj9a4n' }
+};
+
+export const mockKeyStorePrivateKey: KeyStore = {
+  version: '1.2',
+  type: 'privateKey',
+  coinTypeForChain: {},
+  bip44HDPath: { coinType: 118, account: 0, change: 0, addressIndex: 0 },
+  meta: { name: 'orai', __id__: '1' },
+  crypto: {
+    cipher: 'aes-128-ctr',
+    cipherparams: { iv: '22e8fa659d4300f8f03b4c4dee969f49' },
+    ciphertext: '73addd8bd3eaa4ba122209fb8664088e70c2333d9a48f9ac38bfbf7469f854c4e7011dd599553dadb56b57d5c67396923cf54b1c286232f81ed3de10b6d001a2',
+    kdf: 'pbkdf2',
+    kdfparams: {
+      salt: '00944e5b193aab750fe96b13ed6d2e7d7e1cc87b48310aeb40b3e695bdad43c6',
+      dklen: 32,
+      n: 131072,
+      r: 8,
+      p: 1
+    },
+    mac: '0a7de7b54b270a7687318843d607cebe6ed841fd57578a82a85ac0c1d64e99e6'
+  },
+  addresses: undefined
+}
+export const mockKeyStoreMnemonic: KeyStore = {
+  version: '1.2',
+  type: 'mnemonic',
+  coinTypeForChain: {},
+  bip44HDPath: { coinType: 118, account: 0, change: 0, addressIndex: 0 },
+  meta: { name: 'orai', __id__: '1' },
+  crypto: {
+    cipher: 'aes-128-ctr',
+    cipherparams: { iv: '167f8cd1a7e3d681953b986db8525f32' },
+    ciphertext:
+      '4359fb016c64b75fdae35808f5eb270b2407dcc13bb25c09edfa2f32309e16c9402cd3a3765f6c05132bc76f3177d8bf3622873138752eeb8962cbe2d99c4804ab641e3d49199a13833faa',
+    kdf: 'pbkdf2',
+    kdfparams: {
+      salt: '0946372928597c9af6a4a7b19d1856853e876179166bbd7f6e2b4bdab19e516d',
+      dklen: 32,
+      n: 131072,
+      r: 8,
+      p: 1
+    },
+    mac: '86089b1cda6c4e2dd8aabea0c20cc243655309b1180fcf45cf5760e70a2b61e6'
   },
   addresses: undefined
 };

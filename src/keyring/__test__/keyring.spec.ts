@@ -106,7 +106,7 @@ import {
   mockCrypto,
   mockKdfMobile,
   mockKeyCosmos,
-  mockKeyStore,
+  mockKeyStoreMnemonic,
   mockPassword,
   mockRng
 } from '../__mocks__/keyring';
@@ -164,7 +164,7 @@ describe('keyring', () => {
     it('should return KeyRingStatus.UNLOCKED when keyRing.isLocked() returns false', () => {
       // Gán giá trị cho thuộc tính keyStore
       Object.defineProperty(keyRing, 'keyStore', {
-        value: mockKeyStore,
+        value: mockKeyStoreMnemonic,
         writable: true
       });
       // Monkey patch the loaded property
@@ -185,7 +185,7 @@ describe('keyring', () => {
     it('should return KeyRingStatus.LOCKED when all conditions are false', () => {
       // Gán giá trị cho thuộc tính keyStore
       Object.defineProperty(keyRing, 'keyStore', {
-        value: mockKeyStore,
+        value: mockKeyStoreMnemonic,
         writable: true
       });
       // Monkey patch the loaded property
@@ -261,7 +261,7 @@ describe('keyring', () => {
     it('should return "mnemonic" if type is null', () => {
       // Arrange
       const keyStore: Omit<KeyStore, 'crypto'> = {
-        ...mockKeyStore,
+        ...mockKeyStoreMnemonic,
         type: null
       };
 
@@ -275,17 +275,17 @@ describe('keyring', () => {
     it('should return the correct type if type is valid', () => {
       // Arrange
       const mnemonicKeyStore: Omit<KeyStore, 'crypto'> = {
-        ...mockKeyStore,
+        ...mockKeyStoreMnemonic,
         type: 'mnemonic'
       };
 
       const privateKeyKeyStore: Omit<KeyStore, 'crypto'> = {
-        ...mockKeyStore,
+        ...mockKeyStoreMnemonic,
         type: 'privateKey'
       };
 
       const ledgerKeyStore: Omit<KeyStore, 'crypto'> = {
-        ...mockKeyStore,
+        ...mockKeyStoreMnemonic,
         type: 'ledger'
       };
 
@@ -303,7 +303,7 @@ describe('keyring', () => {
     it('should throw an error if type is invalid', () => {
       // Arrange
       const invalidKeyStore: Omit<KeyStore, 'crypto'> = {
-        ...mockKeyStore,
+        ...mockKeyStoreMnemonic,
         type: 'invalid' as any
       };
 
@@ -331,15 +331,15 @@ describe('keyring', () => {
       it('should return the correct type if keyStore is not null or undefined', () => {
         // Arrange
         const mnemonicKeyStore: Omit<KeyStore, 'crypto'> = {
-          ...mockKeyStore,
+          ...mockKeyStoreMnemonic,
           type: 'mnemonic'
         };
         const privateKeyKeyStore: Omit<KeyStore, 'crypto'> = {
-          ...mockKeyStore,
+          ...mockKeyStoreMnemonic,
           type: 'privateKey'
         };
         const ledgerKeyStore: Omit<KeyStore, 'crypto'> = {
-          ...mockKeyStore,
+          ...mockKeyStoreMnemonic,
           type: 'ledger'
         };
         Object.defineProperty(keyRing, 'keyStore', {
@@ -383,7 +383,7 @@ describe('keyring', () => {
     // it('should decrypt and set mnemonic if keyStore type is "mnemonic"', async () => {
     //   // Arrange
     //   const keyStore = {
-    //     ...mockKeyStore,
+    //     ...mockKeyStoreMnemonic,
     //     type: 'mnemonic',
     //   };
 
