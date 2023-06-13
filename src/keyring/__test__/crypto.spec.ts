@@ -338,5 +338,57 @@ describe('Crypto', () => {
         expect(result.toString().trim()).toBe(mockKeyCosmos.mnemonic);
       });
     });
+    describe('privateKey', () => {
+      test('should decrypt with scrypt kdf', async () => {
+        const result = await Crypto.decrypt(
+          mockCrypto,
+          mockKeyStore.privateKey.scrypt,
+          mockPassword
+        );
+        expect(result.toString().trim()).toBe(mockKeyCosmos.privateKey);
+      });
+      test('should decrypt with pbkdf2 kdf', async () => {
+        const result = await Crypto.decrypt(
+          mockCrypto,
+          mockKeyStore.privateKey.pbkdf2,
+          mockPassword
+        );
+        expect(result.toString().trim()).toBe(mockKeyCosmos.privateKey);
+      });
+      test('should decrypt with sha256 kdf', async () => {
+        const result = await Crypto.decrypt(
+          mockCrypto,
+          mockKeyStore.privateKey.sha256,
+          mockPassword
+        );
+        expect(result.toString().trim()).toBe(mockKeyCosmos.privateKey);
+      });
+    });
+    describe('ledger', () => {
+        test('should decrypt with scrypt kdf', async () => {
+          const result = await Crypto.decrypt(
+            mockCrypto,
+            mockKeyStore.ledger.scrypt,
+            mockPassword
+          );
+          expect(result.toString().trim()).toBe(mockKeyCosmos.publicKey);
+        });
+        test('should decrypt with pbkdf2 kdf', async () => {
+          const result = await Crypto.decrypt(
+            mockCrypto,
+            mockKeyStore.ledger.pbkdf2,
+            mockPassword
+          );
+          expect(result.toString().trim()).toBe(mockKeyCosmos.publicKey);
+        });
+        test('should decrypt with sha256 kdf', async () => {
+          const result = await Crypto.decrypt(
+            mockCrypto,
+            mockKeyStore.ledger.sha256,
+            mockPassword
+          );
+          expect(result.toString().trim()).toBe(mockKeyCosmos.publicKey);
+        });
+      });
   });
 });
