@@ -1,7 +1,7 @@
 import 'reflect-metadata';
-function channelMock() {}
-channelMock.prototype.onmessage = function () {}
-channelMock.prototype.postMessage = function (data) {
-    this.onmessage({ data })
-}
-global.BroadcastChannel;
+const nodeCrypto = require('crypto');
+Object.defineProperty(globalThis, 'crypto', {
+  value: {
+    getRandomValues: (arr) => nodeCrypto.randomBytes(arr.length)
+  }
+});

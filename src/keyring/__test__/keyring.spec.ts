@@ -103,34 +103,30 @@ import { KeyRing, KeyRingStatus } from '../keyring';
 import { LedgerService } from '../../ledger';
 import { ScryptParams, CommonCrypto } from '../types';
 import {
+  mockCrypto,
+  mockKdfMobile,
   mockKeyCosmos,
   mockKeyStore,
-  mockPassword
+  mockPassword,
+  mockRng
 } from '../__mocks__/keyring';
-import { KeyStore } from '../crypto';
-const rngMock = jest.fn(async (array) => array);
-const scryptMock = jest.fn(
-  async (text: string, params: ScryptParams) => new Uint8Array(params.dklen)
-);
-const cryptoMock: CommonCrypto = {
-  scrypt: scryptMock
-};
+import { Crypto, KeyStore } from '../crypto';
+import { RNG } from '@owallet/crypto';
+
 const mockKvStore = {
   get: jest.fn().mockResolvedValue(undefined),
   set: jest.fn().mockResolvedValue(undefined),
   prefix: jest.fn().mockReturnValue('keyring')
 };
 const mockEmbedChain: any = null;
-
+export const keyRing = new KeyRing(
+  mockEmbedChain,
+  mockKvStore,
+  new LedgerService(null, null, null),
+  mockRng,
+  mockCrypto
+);
 describe('keyring', () => {
-  const keyRing = new KeyRing(
-    mockEmbedChain,
-    mockKvStore,
-    new LedgerService(null, null, null),
-    rngMock,
-    cryptoMock
-  );
-
   describe('status', () => {
     beforeEach(() => {
       jest.clearAllMocks();
@@ -387,18 +383,19 @@ describe('keyring', () => {
     // it('should decrypt and set mnemonic if keyStore type is "mnemonic"', async () => {
     //   // Arrange
     //   const keyStore = {
+    //     ...mockKeyStore,
     //     type: 'mnemonic',
     //   };
 
-    //   const crypto = 'crypto';
+    //   // const crypto = 'crypto';
     //   const decryptedData = 'decryptedData';
     //   const decryptedBuffer = Buffer.from(decryptedData);
 
     //   const decryptMock = Crypto.decrypt as jest.Mock;
     //   decryptMock.mockResolvedValue(decryptedBuffer);
 
-    //   const keyRing = new KeyRing(keyStore, crypto);
-    //   const password = 'password';
+    //   // const keyRing = new KeyRing(keyStore, crypto);
+    //   const password = mockPassword;
 
     //   // Act
     //   await keyRing.unlock(password);

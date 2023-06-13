@@ -1,3 +1,4 @@
+import { scrypt } from 'scrypt-js';
 //key cosmos example
 const mockAddressCosmos = 'cosmos1eu2ecyzedvkvsfcd5vfht4whgx3uf22fjj9a4n';
 const mnemonicCosmos =
@@ -14,7 +15,33 @@ export const mockKeyCosmos = {
   publicKey: publicKeyTest,
   publicKeyHex: Buffer.from(publicKeyTest, 'hex')
 };
-export const mockPassword = 'password';
+export const mockPassword = '12345678';
+export const mockBip44HDPath: BIP44HDPath = {
+  coinType: 118,
+  account: 0,
+  change: 0,
+  addressIndex: 0
+};
+export const rng = (array) => {
+  return Promise.resolve(crypto.getRandomValues(array));
+};
+export const mockRng = jest.fn().mockImplementation(rng)
+export const mockKdfMobile = 'pbkdf2';
+export const mockKdfExtension = 'scrypt';
+export const mockMeta = { name: 'orai' };
+export const mockMetaHasId = { ...mockMeta, __id__: '1' };
+export const mockCrypto: CommonCrypto = {
+  scrypt: async (text: string, params: ScryptParams) => {
+    return await scrypt(
+      Buffer.from(text),
+      Buffer.from(params.salt, 'hex'),
+      params.n,
+      params.r,
+      params.p,
+      params.dklen
+    );
+  }
+};
 export const mockKeyStore: KeyStore = {
   version: '1.2',
   type: 'mnemonic',
@@ -38,10 +65,9 @@ export const mockKeyStore: KeyStore = {
   addresses: undefined
 };
 
-
 import { KVStore } from '@owallet/common';
 import { RNG } from '@owallet/crypto';
-import { BIP44HDPath, CommonCrypto } from '../types';
+import { BIP44HDPath, CommonCrypto, ScryptParams } from '../types';
 import { Crypto, KeyStore } from '../crypto';
 import {
   KeyRingStatus,
