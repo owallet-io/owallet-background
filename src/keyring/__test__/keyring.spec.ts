@@ -702,6 +702,33 @@ describe('keyring', () => {
       );
     });
   });
+  describe('CreatePrivateKeyStore', () => {
+    beforeEach(() => {
+      jest.spyOn(Crypto, 'encrypt').mockClear();
+    });
+    it('should call Crypto.encrypt with the correct arguments', async () => {
+      // Gọi hàm CreateMnemonicKeyStore
+      await KeyRing['CreatePrivateKeyStore'](
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        mockKeyCosmos.privateKeyHex,
+        mockPassword,
+        mockMetaHasId
+      );
+
+      // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
+      expect(Crypto.encrypt).toHaveBeenCalledWith(
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        'privateKey',
+        Buffer.from(mockKeyCosmos.privateKeyHex).toString('hex'),
+        mockPassword,
+        mockMetaHasId
+      );
+    });
+  });
   describe('showKeyring', () => {
     afterEach(() => {
       jest.clearAllMocks();
