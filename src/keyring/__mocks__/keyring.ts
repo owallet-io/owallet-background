@@ -15,6 +15,35 @@ export const mockMultiKeyStore: KeyStore[] = [
   mockKeyStorePbkdf2Mnemonic,
   mockKeyStorePbkdf2PrivateKey
 ];
+export const mockMultiKeyStoreInfo = [
+  {
+    version: '1.2',
+    type: 'ledger',
+    addresses: { cosmos: 'cosmos1eu2ecyzedvkvsfcd5vfht4whgx3uf22fjj9a4n' },
+    meta: { name: 'orai', __id__: '1' },
+    coinTypeForChain: {},
+    bip44HDPath: { coinType: 118, account: 0, change: 0, addressIndex: 0 },
+    selected: true
+  },
+  {
+    version: '1.2',
+    type: 'mnemonic',
+    addresses: undefined,
+    meta: { name: 'orai', __id__: '1' },
+    coinTypeForChain: {},
+    bip44HDPath: { coinType: 118, account: 0, change: 0, addressIndex: 0 },
+    selected: true
+  },
+  {
+    version: '1.2',
+    type: 'privateKey',
+    addresses: undefined,
+    meta: { name: 'orai', __id__: '1' },
+    coinTypeForChain: {},
+    bip44HDPath: { coinType: 118, account: 0, change: 0, addressIndex: 0 },
+    selected: true
+  }
+];
 //key cosmos example
 const mockAddressCosmos = 'cosmos1eu2ecyzedvkvsfcd5vfht4whgx3uf22fjj9a4n';
 const mnemonicCosmos =

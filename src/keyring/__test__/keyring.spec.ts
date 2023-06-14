@@ -112,6 +112,7 @@ import {
   mockMeta,
   mockMetaHasId,
   mockMultiKeyStore,
+  mockMultiKeyStoreInfo,
   mockPassword,
   mockRng
 } from '../__mocks__/keyring';
@@ -137,7 +138,11 @@ describe('keyring', () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
+
   describe('getKeyStoreId', () => {
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
     it('should return the id of the key store if it exists', () => {
       const result = KeyRing['getKeyStoreId'](mockMultiKeyStore[1]);
 
@@ -166,6 +171,22 @@ describe('keyring', () => {
       expect(() => KeyRing['getKeyStoreId'](keyStoreMock)).toThrow(
         "Key store's id is empty"
       );
+    });
+  });
+  describe('getMultiKeyStoreInfo', () => {
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+    it('should return the correct multiKeyStoreInfo', () => {
+      keyRing['multiKeyStore'] = mockMultiKeyStore;
+      // Mock keyStore
+
+      keyRing['keyStore'] = mockMultiKeyStore[1];
+      // Gọi phương thức getMultiKeyStoreInfo()
+      const result = keyRing.getMultiKeyStoreInfo();
+
+      // Kiểm tra kết quả
+      expect(result).toEqual(mockMultiKeyStoreInfo);
     });
   });
   describe('save', () => {
