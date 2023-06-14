@@ -7,17 +7,18 @@ import {
   mockKeyCosmos,
   mockKeyStore,
   mockMeta,
+  mockMetaHasId,
   mockPassword,
   mockRng
 } from '../__mocks__/keyring';
 import { Crypto } from '../crypto';
-import { keyRing } from './keyring.spec';
+
 
 describe('Crypto', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
   describe('encrypt', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
     const scryptSpy = jest.spyOn(mockCrypto, 'scrypt');
     const scryptParams = {
       salt: expect.any(String),
@@ -27,12 +28,9 @@ describe('Crypto', () => {
       p: 1
     };
     describe('mnemonic', () => {
-      afterEach(() => {
-        jest.clearAllMocks();
-      });
       it('should encrypt with scrypt and return a KeyStore object', async () => {
         // Mock the scrypt function to return the derived key
-        const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
+        
         const result = await Crypto.encrypt(
           mockRng,
           mockCrypto,
@@ -40,7 +38,7 @@ describe('Crypto', () => {
           'mnemonic',
           mockKeyCosmos.mnemonic,
           mockPassword,
-          metaHasId,
+          mockMetaHasId,
           mockBip44HDPath
         );
 
@@ -51,7 +49,7 @@ describe('Crypto', () => {
         expect(result.type).toBe('mnemonic');
         expect(result.coinTypeForChain).toEqual({});
         expect(result.bip44HDPath).toBe(mockBip44HDPath);
-        expect(result.meta).toBe(metaHasId);
+        expect(result.meta).toBe(mockMetaHasId);
         expect(result.crypto.cipher).toBe('aes-128-ctr');
         expect(result.crypto.cipherparams.iv).toEqual(expect.any(String));
         expect(result.crypto.ciphertext).toEqual(expect.any(String));
@@ -62,7 +60,7 @@ describe('Crypto', () => {
       });
 
       it('should encrypt with sha256 and return a KeyStore object', async () => {
-        const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
+        
         const result = await Crypto.encrypt(
           mockRng,
           mockCrypto,
@@ -70,7 +68,7 @@ describe('Crypto', () => {
           'mnemonic',
           mockKeyCosmos.mnemonic,
           mockPassword,
-          metaHasId,
+          mockMetaHasId,
           mockBip44HDPath
         );
 
@@ -81,7 +79,7 @@ describe('Crypto', () => {
         expect(result.type).toBe('mnemonic');
         expect(result.coinTypeForChain).toEqual({});
         expect(result.bip44HDPath).toBe(mockBip44HDPath);
-        expect(result.meta).toBe(metaHasId);
+        expect(result.meta).toBe(mockMetaHasId);
         expect(result.crypto.cipher).toBe('aes-128-ctr');
         expect(result.crypto.cipherparams.iv).toEqual(expect.any(String));
         expect(result.crypto.ciphertext).toEqual(expect.any(String));
@@ -92,7 +90,7 @@ describe('Crypto', () => {
       });
 
       it('should encrypt with pbkdf2 and return a KeyStore object', async () => {
-        const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
+        
         const result = await Crypto.encrypt(
           mockRng,
           mockCrypto,
@@ -100,7 +98,7 @@ describe('Crypto', () => {
           'mnemonic',
           mockKeyCosmos.mnemonic,
           mockPassword,
-          metaHasId,
+          mockMetaHasId,
           mockBip44HDPath
         );
         expect(mockRng).toHaveBeenCalled();
@@ -110,7 +108,7 @@ describe('Crypto', () => {
         expect(result.type).toBe('mnemonic');
         expect(result.coinTypeForChain).toEqual({});
         expect(result.bip44HDPath).toBe(mockBip44HDPath);
-        expect(result.meta).toBe(metaHasId);
+        expect(result.meta).toBe(mockMetaHasId);
         expect(result.crypto.cipher).toBe('aes-128-ctr');
         expect(result.crypto.cipherparams.iv).toEqual(expect.any(String));
         expect(result.crypto.ciphertext).toEqual(expect.any(String));
@@ -121,12 +119,9 @@ describe('Crypto', () => {
       });
     });
     describe('privateKey', () => {
-      afterEach(() => {
-        jest.clearAllMocks();
-      });
       it('should encrypt with scrypt and return a KeyStore object', async () => {
         // Mock the scrypt function to return the derived key
-        const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
+        
         const result = await Crypto.encrypt(
           mockRng,
           mockCrypto,
@@ -134,7 +129,7 @@ describe('Crypto', () => {
           'privateKey',
           Buffer.from(mockKeyCosmos.privateKeyHex).toString('hex'),
           mockPassword,
-          metaHasId,
+          mockMetaHasId,
           mockBip44HDPath
         );
 
@@ -145,7 +140,7 @@ describe('Crypto', () => {
         expect(result.type).toBe('privateKey');
         expect(result.coinTypeForChain).toEqual({});
         expect(result.bip44HDPath).toBe(mockBip44HDPath);
-        expect(result.meta).toBe(metaHasId);
+        expect(result.meta).toBe(mockMetaHasId);
         expect(result.crypto.cipher).toBe('aes-128-ctr');
         expect(result.crypto.cipherparams.iv).toEqual(expect.any(String));
         expect(result.crypto.ciphertext).toEqual(expect.any(String));
@@ -156,7 +151,7 @@ describe('Crypto', () => {
       });
 
       it('should encrypt with sha256 and return a KeyStore object', async () => {
-        const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
+        
         const result = await Crypto.encrypt(
           mockRng,
           mockCrypto,
@@ -164,7 +159,7 @@ describe('Crypto', () => {
           'privateKey',
           Buffer.from(mockKeyCosmos.privateKeyHex).toString('hex'),
           mockPassword,
-          metaHasId,
+          mockMetaHasId,
           mockBip44HDPath
         );
 
@@ -175,7 +170,7 @@ describe('Crypto', () => {
         expect(result.type).toBe('privateKey');
         expect(result.coinTypeForChain).toEqual({});
         expect(result.bip44HDPath).toBe(mockBip44HDPath);
-        expect(result.meta).toBe(metaHasId);
+        expect(result.meta).toBe(mockMetaHasId);
         expect(result.crypto.cipher).toBe('aes-128-ctr');
         expect(result.crypto.cipherparams.iv).toEqual(expect.any(String));
         expect(result.crypto.ciphertext).toEqual(expect.any(String));
@@ -186,7 +181,7 @@ describe('Crypto', () => {
       });
 
       it('should encrypt with pbkdf2 and return a KeyStore object', async () => {
-        const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
+        
         const result = await Crypto.encrypt(
           mockRng,
           mockCrypto,
@@ -194,7 +189,7 @@ describe('Crypto', () => {
           'privateKey',
           Buffer.from(mockKeyCosmos.privateKeyHex).toString('hex'),
           mockPassword,
-          metaHasId,
+          mockMetaHasId,
           mockBip44HDPath
         );
         expect(mockRng).toHaveBeenCalled();
@@ -204,7 +199,7 @@ describe('Crypto', () => {
         expect(result.type).toBe('privateKey');
         expect(result.coinTypeForChain).toEqual({});
         expect(result.bip44HDPath).toBe(mockBip44HDPath);
-        expect(result.meta).toBe(metaHasId);
+        expect(result.meta).toBe(mockMetaHasId);
         expect(result.crypto.cipher).toBe('aes-128-ctr');
         expect(result.crypto.cipherparams.iv).toEqual(expect.any(String));
         expect(result.crypto.ciphertext).toEqual(expect.any(String));
@@ -215,12 +210,9 @@ describe('Crypto', () => {
       });
     });
     describe('ledger', () => {
-      afterEach(() => {
-        jest.clearAllMocks();
-      });
       it('should encrypt with scrypt and return a KeyStore object', async () => {
         // Mock the scrypt function to return the derived key
-        const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
+        
         const result = await Crypto.encrypt(
           mockRng,
           mockCrypto,
@@ -228,7 +220,7 @@ describe('Crypto', () => {
           'ledger',
           Buffer.from(mockKeyCosmos.publicKeyHex).toString('hex'),
           mockPassword,
-          metaHasId,
+          mockMetaHasId,
           mockBip44HDPath,
           mockAddressLedger
         );
@@ -240,7 +232,7 @@ describe('Crypto', () => {
         expect(result.type).toBe('ledger');
         expect(result.coinTypeForChain).toEqual({});
         expect(result.bip44HDPath).toBe(mockBip44HDPath);
-        expect(result.meta).toBe(metaHasId);
+        expect(result.meta).toBe(mockMetaHasId);
         expect(result.crypto.cipher).toBe('aes-128-ctr');
         expect(result.crypto.cipherparams.iv).toEqual(expect.any(String));
         expect(result.crypto.ciphertext).toEqual(expect.any(String));
@@ -251,7 +243,7 @@ describe('Crypto', () => {
       });
 
       it('should encrypt with sha256 and return a KeyStore object', async () => {
-        const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
+        
         const result = await Crypto.encrypt(
           mockRng,
           mockCrypto,
@@ -259,7 +251,7 @@ describe('Crypto', () => {
           'ledger',
           Buffer.from(mockKeyCosmos.publicKeyHex).toString('hex'),
           mockPassword,
-          metaHasId,
+          mockMetaHasId,
           mockBip44HDPath,
           mockAddressLedger
         );
@@ -271,7 +263,7 @@ describe('Crypto', () => {
         expect(result.type).toBe('ledger');
         expect(result.coinTypeForChain).toEqual({});
         expect(result.bip44HDPath).toBe(mockBip44HDPath);
-        expect(result.meta).toBe(metaHasId);
+        expect(result.meta).toBe(mockMetaHasId);
         expect(result.crypto.cipher).toBe('aes-128-ctr');
         expect(result.crypto.cipherparams.iv).toEqual(expect.any(String));
         expect(result.crypto.ciphertext).toEqual(expect.any(String));
@@ -282,7 +274,7 @@ describe('Crypto', () => {
       });
 
       it('should encrypt with pbkdf2 and return a KeyStore object', async () => {
-        const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
+        
         const result = await Crypto.encrypt(
           mockRng,
           mockCrypto,
@@ -290,7 +282,7 @@ describe('Crypto', () => {
           'ledger',
           Buffer.from(mockKeyCosmos.publicKeyHex).toString('hex'),
           mockPassword,
-          metaHasId,
+          mockMetaHasId,
           mockBip44HDPath,
           mockAddressLedger
         );
@@ -301,7 +293,7 @@ describe('Crypto', () => {
         expect(result.type).toBe('ledger');
         expect(result.coinTypeForChain).toEqual({});
         expect(result.bip44HDPath).toBe(mockBip44HDPath);
-        expect(result.meta).toBe(metaHasId);
+        expect(result.meta).toBe(mockMetaHasId);
         expect(result.crypto.cipher).toBe('aes-128-ctr');
         expect(result.crypto.cipherparams.iv).toEqual(expect.any(String));
         expect(result.crypto.ciphertext).toEqual(expect.any(String));
@@ -313,9 +305,6 @@ describe('Crypto', () => {
     });
   });
   describe('decrypt', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
     describe('mnemonic', () => {
       test('should decrypt with scrypt kdf', async () => {
         const result = await Crypto.decrypt(
@@ -372,9 +361,6 @@ describe('Crypto', () => {
       });
     });
     describe('ledger', () => {
-      afterEach(() => {
-        jest.clearAllMocks();
-      });
       test('should decrypt with scrypt kdf', async () => {
         const result = await Crypto.decrypt(
           mockCrypto,

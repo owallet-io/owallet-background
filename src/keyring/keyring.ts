@@ -1671,8 +1671,6 @@ export class KeyRing {
           ledgerAppType
         )) || {};
 
-      console.log('address ==1', address);
-
       const keyStore = await KeyRing.CreateLedgerKeyStore(
         this.rng,
         this.crypto,
@@ -1686,13 +1684,10 @@ export class KeyRing {
         }
       );
 
-      console.log(keyStore, 'keystore here');
-
       this.multiKeyStore.push(keyStore);
 
       await this.save();
 
-      console.log(this.getMultiKeyStoreInfo, 'multi here');
       return {
         multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
       };

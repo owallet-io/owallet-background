@@ -15,6 +15,12 @@ export const mockMultiKeyStore: KeyStore[] = [
   mockKeyStorePbkdf2Mnemonic,
   mockKeyStorePbkdf2PrivateKey
 ];
+export const mockKvStore = {
+  get: jest.fn().mockResolvedValue(undefined),
+  set: jest.fn().mockResolvedValue(undefined),
+  prefix: jest.fn().mockReturnValue('keyring')
+};
+export const mockEmbedChain: any = null;
 export const mockMultiKeyStoreInfo = [
   {
     version: '1.2',
