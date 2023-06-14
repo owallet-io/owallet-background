@@ -45,7 +45,9 @@ jest.mock('@owallet/common', () => ({
 }));
 jest.mock('../../ledger', () => ({
   LedgerAppType: jest.fn(),
-  LedgerService: jest.fn()
+  LedgerService: jest.fn().mockImplementation(() => ({
+    getPublicKey: jest.fn()
+  }))
 }));
 
 // Mock @owallet/router module
@@ -90,7 +92,7 @@ jest.mock('../../tx', () => ({
 }));
 jest.mock('../../utils/helper.ts', () => ({
   formatNeworkTypeToLedgerAppName: jest.fn(),
-  getNetworkTypeByBip44HDPath: jest.fn(),
+  getNetworkTypeByBip44HDPath: jest.fn().mockReturnValue('cosmos'),
   splitPath: jest.fn()
 }));
 // Mock @ethersproject/transactions module
@@ -106,6 +108,7 @@ jest.mock('tronweb', () => ({
 import { KeyRing, KeyRingStatus } from '../keyring';
 import { LedgerService } from '../../ledger';
 import { ScryptParams, CommonCrypto } from '../types';
+import { getNetworkTypeByBip44HDPath } from '../../utils/helper';
 import {
   mockBip44HDPath,
   mockCrypto,
@@ -121,6 +124,7 @@ import {
 } from '../__mocks__/keyring';
 import { Crypto, KeyStore } from '../crypto';
 import { KeyMultiStoreKey, KeyStoreKey } from '../__mocks__/types';
+import { Env } from '@owallet/router';
 
 const mockKvStore = {
   get: jest.fn().mockResolvedValue(undefined),
@@ -128,7 +132,7 @@ const mockKvStore = {
   prefix: jest.fn().mockReturnValue('keyring')
 };
 const mockEmbedChain: any = null;
-export const keyRing = new KeyRing(
+export let keyRing = new KeyRing(
   mockEmbedChain,
   mockKvStore,
   new LedgerService(null, null, null),
@@ -136,14 +140,20 @@ export const keyRing = new KeyRing(
   mockCrypto
 );
 describe('keyring', () => {
+  beforeEach(() => {
+    keyRing = new KeyRing(
+      mockEmbedChain,
+      mockKvStore,
+      new LedgerService(null, null, null),
+      mockRng,
+      mockCrypto
+    );
+  });
   afterEach(() => {
     jest.clearAllMocks();
   });
 
   describe('getKeyStoreId', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
     it('should return the id of the key store if it exists', () => {
       const result = KeyRing['getKeyStoreId'](mockMultiKeyStore[1]);
 
@@ -175,9 +185,6 @@ describe('keyring', () => {
     });
   });
   describe('getMultiKeyStoreInfo', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
     it('should return the correct multiKeyStoreInfo', () => {
       keyRing['multiKeyStore'] = mockMultiKeyStore;
       // Mock keyStore
@@ -240,9 +247,6 @@ describe('keyring', () => {
     });
   });
   describe('getIncrementalNumber', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
     test('should return the correct incremental number', async () => {
       // Mock kvStore
       // Gọi hàm getIncrementalNumber và kiểm tra kết quả
@@ -279,9 +283,6 @@ describe('keyring', () => {
     });
   });
   describe('assignKeyStoreIdMeta', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
     test('should call getIncrementalNumber and return the modified meta object', async () => {
       // Mock implementation cho getIncrementalNumber
       const getIncrementalNumberSpy = jest
@@ -303,9 +304,6 @@ describe('keyring', () => {
   });
 
   describe('status', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
     it('should return KeyRingStatus.NOTLOADED when loaded is false', () => {
       // Monkey patch the loaded property
       Object.defineProperty(keyRing, 'loaded', {
@@ -378,9 +376,6 @@ describe('keyring', () => {
     });
   });
   describe('lock', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
     it('should lock the key ring if it is unlocked', () => {
       // Arrange
       const spyOnStatus = jest.spyOn(keyRing, 'status', 'get');
@@ -430,9 +425,6 @@ describe('keyring', () => {
     });
   });
   describe('getTypeOfKeyStore', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
     it('should return "mnemonic" if type is null', () => {
       // Arrange
       const keyStore: Omit<KeyStore, 'crypto'> = {
@@ -488,9 +480,6 @@ describe('keyring', () => {
       );
     });
     describe('type', () => {
-      afterEach(() => {
-        jest.clearAllMocks();
-      });
       it('should return "none" if keyStore is null or undefined', () => {
         // Arrange
         Object.defineProperty(keyRing, 'keyStore', {
@@ -539,9 +528,6 @@ describe('keyring', () => {
     });
   });
   describe('unlock', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
     it('should throw an error if keyStore is not initialized', async () => {
       // Arrange
       Object.defineProperty(keyRing, 'keyStore', {
@@ -641,9 +627,6 @@ describe('keyring', () => {
     });
   });
   describe('CreateMnemonicKeyStore', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
-    });
     it('should call Crypto.encrypt with the correct arguments', async () => {
       // Gọi hàm CreateMnemonicKeyStore
       await KeyRing['CreateMnemonicKeyStore'](
@@ -778,15 +761,110 @@ describe('keyring', () => {
       expect(keyRing.save).toHaveBeenCalled();
     });
   });
-  describe('showKeyring', () => {
-    afterEach(() => {
-      jest.clearAllMocks();
+  describe('createPrivateKey', () => {
+    it('should create private key and update keyStore and multiKeyStore', async () => {
+      // Mock các phương thức liên quan
+      const spyCreatePrivateKeyStore = jest
+        .spyOn(KeyRing as any, 'CreatePrivateKeyStore')
+        .mockResolvedValue(mockMultiKeyStore[2]);
+
+      jest
+        .spyOn(keyRing as any, 'status', 'get')
+        .mockReturnValue(KeyRingStatus.UNLOCKED);
+      jest
+        .spyOn(keyRing as any, 'getMultiKeyStoreInfo')
+        .mockReturnValue(mockMultiKeyStoreInfo);
+      jest.spyOn(keyRing, 'save');
+      const assignKeyStoreIdMetaSpy = jest.spyOn(
+        keyRing as any,
+        'assignKeyStoreIdMeta'
+      );
+      // Gọi phương thức createMnemonicKey()
+      const result = await keyRing.createPrivateKey(
+        mockKdfMobile,
+        mockKeyCosmos.privateKeyHex,
+        mockPassword,
+        mockMeta
+      );
+
+      // Kiểm tra kết quả
+      expect(result.status).toBe(KeyRingStatus.UNLOCKED);
+      expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
+      expect(keyRing['privateKey']).toBe(mockKeyCosmos.privateKeyHex);
+      expect(keyRing['keyStore']).toBe(mockMultiKeyStore[2]);
+      expect(keyRing['password']).toBe(mockPassword);
+      expect(spyCreatePrivateKeyStore).toHaveBeenCalledWith(
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        mockKeyCosmos.privateKeyHex,
+        mockPassword,
+        mockMetaHasId
+      );
+      expect(assignKeyStoreIdMetaSpy).toHaveBeenCalled();
+      expect(keyRing.save).toHaveBeenCalled();
     });
+  });
+  describe('createLedgerKey', () => {
+    it('should create ledger key and update keyStore and multiKeyStore', async () => {
+      // Mock các phương thức liên quan
+      jest.spyOn(keyRing['ledgerKeeper'], 'getPublicKey').mockResolvedValue({
+        publicKey: mockKeyCosmos.publicKeyHex,
+        address: mockKeyCosmos.address
+      });
+      const spyCreateLedgerKeyStore = jest
+        .spyOn(KeyRing as any, 'CreateLedgerKeyStore')
+        .mockResolvedValue(mockMultiKeyStore[0]);
+
+      jest
+        .spyOn(keyRing as any, 'getMultiKeyStoreInfo')
+        .mockReturnValue(mockMultiKeyStoreInfo);
+      jest
+        .spyOn(keyRing as any, 'assignKeyStoreIdMeta')
+        .mockResolvedValue(mockMetaHasId);
+      jest
+        .spyOn(keyRing as any, 'status', 'get')
+        .mockReturnValue(KeyRingStatus.UNLOCKED);
+      jest.spyOn(keyRing, 'save');
+      const mockEnv: Env = {
+        isInternalMsg: false,
+        requestInteraction: jest.fn()
+      };
+      // Gọi phương thức createMnemonicKey()
+      const result = await keyRing.createLedgerKey(
+        mockEnv,
+        mockKdfMobile,
+        mockPassword,
+        mockMeta,
+        mockBip44HDPath
+      );
+
+      // Kiểm tra kết quả
+      expect(result.status).toBe(KeyRingStatus.UNLOCKED);
+      expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
+      expect(keyRing['ledgerPublicKey']).toBe(mockKeyCosmos.publicKeyHex);
+      expect(keyRing['keyStore']).toBe(mockMultiKeyStore[0]);
+      expect(keyRing['password']).toBe(mockPassword);
+
+      expect(spyCreateLedgerKeyStore).toHaveBeenCalledWith(
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        mockKeyCosmos.publicKeyHex,
+        mockPassword,
+        mockMetaHasId,
+        mockBip44HDPath,
+        mockAddressLedger
+      );
+      expect(keyRing['assignKeyStoreIdMeta']).toHaveBeenCalled();
+      expect(keyRing.save).toHaveBeenCalled();
+      expect(getNetworkTypeByBip44HDPath).toHaveBeenCalled();
+      expect(keyRing['ledgerKeeper'].getPublicKey).toHaveBeenCalled();
+    });
+  });
+  describe('showKeyring', () => {
     const mockIndex = 0;
     describe('should to throw err status for showKeyRing method', () => {
-      afterEach(() => {
-        jest.clearAllMocks();
-      });
       it('check status KeyRingStatus.EMPTY with KeyRingStatus.UNLOCKED', async () => {
         const statusSpy = jest
           .spyOn(keyRing as any, 'status', 'get')
@@ -822,9 +900,6 @@ describe('keyring', () => {
       });
     });
     describe('should to throw err password for showKeyRing method', () => {
-      afterEach(() => {
-        jest.clearAllMocks();
-      });
       it('check password with password params', async () => {
         const statusSpy = jest
           .spyOn(keyRing as any, 'status', 'get')
@@ -841,9 +916,6 @@ describe('keyring', () => {
       });
     });
     describe('should to throw err keyStore for showKeyRing method', () => {
-      afterEach(() => {
-        jest.clearAllMocks();
-      });
       it('check keyStore null or undefined', async () => {
         const statusSpy = jest
           .spyOn(keyRing as any, 'status', 'get')
@@ -860,9 +932,6 @@ describe('keyring', () => {
       });
     });
     describe('decrypt data follow key store type', () => {
-      afterEach(() => {
-        jest.clearAllMocks();
-      });
       it('with key store type == mnemonic', async () => {
         const statusSpy = jest
           .spyOn(keyRing as any, 'status', 'get')
