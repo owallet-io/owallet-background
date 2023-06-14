@@ -115,6 +115,7 @@ import {
 } from '../__mocks__/keyring';
 import { Crypto, KeyStore } from '../crypto';
 import { RNG } from '@owallet/crypto';
+import { object } from 'joi';
 
 const mockKvStore = {
   get: jest.fn().mockResolvedValue(undefined),
@@ -132,6 +133,79 @@ export const keyRing = new KeyRing(
 describe('keyring', () => {
   afterEach(() => {
     jest.clearAllMocks();
+  });
+  // describe('assignKeyStoreIdMeta', () => {
+    //   test('should call getIncrementalNumber and return the modified meta object', async () => {
+    //     const kvStore = {
+    //       get: jest.fn().mockResolvedValue(0),
+    //       set: jest.fn().mockResolvedValue(undefined),
+    //       prefix: jest.fn().mockReturnValue('')
+    //     };
+    //     // Object meta ban đầu
+    //     // Tạo một đối tượng từ class chứa hàm getIncrementalNumber
+    //     const mockAssignKey = new MockFnHelper();
+    //     const initialMeta = { key1: 'value1', key2: 'value2' };
+    //     mockAssignKey['kvStore'] = kvStore;
+    //     // Giá trị trả về từ getIncrementalNumber
+    //     // const mockIncrementalNumber = 1;
+    //     const mockIncrementalNumber = await mockAssignKey.getIncrementalNumber();
+
+    //     // Mock implementation cho getIncrementalNumber
+    //     jest
+    //       .spyOn(mockAssignKey, 'getIncrementalNumber')
+    //       .mockResolvedValue(mockIncrementalNumber);
+
+    //     // Gọi hàm assignKeyStoreIdMeta
+    //     const result = await mockAssignKey.assignKeyStoreIdMeta(initialMeta);
+
+    //     // Kiểm tra xem getIncrementalNumber đã được gọi
+    //     expect(mockAssignKey.getIncrementalNumber).toHaveBeenCalled();
+
+    //     // Kiểm tra xem kết quả trả về là đúng
+    //     expect(result).toEqual({
+    //       ...initialMeta,
+    //       __id__: mockIncrementalNumber.toString()
+    //     });
+    //   });
+    // });
+  describe('getIncrementalNumber', () => {
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+    test('should return the correct incremental number', async () => {
+      // Mock kvStore
+      // Gọi hàm getIncrementalNumber và kiểm tra kết quả
+      const result = await keyRing['getIncrementalNumber']();
+      // Kiểm tra kết quả trả về
+      expect(result).toBe(1);
+      // Kiểm tra các mock function được gọi đúng số lần và với đúng đối số
+      expect(mockKvStore.get).toHaveBeenCalledTimes(1);
+      expect(mockKvStore.get).toHaveBeenCalledWith('incrementalNumber');
+      expect(mockKvStore.set).toHaveBeenCalledTimes(1);
+      expect(mockKvStore.set).toHaveBeenCalledWith('incrementalNumber', 1);
+    });
+
+    test('should return the correct incremental number when it already exists', async () => {
+      // Mock kvStore
+      const kvStore = {
+        get: jest.fn().mockResolvedValue(5),
+        set: jest.fn().mockResolvedValue(undefined),
+        prefix: jest.fn().mockReturnValue('')
+      };
+      Object.defineProperty(keyRing, 'kvStore', {
+        value: kvStore,
+        writable: true
+      });
+      // Gọi hàm getIncrementalNumber và kiểm tra kết quả
+      const result = await keyRing['getIncrementalNumber']();
+      // Kiểm tra kết quả trả về
+      expect(result).toBe(6);
+      // Kiểm tra các mock function được gọi đúng số lần và với đúng đối số
+      expect(kvStore.get).toHaveBeenCalledTimes(1);
+      expect(kvStore.get).toHaveBeenCalledWith('incrementalNumber');
+      expect(kvStore.set).toHaveBeenCalledTimes(1);
+      expect(kvStore.set).toHaveBeenCalledWith('incrementalNumber', 6);
+    });
   });
   describe('status', () => {
     afterEach(() => {
