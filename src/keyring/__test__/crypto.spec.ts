@@ -27,6 +27,9 @@ describe('Crypto', () => {
       p: 1
     };
     describe('mnemonic', () => {
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
       it('should encrypt with scrypt and return a KeyStore object', async () => {
         // Mock the scrypt function to return the derived key
         const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
@@ -89,7 +92,6 @@ describe('Crypto', () => {
       });
 
       it('should encrypt with pbkdf2 and return a KeyStore object', async () => {
-        jest.clearAllMocks();
         const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
         const result = await Crypto.encrypt(
           mockRng,
@@ -119,6 +121,9 @@ describe('Crypto', () => {
       });
     });
     describe('privateKey', () => {
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
       it('should encrypt with scrypt and return a KeyStore object', async () => {
         // Mock the scrypt function to return the derived key
         const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
@@ -181,7 +186,6 @@ describe('Crypto', () => {
       });
 
       it('should encrypt with pbkdf2 and return a KeyStore object', async () => {
-        jest.clearAllMocks();
         const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
         const result = await Crypto.encrypt(
           mockRng,
@@ -211,6 +215,9 @@ describe('Crypto', () => {
       });
     });
     describe('ledger', () => {
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
       it('should encrypt with scrypt and return a KeyStore object', async () => {
         // Mock the scrypt function to return the derived key
         const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
@@ -275,7 +282,6 @@ describe('Crypto', () => {
       });
 
       it('should encrypt with pbkdf2 and return a KeyStore object', async () => {
-        jest.clearAllMocks();
         const metaHasId = await keyRing['assignKeyStoreIdMeta'](mockMeta);
         const result = await Crypto.encrypt(
           mockRng,
@@ -307,10 +313,9 @@ describe('Crypto', () => {
     });
   });
   describe('decrypt', () => {
-    beforeEach(() => {
+    afterEach(() => {
       jest.clearAllMocks();
     });
-
     describe('mnemonic', () => {
       test('should decrypt with scrypt kdf', async () => {
         const result = await Crypto.decrypt(
@@ -338,6 +343,9 @@ describe('Crypto', () => {
       });
     });
     describe('privateKey', () => {
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
       test('should decrypt with scrypt kdf', async () => {
         const result = await Crypto.decrypt(
           mockCrypto,
@@ -364,6 +372,9 @@ describe('Crypto', () => {
       });
     });
     describe('ledger', () => {
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
       test('should decrypt with scrypt kdf', async () => {
         const result = await Crypto.decrypt(
           mockCrypto,

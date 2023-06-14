@@ -109,6 +109,7 @@ import {
   mockKdfMobile,
   mockKeyCosmos,
   mockKeyStore,
+  mockMultiKeyStore,
   mockPassword,
   mockRng
 } from '../__mocks__/keyring';
@@ -129,8 +130,11 @@ export const keyRing = new KeyRing(
   mockCrypto
 );
 describe('keyring', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
   describe('status', () => {
-    beforeEach(() => {
+    afterEach(() => {
       jest.clearAllMocks();
     });
     it('should return KeyRingStatus.NOTLOADED when loaded is false', () => {
@@ -205,7 +209,7 @@ describe('keyring', () => {
     });
   });
   describe('lock', () => {
-    beforeEach(() => {
+    afterEach(() => {
       jest.clearAllMocks();
     });
     it('should lock the key ring if it is unlocked', () => {
@@ -257,7 +261,7 @@ describe('keyring', () => {
     });
   });
   describe('getTypeOfKeyStore', () => {
-    beforeEach(() => {
+    afterEach(() => {
       jest.clearAllMocks();
     });
     it('should return "mnemonic" if type is null', () => {
@@ -315,7 +319,7 @@ describe('keyring', () => {
       );
     });
     describe('type', () => {
-      beforeEach(() => {
+      afterEach(() => {
         jest.clearAllMocks();
       });
       it('should return "none" if keyStore is null or undefined', () => {
@@ -366,7 +370,7 @@ describe('keyring', () => {
     });
   });
   describe('unlock', () => {
-    beforeEach(() => {
+    afterEach(() => {
       jest.clearAllMocks();
     });
     it('should throw an error if keyStore is not initialized', async () => {
@@ -465,6 +469,171 @@ describe('keyring', () => {
       );
       expect(ledgerPublicKey.toString('hex')).toBe(mockKeyCosmos.publicKey);
       expect(passwordReflect).toBe(mockPassword);
+    });
+  });
+  describe('showKeyring', () => {
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+    const mockIndex = 0;
+    describe('should to throw err status for showKeyRing method', () => {
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
+      it('check status KeyRingStatus.EMPTY with KeyRingStatus.UNLOCKED', async () => {
+        const statusSpy = jest
+          .spyOn(keyRing as any, 'status', 'get')
+          .mockReturnValue(KeyRingStatus.EMPTY);
+
+        await expect(
+          keyRing.showKeyRing(mockIndex, mockPassword)
+        ).rejects.toThrow('Key ring is not unlocked');
+        expect(statusSpy).toHaveBeenCalled();
+        expect(statusSpy).toBeCalledTimes(1);
+      });
+      it('check status KeyRingStatus.LOCKED with KeyRingStatus.UNLOCKED', async () => {
+        const statusSpy = jest
+          .spyOn(keyRing as any, 'status', 'get')
+          .mockReturnValue(KeyRingStatus.LOCKED);
+
+        await expect(
+          keyRing.showKeyRing(mockIndex, mockPassword)
+        ).rejects.toThrow('Key ring is not unlocked');
+        expect(statusSpy).toHaveBeenCalled();
+        expect(statusSpy).toBeCalledTimes(1);
+      });
+      it('check status KeyRingStatus.NOTLOADED with KeyRingStatus.UNLOCKED', async () => {
+        const statusSpy = jest
+          .spyOn(keyRing as any, 'status', 'get')
+          .mockReturnValue(KeyRingStatus.NOTLOADED);
+
+        await expect(
+          keyRing.showKeyRing(mockIndex, mockPassword)
+        ).rejects.toThrow('Key ring is not unlocked');
+        expect(statusSpy).toHaveBeenCalled();
+        expect(statusSpy).toBeCalledTimes(1);
+      });
+    });
+    describe('should to throw err password for showKeyRing method', () => {
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
+      it('check password with password params', async () => {
+        const statusSpy = jest
+          .spyOn(keyRing as any, 'status', 'get')
+          .mockReturnValue(KeyRingStatus.UNLOCKED);
+        Object.defineProperty(keyRing, 'password', {
+          value: 'mock pass',
+          writable: true
+        });
+        await expect(
+          keyRing.showKeyRing(mockIndex, mockPassword)
+        ).rejects.toThrow('Invalid password');
+        expect(statusSpy).toHaveBeenCalled();
+        expect(statusSpy).toBeCalledTimes(1);
+      });
+    });
+    describe('should to throw err keyStore for showKeyRing method', () => {
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
+      it('check keyStore null or undefined', async () => {
+        const statusSpy = jest
+          .spyOn(keyRing as any, 'status', 'get')
+          .mockReturnValue(KeyRingStatus.UNLOCKED);
+        Object.defineProperty(keyRing, 'password', {
+          value: mockPassword,
+          writable: true
+        });
+        await expect(keyRing.showKeyRing(5, mockPassword)).rejects.toThrow(
+          'Empty key store'
+        );
+        expect(statusSpy).toHaveBeenCalled();
+        expect(statusSpy).toBeCalledTimes(1);
+      });
+    });
+    describe('decrypt data follow key store type', () => {
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
+      it('with key store type == mnemonic', async () => {
+        const statusSpy = jest
+          .spyOn(keyRing as any, 'status', 'get')
+          .mockReturnValue(KeyRingStatus.UNLOCKED);
+        Object.defineProperty(keyRing, 'password', {
+          value: mockPassword,
+          writable: true
+        });
+        Object.defineProperty(keyRing, 'multiKeyStore', {
+          value: mockMultiKeyStore,
+          writable: true
+        });
+        const decryptSpy = jest
+          .spyOn(Crypto, 'decrypt')
+          .mockResolvedValue(Buffer.from(mockKeyCosmos.mnemonic));
+        const rs = await keyRing.showKeyRing(1, mockPassword);
+        expect(rs).toBe(mockKeyCosmos.mnemonic);
+        expect(statusSpy).toHaveBeenCalled();
+        expect(statusSpy).toBeCalledTimes(1);
+        expect(decryptSpy).toHaveBeenCalled();
+        expect(decryptSpy).toHaveBeenCalledWith(
+          mockCrypto,
+          mockMultiKeyStore[1],
+          mockPassword
+        );
+      });
+      it('with key store type == privateKey', async () => {
+        const statusSpy = jest
+          .spyOn(keyRing as any, 'status', 'get')
+          .mockReturnValue(KeyRingStatus.UNLOCKED);
+        Object.defineProperty(keyRing, 'password', {
+          value: mockPassword,
+          writable: true
+        });
+        Object.defineProperty(keyRing, 'multiKeyStore', {
+          value: mockMultiKeyStore,
+          writable: true
+        });
+        const decryptSpy = jest
+          .spyOn(Crypto, 'decrypt')
+          .mockResolvedValue(Buffer.from(mockKeyCosmos.privateKey));
+        const rs = await keyRing.showKeyRing(2, mockPassword);
+        expect(rs).toBe(mockKeyCosmos.privateKey);
+        expect(statusSpy).toHaveBeenCalled();
+        expect(statusSpy).toBeCalledTimes(1);
+        expect(decryptSpy).toHaveBeenCalled();
+        expect(decryptSpy).toHaveBeenCalledWith(
+          mockCrypto,
+          mockMultiKeyStore[2],
+          mockPassword
+        );
+      });
+      it('with key store type == ledger', async () => {
+        const statusSpy = jest
+          .spyOn(keyRing as any, 'status', 'get')
+          .mockReturnValue(KeyRingStatus.UNLOCKED);
+        Object.defineProperty(keyRing, 'password', {
+          value: mockPassword,
+          writable: true
+        });
+        Object.defineProperty(keyRing, 'multiKeyStore', {
+          value: mockMultiKeyStore,
+          writable: true
+        });
+        const decryptSpy = jest
+          .spyOn(Crypto, 'decrypt')
+          .mockResolvedValue(Buffer.from(mockKeyCosmos.publicKey));
+        const rs = await keyRing.showKeyRing(0, mockPassword);
+        expect(rs).toBe(mockKeyCosmos.publicKey);
+        expect(statusSpy).toHaveBeenCalled();
+        expect(statusSpy).toBeCalledTimes(1);
+        expect(decryptSpy).toHaveBeenCalled();
+        expect(decryptSpy).toHaveBeenCalledWith(
+          mockCrypto,
+          mockMultiKeyStore[0],
+          mockPassword
+        );
+      });
     });
   });
 });

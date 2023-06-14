@@ -1572,18 +1572,10 @@ export class KeyRing {
     if (!keyStore) {
       throw new Error('Empty key store');
     }
-
-    if (keyStore.type === 'mnemonic') {
-      // If password is invalid, error will be thrown.
-      return Buffer.from(
-        await Crypto.decrypt(this.crypto, keyStore, password)
-      ).toString();
-    } else {
-      // If password is invalid, error will be thrown.
-      return Buffer.from(
-        await Crypto.decrypt(this.crypto, keyStore, password)
-      ).toString();
-    }
+    // If password is invalid, error will be thrown.
+    return Buffer.from(
+      await Crypto.decrypt(this.crypto, keyStore, password)
+    ).toString();
   }
 
   public get canSetPath(): boolean {

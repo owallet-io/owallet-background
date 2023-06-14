@@ -10,7 +10,11 @@ import {
   mockKeyStoreSha256Mnemonic,
   mockKeyStoreSha256PrivateKey
 } from './keystores';
-
+export const mockMultiKeyStore: KeyStore[] = [
+  mockKeyStorePbkdf2Ledger,
+  mockKeyStorePbkdf2Mnemonic,
+  mockKeyStorePbkdf2PrivateKey
+];
 //key cosmos example
 const mockAddressCosmos = 'cosmos1eu2ecyzedvkvsfcd5vfht4whgx3uf22fjj9a4n';
 const mnemonicCosmos =

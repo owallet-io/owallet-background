@@ -207,3 +207,4 @@ export const mockKeyStoreScryptMnemonic: KeyStore = {
   },
   addresses: undefined
 };
+
