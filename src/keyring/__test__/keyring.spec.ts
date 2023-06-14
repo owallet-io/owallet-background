@@ -135,6 +135,35 @@ describe('keyring', () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
+  describe('isLocked', () => {
+    it('should return true when privateKey, mnemonic, and ledgerPublicKey are null or undefined', () => {
+      // Tạo instance của lớp MockIsLocked
+      // const instance = new MockIsLocked();
+
+      // Gán giá trị null/undefined cho các thuộc tính
+      keyRing['privateKey'] = null;
+      keyRing['mnemonic'] = undefined;
+      keyRing['ledgerPublicKey'] = null;
+      // Gọi phương thức isLocked()
+      const result = keyRing.isLocked();
+
+      // Kiểm tra kết quả
+      expect(result).toBe(true);
+    });
+
+    it('should return false when at least one of privateKey, mnemonic, or ledgerPublicKey has a value', () => {
+      // Gán giá trị cho một trong các thuộc tính
+      keyRing['privateKey'] = new Uint8Array();
+      keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
+      keyRing['ledgerPublicKey'] = new Uint8Array();
+
+      // Gọi phương thức isLocked()
+      const result = keyRing.isLocked();
+
+      // Kiểm tra kết quả
+      expect(result).toBe(false);
+    });
+  });
   describe('getIncrementalNumber', () => {
     afterEach(() => {
       jest.clearAllMocks();
@@ -151,7 +180,7 @@ describe('keyring', () => {
       expect(mockKvStore.set).toHaveBeenCalledTimes(1);
       expect(mockKvStore.set).toHaveBeenCalledWith('incrementalNumber', 1);
     });
-    
+
     test('should return the correct incremental number when it already exists', async () => {
       // Mock kvStore
       const kvStore = {
@@ -197,7 +226,7 @@ describe('keyring', () => {
       });
     });
   });
-  
+
   describe('status', () => {
     afterEach(() => {
       jest.clearAllMocks();
