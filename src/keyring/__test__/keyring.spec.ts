@@ -110,6 +110,7 @@ import {
   mockKeyCosmos,
   mockKeyStore,
   mockMeta,
+  mockMetaHasId,
   mockMultiKeyStore,
   mockPassword,
   mockRng
@@ -135,6 +136,37 @@ export const keyRing = new KeyRing(
 describe('keyring', () => {
   afterEach(() => {
     jest.clearAllMocks();
+  });
+  describe('getKeyStoreId', () => {
+    it('should return the id of the key store if it exists', () => {
+      const result = KeyRing['getKeyStoreId'](mockMultiKeyStore[1]);
+
+      expect(result).toBe(mockMetaHasId.__id__);
+    });
+
+    it('should throw an error if the key store id is empty', () => {
+      const keyStoreMock: KeyStore = {
+        ...mockMultiKeyStore[1],
+        meta: {
+          __id__: ''
+        }
+      };
+      expect(() => KeyRing['getKeyStoreId'](keyStoreMock)).toThrow(
+        "Key store's id is empty"
+      );
+    });
+
+    it('should throw an error if the key store id is undefined', () => {
+      const keyStoreMock: KeyStore = {
+        ...mockMultiKeyStore[1],
+        meta: {
+          __id__: ''
+        }
+      };
+      expect(() => KeyRing['getKeyStoreId'](keyStoreMock)).toThrow(
+        "Key store's id is empty"
+      );
+    });
   });
   describe('save', () => {
     it('should save keyStore and multiKeyStore', async () => {
