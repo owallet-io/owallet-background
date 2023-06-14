@@ -117,6 +117,7 @@ import {
 import { Crypto, KeyStore } from '../crypto';
 import { RNG } from '@owallet/crypto';
 import { object } from 'joi';
+import { KeyMultiStoreKey, KeyStoreKey } from '../__mocks__/types';
 
 const mockKvStore = {
   get: jest.fn().mockResolvedValue(undefined),
@@ -134,6 +135,26 @@ export const keyRing = new KeyRing(
 describe('keyring', () => {
   afterEach(() => {
     jest.clearAllMocks();
+  });
+  describe('save', () => {
+    it('should save keyStore and multiKeyStore', async () => {
+      keyRing['keyStore'] = mockMultiKeyStore[1];
+      keyRing['multiKeyStore'] = mockMultiKeyStore;
+
+      // Gọi phương thức save()
+      await keyRing.save();
+
+      // Kiểm tra việc gọi kvStore.set với đúng đối số
+      expect(mockKvStore.set).toHaveBeenCalledTimes(2);
+      expect(mockKvStore.set).toHaveBeenCalledWith(
+        KeyStoreKey,
+        mockMultiKeyStore[1]
+      );
+      expect(mockKvStore.set).toHaveBeenCalledWith(
+        KeyMultiStoreKey,
+        mockMultiKeyStore
+      );
+    });
   });
   describe('isLocked', () => {
     it('should return true when privateKey, mnemonic, and ledgerPublicKey are null or undefined', () => {
