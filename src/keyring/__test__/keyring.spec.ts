@@ -1,3 +1,4 @@
+import { mockAddressLedger } from './../__mocks__/keyring';
 // Mock Crypto module
 jest.mock('../crypto', () => ({
   Crypto: {
@@ -119,8 +120,6 @@ import {
   mockRng
 } from '../__mocks__/keyring';
 import { Crypto, KeyStore } from '../crypto';
-import { RNG } from '@owallet/crypto';
-import { object } from 'joi';
 import { KeyMultiStoreKey, KeyStoreKey } from '../__mocks__/types';
 
 const mockKvStore = {
@@ -653,11 +652,13 @@ describe('keyring', () => {
         mockKdfMobile,
         mockKeyCosmos.mnemonic,
         mockPassword,
-        mockMeta,
+        mockMetaHasId,
         mockBip44HDPath
       );
 
       // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
+      expect(Crypto.encrypt).toHaveBeenCalled();
+      expect(Crypto.encrypt).toHaveBeenCalledTimes(1);
       expect(Crypto.encrypt).toHaveBeenCalledWith(
         mockRng,
         mockCrypto,
@@ -665,8 +666,39 @@ describe('keyring', () => {
         'mnemonic',
         mockKeyCosmos.mnemonic,
         mockPassword,
-        mockMeta,
+        mockMetaHasId,
         mockBip44HDPath
+      );
+    });
+  });
+  describe('CreateLedgerKeyStore', () => {
+    beforeEach(() => {
+      jest.spyOn(Crypto, 'encrypt').mockClear();
+    });
+
+    it('should call Crypto.encrypt with the correct arguments', async () => {
+      await KeyRing['CreateLedgerKeyStore'](
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        mockKeyCosmos.publicKeyHex,
+        mockPassword,
+        mockMetaHasId,
+        mockBip44HDPath,
+        mockAddressLedger
+      );
+      expect(Crypto.encrypt).toHaveBeenCalled();
+      expect(Crypto.encrypt).toHaveBeenCalledTimes(1);
+      expect(Crypto.encrypt).toHaveBeenCalledWith(
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        'ledger',
+        Buffer.from(mockKeyCosmos.publicKeyHex).toString('hex'),
+        mockPassword,
+        mockMetaHasId,
+        mockBip44HDPath,
+        mockAddressLedger
       );
     });
   });
