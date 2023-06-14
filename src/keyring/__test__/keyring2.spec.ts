@@ -22,7 +22,8 @@ import {
 import {
   KeyRingStatus,
   KeyStoreKey,
-  KeyMultiStoreKey
+  KeyMultiStoreKey,
+  MultiKeyStoreInfoWithSelected
 } from '../__mocks__/types';
 import { Env, OWalletError } from '@owallet/router';
 const mockMnemonic = 'example mnemonic';
@@ -43,7 +44,7 @@ const cryptoMock: CommonCrypto = {
   scrypt: scryptMock
 };
 const rngMock = jest.fn(async (array) => array);
-const mockMultiKeyStoreInfo = [
+const mockMultiKeyStoreInfo: MultiKeyStoreInfoWithSelected = [
   {
     version: '1.2',
     type: 'mnemonic',
@@ -198,7 +199,7 @@ describe('getIncrementalNumber', () => {
       // Giá trị trả về từ getIncrementalNumber
       // const mockIncrementalNumber = 1;
       const mockIncrementalNumber = await mockAssignKey.getIncrementalNumber();
-      
+
       // Mock implementation cho getIncrementalNumber
       jest
         .spyOn(mockAssignKey, 'getIncrementalNumber')
@@ -206,7 +207,6 @@ describe('getIncrementalNumber', () => {
 
       // Gọi hàm assignKeyStoreIdMeta
       const result = await mockAssignKey.assignKeyStoreIdMeta(initialMeta);
-      
 
       // Kiểm tra xem getIncrementalNumber đã được gọi
       expect(mockAssignKey.getIncrementalNumber).toHaveBeenCalled();
@@ -323,7 +323,7 @@ describe('Keyring', () => {
         mockBip44HDPath,
         addresses
       );
-      
+
       keyStoreEncrypted = result;
       expect(rngMock).toHaveBeenCalledTimes(2);
       expect(scryptMock).toHaveBeenCalledTimes(1);
@@ -429,7 +429,6 @@ describe('Keyring', () => {
         meta,
         mockBip44HDPath
       );
-      
 
       // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
       expect(Crypto.encrypt).toHaveBeenCalledWith(
@@ -503,7 +502,6 @@ describe('Keyring', () => {
           cosmos: mockAddress
         }
       );
-      
 
       // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
       expect(Crypto.encrypt).toHaveBeenCalledWith(
@@ -576,7 +574,6 @@ describe('Keyring', () => {
         password,
         meta
       );
-      
 
       // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
       expect(Crypto.encrypt).toHaveBeenCalledWith(
@@ -1004,7 +1001,7 @@ describe('MockAddPrivateKey', () => {
       instance.multiKeyStore = mockMultiKeyStore;
       instance.rng = rngMock;
       instance.crypto = cryptoMock;
-      
+
       // Mock các phương thức liên quan
       jest
         .spyOn(instance, 'CreatePrivateKeyStore')

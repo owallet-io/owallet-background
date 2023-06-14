@@ -729,6 +729,55 @@ describe('keyring', () => {
       );
     });
   });
+  describe('createMnemonicKey', () => {
+    it('should create mnemonic key and update keyStore and multiKeyStore', async () => {
+      // Gán giá trị cho các thuộc tính
+
+      // Mock các phương thức liên quan
+      const spyCreateMnemonicKeyStore = jest
+        .spyOn(KeyRing as any, 'CreateMnemonicKeyStore')
+        .mockResolvedValue(mockMultiKeyStore[1]);
+
+      jest
+        .spyOn(keyRing as any, 'status', 'get')
+        .mockReturnValue(KeyRingStatus.UNLOCKED);
+      jest
+        .spyOn(keyRing as any, 'getMultiKeyStoreInfo')
+        .mockReturnValue(mockMultiKeyStoreInfo);
+      jest.spyOn(keyRing, 'save');
+      const assignKeyStoreIdMetaSpy = jest.spyOn(
+        keyRing as any,
+        'assignKeyStoreIdMeta'
+      );
+      // Gọi phương thức createMnemonicKey()
+      const result = await keyRing.createMnemonicKey(
+        mockKdfMobile,
+        mockKeyCosmos.mnemonic,
+        mockPassword,
+        mockMeta,
+        mockBip44HDPath
+      );
+
+      // Kiểm tra kết quả
+      expect(result.status).toBe(KeyRingStatus.UNLOCKED);
+      expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
+      expect(keyRing['mnemonic']).toBe(mockKeyCosmos.mnemonic);
+      expect(keyRing['keyStore']).toBe(mockMultiKeyStore[1]);
+      expect(keyRing['password']).toBe(mockPassword);
+      // expect(instance.multiKeyStore).toEqual(mockMultiKeyStore);
+      expect(spyCreateMnemonicKeyStore).toHaveBeenCalledWith(
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        mockKeyCosmos.mnemonic,
+        mockPassword,
+        mockMetaHasId,
+        mockBip44HDPath
+      );
+      expect(assignKeyStoreIdMetaSpy).toHaveBeenCalled();
+      expect(keyRing.save).toHaveBeenCalled();
+    });
+  });
   describe('showKeyring', () => {
     afterEach(() => {
       jest.clearAllMocks();
