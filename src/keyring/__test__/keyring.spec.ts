@@ -1,7 +1,8 @@
 // Mock Crypto module
 jest.mock('../crypto', () => ({
   Crypto: {
-    decrypt: jest.fn()
+    decrypt: jest.fn(),
+    encrypt: jest.fn()
   },
   KeyStore: jest.fn()
 }));
@@ -105,6 +106,7 @@ import { KeyRing, KeyRingStatus } from '../keyring';
 import { LedgerService } from '../../ledger';
 import { ScryptParams, CommonCrypto } from '../types';
 import {
+  mockBip44HDPath,
   mockCrypto,
   mockKdfMobile,
   mockKeyCosmos,
@@ -637,6 +639,35 @@ describe('keyring', () => {
       );
       expect(ledgerPublicKey.toString('hex')).toBe(mockKeyCosmos.publicKey);
       expect(passwordReflect).toBe(mockPassword);
+    });
+  });
+  describe('CreateMnemonicKeyStore', () => {
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+    it('should call Crypto.encrypt with the correct arguments', async () => {
+      // Gọi hàm CreateMnemonicKeyStore
+      await KeyRing['CreateMnemonicKeyStore'](
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        mockKeyCosmos.mnemonic,
+        mockPassword,
+        mockMeta,
+        mockBip44HDPath
+      );
+
+      // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
+      expect(Crypto.encrypt).toHaveBeenCalledWith(
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        'mnemonic',
+        mockKeyCosmos.mnemonic,
+        mockPassword,
+        mockMeta,
+        mockBip44HDPath
+      );
     });
   });
   describe('showKeyring', () => {
