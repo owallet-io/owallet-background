@@ -80,6 +80,7 @@ export const mockBip44HDPath: BIP44HDPath = {
   change: 0,
   addressIndex: 0
 };
+export const mockPathBip44 = `m/44'/118'/0'/0/0`;
 export const rng = (array) => {
   return Promise.resolve(crypto.getRandomValues(array));
 };
