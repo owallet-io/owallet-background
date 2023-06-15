@@ -1356,7 +1356,7 @@ describe('keyring', () => {
       expect(spyKeyStoreBip44).toHaveBeenCalledTimes(1);
       jest.clearAllMocks();
     });
-    test('loadprivate key with type private key err when not show this.mnemonic', () => {
+    test('loadprivate key with type private key err when not show this.privateKey', () => {
       Object.defineProperty(keyRing, 'status', {
         value: KeyRingStatus.UNLOCKED,
         writable: true
@@ -1393,6 +1393,26 @@ describe('keyring', () => {
       const rs = keyRing['loadPrivKey'](mockCoinType);
       expect(rs).toEqual(new PrivKeySecp256k1(mockKeyCosmos.privateKeyHex));
       expect(spyKeyStoreBip44).toHaveBeenCalledTimes(1);
+      jest.clearAllMocks();
+    });
+    test('load private key with type private key err when Unexpected type of keyring', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      Object.defineProperty(keyRing, 'type', {
+        value: 'invalid',
+        writable: true
+      });
+
+      keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+      const spyKeyStoreBip44 = jest
+        .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
+        .mockReturnValue(mockKeyStore.mnemonic.pbkdf2);
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow(
+        'Unexpected type of keyring'
+      );
+      expect(spyKeyStoreBip44).toHaveBeenCalled();
       jest.clearAllMocks();
     });
   });
