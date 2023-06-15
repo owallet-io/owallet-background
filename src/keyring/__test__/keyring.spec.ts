@@ -1,4 +1,8 @@
-import { mockAddressLedger } from './../__mocks__/keyring';
+import {
+  mockAddressLedger,
+  mockCoinType,
+  mockPathBip44
+} from './../__mocks__/keyring';
 // Mock Crypto module
 jest.mock('../crypto', () => ({
   Crypto: {
@@ -9,12 +13,12 @@ jest.mock('../crypto', () => ({
 }));
 
 // Mock @owallet/crypto module
-jest.mock('@owallet/crypto', () => ({
-  Mnemonic: jest.fn(),
-  PrivKeySecp256k1: jest.fn(),
-  PubKeySecp256k1: jest.fn(),
-  RNG: jest.fn()
-}));
+// jest.mock('@owallet/crypto', () => ({
+//   Mnemonic: jest.fn(),
+//   PrivKeySecp256k1: jest.fn(),
+//   PubKeySecp256k1: jest.fn(),
+//   RNG: jest.fn()
+// }));
 
 // Mock eccrypto-js module
 jest.mock('eccrypto-js', () => ({
@@ -125,6 +129,8 @@ import {
 import { Crypto, KeyStore } from '../crypto';
 import { KeyMultiStoreKey, KeyStoreKey } from '../__mocks__/types';
 import { Env, OWalletError } from '@owallet/router';
+import { Mnemonic, PrivKeySecp256k1 } from '@owallet/crypto';
+// import { Mnemonic } from '@owallet/crypto';
 
 const mockKvStore = {
   get: jest.fn().mockResolvedValue(undefined),
@@ -1219,6 +1225,137 @@ describe('keyring', () => {
 
       // Restore the original validateBIP44Path method
       mockValidateBIP44Path.mockRestore();
+    });
+  });
+  describe('loadPrivKey', () => {
+    test('should throw error when key ring is not unlocked with status = LOCKED', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.LOCKED,
+        writable: true
+      });
+      Object.defineProperty(keyRing, 'type', {
+        value: 'mnemonic',
+        writable: true
+      });
+      keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow(
+        'Key ring is not unlocked'
+      );
+    });
+    test('should throw error when key ring is not unlocked with type === none', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      Object.defineProperty(keyRing, 'type', {
+        value: 'none',
+        writable: true
+      });
+      keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow(
+        'Key ring is not unlocked'
+      );
+    });
+    test('should throw error when key ring is not unlocked with keyStore === null', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      Object.defineProperty(keyRing, 'type', {
+        value: 'mnemonic',
+        writable: true
+      });
+      keyRing['keyStore'] = null;
+
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow(
+        'Key ring is not unlocked'
+      );
+    });
+    test('should not throw error when key ring is not unlocked with keyStore === null', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      Object.defineProperty(keyRing, 'type', {
+        value: 'mnemonic',
+        writable: true
+      });
+      keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).not.toThrow(
+        'Key ring is not unlocked'
+      );
+    });
+    test('loadprivate key with type mnemonic err when not show this.mnemonic', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      Object.defineProperty(keyRing, 'type', {
+        value: 'mnemonic',
+        writable: true
+      });
+
+      keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+      const spyKeyStoreBip44 = jest
+        .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
+        .mockReturnValue(mockKeyStore.mnemonic.pbkdf2);
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow(
+        'Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly'
+      );
+      expect(spyKeyStoreBip44).toHaveBeenCalled();
+      jest.clearAllMocks();
+    });
+    test('loadprivate key with type mnemonic to get private key', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      Object.defineProperty(keyRing, 'type', {
+        value: 'mnemonic',
+        writable: true
+      });
+      keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
+      keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+      const spyKeyStoreBip44 = jest
+        .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
+        .mockReturnValue(mockKeyStore.mnemonic.pbkdf2.bip44HDPath);
+      const spyGenerateWalletFromMnemonic = jest
+        .spyOn(Mnemonic as any, 'generateWalletFromMnemonic')
+        .mockReturnValue(mockKeyCosmos.privateKeyHex);
+      const rs = keyRing['loadPrivKey'](mockCoinType);
+      console.log('rs: ', rs);
+      expect(rs).toEqual(new PrivKeySecp256k1(mockKeyCosmos.privateKeyHex));
+      expect(spyGenerateWalletFromMnemonic).toHaveBeenCalledTimes(1);
+      expect(spyKeyStoreBip44).toHaveBeenCalledTimes(1);
+      jest.clearAllMocks();
+    });
+    test('loadprivate key with type mnemonic have cached key', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      Object.defineProperty(keyRing, 'type', {
+        value: 'mnemonic',
+        writable: true
+      });
+      keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
+      keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+      keyRing['cached'].set(mockPathBip44, mockKeyCosmos.privateKeyHex);
+      const spyGenerateWalletFromMnemonic = jest.spyOn(
+        Mnemonic as any,
+        'generateWalletFromMnemonic'
+      );
+      const spyKeyStoreBip44 = jest
+        .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
+        .mockReturnValue(mockKeyStore.mnemonic.pbkdf2.bip44HDPath);
+      const rs = keyRing['loadPrivKey'](mockCoinType);
+      expect(rs).toEqual(new PrivKeySecp256k1(mockKeyCosmos.privateKeyHex));
+      expect(spyGenerateWalletFromMnemonic).not.toHaveBeenCalled();
+      expect(spyKeyStoreBip44).toHaveBeenCalledTimes(1);
+      jest.clearAllMocks();
     });
   });
 });

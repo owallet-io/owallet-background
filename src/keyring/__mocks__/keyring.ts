@@ -18,6 +18,7 @@ export const mockMultiKeyStore: KeyStore[] = [
   mockKeyStorePbkdf2Mnemonic,
   mockKeyStorePbkdf2PrivateKey
 ];
+export const mockCoinType = 118;
 export const mockKvStore = {
   get: jest.fn().mockResolvedValue(undefined),
   set: jest.fn().mockResolvedValue(undefined),
@@ -31,7 +32,7 @@ export const mockMultiKeyStoreInfo = [
     addresses: { cosmos: 'cosmos1eu2ecyzedvkvsfcd5vfht4whgx3uf22fjj9a4n' },
     meta: { name: 'orai', __id__: '1' },
     coinTypeForChain: {},
-    bip44HDPath: { coinType: 118, account: 0, change: 0, addressIndex: 0 },
+    bip44HDPath: { coinType: mockCoinType, account: 0, change: 0, addressIndex: 0 },
     selected: true
   },
   {
@@ -40,7 +41,7 @@ export const mockMultiKeyStoreInfo = [
     addresses: undefined,
     meta: { name: 'orai', __id__: '1' },
     coinTypeForChain: {},
-    bip44HDPath: { coinType: 118, account: 0, change: 0, addressIndex: 0 },
+    bip44HDPath: { coinType: mockCoinType, account: 0, change: 0, addressIndex: 0 },
     selected: true
   },
   {
@@ -49,7 +50,7 @@ export const mockMultiKeyStoreInfo = [
     addresses: undefined,
     meta: { name: 'orai', __id__: '1' },
     coinTypeForChain: {},
-    bip44HDPath: { coinType: 118, account: 0, change: 0, addressIndex: 0 },
+    bip44HDPath: { coinType: mockCoinType, account: 0, change: 0, addressIndex: 0 },
     selected: true
   }
 ];
@@ -75,12 +76,12 @@ export const mockAddressLedger = {
 };
 export const mockPassword = '12345678';
 export const mockBip44HDPath: BIP44HDPath = {
-  coinType: 118,
+  coinType: mockCoinType,
   account: 0,
   change: 0,
   addressIndex: 0
 };
-export const mockPathBip44 = `m/44'/118'/0'/0/0`;
+export const mockPathBip44 = `m/44'/${mockCoinType}'/0'/0/0`;
 export const rng = (array) => {
   return Promise.resolve(crypto.getRandomValues(array));
 };
