@@ -1326,13 +1326,12 @@ describe('keyring', () => {
         .spyOn(Mnemonic as any, 'generateWalletFromMnemonic')
         .mockReturnValue(mockKeyCosmos.privateKeyHex);
       const rs = keyRing['loadPrivKey'](mockCoinType);
-      console.log('rs: ', rs);
       expect(rs).toEqual(new PrivKeySecp256k1(mockKeyCosmos.privateKeyHex));
       expect(spyGenerateWalletFromMnemonic).toHaveBeenCalledTimes(1);
       expect(spyKeyStoreBip44).toHaveBeenCalledTimes(1);
       jest.clearAllMocks();
     });
-    test('loadprivate key with type mnemonic have cached key', () => {
+    test('load private key with type mnemonic have cached key', () => {
       Object.defineProperty(keyRing, 'status', {
         value: KeyRingStatus.UNLOCKED,
         writable: true
@@ -1354,6 +1353,45 @@ describe('keyring', () => {
       const rs = keyRing['loadPrivKey'](mockCoinType);
       expect(rs).toEqual(new PrivKeySecp256k1(mockKeyCosmos.privateKeyHex));
       expect(spyGenerateWalletFromMnemonic).not.toHaveBeenCalled();
+      expect(spyKeyStoreBip44).toHaveBeenCalledTimes(1);
+      jest.clearAllMocks();
+    });
+    test('loadprivate key with type private key err when not show this.mnemonic', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      Object.defineProperty(keyRing, 'type', {
+        value: 'privateKey',
+        writable: true
+      });
+
+      keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+      const spyKeyStoreBip44 = jest
+        .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
+        .mockReturnValue(mockKeyStore.mnemonic.pbkdf2);
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow(
+        'Key store type is private key and it is unlocked. But, private key is not loaded unexpectedly'
+      );
+      expect(spyKeyStoreBip44).toHaveBeenCalled();
+      jest.clearAllMocks();
+    });
+    test('load private key with type private key to get private key', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      Object.defineProperty(keyRing, 'type', {
+        value: 'privateKey',
+        writable: true
+      });
+      keyRing['_privateKey'] = mockKeyCosmos.privateKeyHex;
+      keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+      const spyKeyStoreBip44 = jest
+        .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
+        .mockReturnValue(mockKeyStore.mnemonic.pbkdf2.bip44HDPath);
+      const rs = keyRing['loadPrivKey'](mockCoinType);
+      expect(rs).toEqual(new PrivKeySecp256k1(mockKeyCosmos.privateKeyHex));
       expect(spyKeyStoreBip44).toHaveBeenCalledTimes(1);
       jest.clearAllMocks();
     });
