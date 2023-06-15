@@ -1143,4 +1143,82 @@ describe('keyring', () => {
       });
     });
   });
+  describe('validateBIP44Path', () => {
+    test('should throw an error if account is not an integer or is negative', () => {
+      expect(() => {
+        KeyRing.validateBIP44Path({ ...mockBip44HDPath, account: -1 });
+      }).toThrow('Invalid account in hd path');
+    });
+
+    test('should throw an error if change is not an integer or is not 0 or 1', () => {
+      expect(() => {
+        KeyRing.validateBIP44Path({ ...mockBip44HDPath, change: 2 });
+      }).toThrow('Invalid change in hd path');
+
+      expect(() => {
+        KeyRing.validateBIP44Path({
+          ...mockBip44HDPath,
+          change: 'invalid'
+        } as any);
+      }).toThrow('Invalid change in hd path');
+    });
+
+    test('should throw an error if addressIndex is not an integer or is negative', () => {
+      expect(() => {
+        KeyRing.validateBIP44Path({
+          ...mockBip44HDPath,
+          addressIndex: -1
+        });
+      }).toThrow('Invalid address index in hd path');
+
+      expect(() => {
+        KeyRing.validateBIP44Path({
+          ...mockBip44HDPath,
+          addressIndex: 1.5
+        });
+      }).toThrow('Invalid address index in hd path');
+
+      expect(() => {
+        KeyRing.validateBIP44Path({
+          ...mockBip44HDPath,
+          addressIndex: 'invalid'
+        } as any);
+      }).toThrow('Invalid address index in hd path');
+    });
+
+    test('should not throw an error if BIP44 path is valid', () => {
+      expect(() => {
+        KeyRing.validateBIP44Path(mockBip44HDPath);
+      }).not.toThrow();
+      expect(() => {
+        KeyRing.validateBIP44Path({ account: 1, change: 1, addressIndex: 1 });
+      }).not.toThrow();
+    });
+  });
+
+  describe('getKeyStoreBIP44Path', () => {
+    test('should return default BIP44 path if keyStore has no bip44HDPath', () => {
+      const result = KeyRing['getKeyStoreBIP44Path']({
+        ...mockKeyStore.mnemonic.pbkdf2,
+        bip44HDPath: null
+      });
+      expect(result).toEqual(mockBip44HDPath);
+    });
+
+    test('should validate and return the bip44HDPath if it exists in keyStore', () => {
+      const keyStore = mockKeyStore.mnemonic.pbkdf2;
+      // Mock the validateBIP44Path method
+      const mockValidateBIP44Path = jest.spyOn(KeyRing, 'validateBIP44Path');
+
+      const result = KeyRing['getKeyStoreBIP44Path'](
+        mockKeyStore.mnemonic.pbkdf2
+      );
+
+      expect(result).toEqual(keyStore.bip44HDPath);
+      expect(mockValidateBIP44Path).toHaveBeenCalledWith(keyStore.bip44HDPath);
+
+      // Restore the original validateBIP44Path method
+      mockValidateBIP44Path.mockRestore();
+    });
+  });
 });
