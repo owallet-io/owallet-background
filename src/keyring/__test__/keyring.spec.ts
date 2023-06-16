@@ -1692,4 +1692,23 @@ describe('keyring', () => {
       expect(spyChainIdHelperParse).toHaveBeenCalledWith(mockChainId);
     });
   });
+  describe('getKey', () => {
+    it('return data from getKey method', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+      keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
+      const rs = keyRing.getKey(mockChainId, mockCoinType);
+      expect(Buffer.from(rs.address).toString('hex')).toBe(
+        'cf159c10596b2cc8270da31375d5d741a3c4a949'
+      );
+      expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
+        '034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c'
+      );
+      expect(rs.algo).toBe('secp256k1');
+      expect(rs.isNanoLedger).toBe(false);
+    });
+  });
 });
