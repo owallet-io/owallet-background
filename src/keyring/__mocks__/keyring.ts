@@ -41,7 +41,7 @@ export const mockMultiKeyStoreInfo = [
       change: 0,
       addressIndex: 0
     },
-    selected: true
+    selected: false
   },
   {
     version: '1.2',
@@ -55,7 +55,7 @@ export const mockMultiKeyStoreInfo = [
       change: 0,
       addressIndex: 0
     },
-    selected: true
+    selected: false
   },
   {
     version: '1.2',
@@ -69,7 +69,7 @@ export const mockMultiKeyStoreInfo = [
       change: 0,
       addressIndex: 0
     },
-    selected: true
+    selected: false
   }
 ];
 //key cosmos example

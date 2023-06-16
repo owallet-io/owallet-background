@@ -644,6 +644,7 @@ export class KeyRing {
     }
 
     this.multiKeyStore = multiKeyStore;
+    console.log('multiKeyStore: ', multiKeyStore);
     await this.save();
     return {
       multiKeyStoreInfo: await this.getMultiKeyStoreInfo(),

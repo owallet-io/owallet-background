@@ -7,13 +7,6 @@ import {
   mockPathBip44
 } from './../__mocks__/keyring';
 // Mock Crypto module
-jest.mock('../crypto', () => ({
-  Crypto: {
-    decrypt: jest.fn(),
-    encrypt: jest.fn()
-  },
-  KeyStore: jest.fn()
-}));
 
 // Mock @owallet/crypto module
 // jest.mock('@owallet/crypto', () => ({
@@ -27,16 +20,6 @@ jest.mock('../crypto', () => ({
 jest.mock('eccrypto-js', () => ({
   // Mock functions here
 }));
-
-// Mock ethereumjs-util module
-// jest.mock('ethereumjs-util', () => ({
-//   privateToAddress: jest.fn(),
-//   ecsign: jest.fn(),
-//   keccak: jest.fn(),
-//   privateToPublic: jest.fn(),
-//   toBuffer: jest.fn(),
-//   publicToAddress: jest.fn()
-// }));
 
 // Mock ethereumjs-abi module
 jest.mock('ethereumjs-abi', () => ({
@@ -204,7 +187,11 @@ describe('keyring', () => {
       const result = keyRing.getMultiKeyStoreInfo();
 
       // Kiểm tra kết quả
-      expect(result).toEqual(mockMultiKeyStoreInfo);
+      expect(result).toEqual([
+        { ...mockMultiKeyStoreInfo[0], selected: true },
+        { ...mockMultiKeyStoreInfo[1], selected: true },
+        { ...mockMultiKeyStoreInfo[2], selected: true }
+      ]);
     });
   });
   describe('save', () => {
@@ -639,6 +626,7 @@ describe('keyring', () => {
   describe('CreateMnemonicKeyStore', () => {
     it('should call Crypto.encrypt with the correct arguments', async () => {
       // Gọi hàm CreateMnemonicKeyStore
+      jest.spyOn(Crypto, 'encrypt');
       await KeyRing['CreateMnemonicKeyStore'](
         mockRng,
         mockCrypto,
@@ -648,7 +636,6 @@ describe('keyring', () => {
         mockMetaHasId,
         mockBip44HDPath
       );
-
       // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
       expect(Crypto.encrypt).toHaveBeenCalled();
       expect(Crypto.encrypt).toHaveBeenCalledTimes(1);
@@ -1522,6 +1509,113 @@ describe('keyring', () => {
           'a7942620580e6b7940518d90b0f7aaea2f6a9f73'
         );
       });
+    });
+  });
+  describe('deleteKeyRing', () => {
+    beforeEach(() => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      keyRing['password'] = mockPassword;
+      keyRing['multiKeyStore'] = mockMultiKeyStore;
+    });
+    it('test throw err for Key ring is not unlocked', async () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.LOCKED,
+        writable: true
+      });
+      await expect(() =>
+        keyRing.deleteKeyRing(1, mockPassword)
+      ).rejects.toThrow('Key ring is not unlocked');
+    });
+    it('test throw err for Key ring password not compare', async () => {
+      keyRing['password'] = 'test';
+      await expect(() =>
+        keyRing.deleteKeyRing(1, mockPassword)
+      ).rejects.toThrow('Invalid password');
+    });
+    it('test throw err for Key store is null', async () => {
+      await expect(() =>
+        keyRing.deleteKeyRing(3, mockPassword)
+      ).rejects.toThrow('Empty key store');
+    });
+    describe('check this.keyStore', () => {
+      it('check KeyRing.getKeyStoreId(keyStore) === KeyRing.getKeyStoreId(this.keyStore) and multiKeyStore.length > 0', async () => {
+        keyRing['keyStore'] = mockMultiKeyStore[1];
+        const spyCryptoDecrypt = jest.spyOn(Crypto, 'decrypt');
+        const spyKeyringGetKeyStoreId = jest.spyOn(
+          KeyRing as any,
+          'getKeyStoreId'
+        );
+        const spyLock = jest.spyOn(keyRing, 'lock');
+        const spyUnLock = jest.spyOn(keyRing, 'unlock');
+        const spySave = jest.spyOn(keyRing, 'save');
+        const spyGetMultiKeyStoreInfo = jest.spyOn(
+          keyRing,
+          'getMultiKeyStoreInfo'
+        );
+        const rs = await keyRing.deleteKeyRing(1, mockPassword);
+        expect(spyCryptoDecrypt).toHaveBeenCalledWith(
+          mockCrypto,
+          mockMultiKeyStore[1],
+          mockPassword
+        );
+        expect(spyCryptoDecrypt).toHaveBeenCalled();
+        expect(spyCryptoDecrypt).toHaveBeenCalledTimes(2);
+        expect(spyKeyringGetKeyStoreId).toHaveBeenCalledWith(
+          mockMultiKeyStore[1]
+        );
+        expect(spyKeyringGetKeyStoreId).toHaveBeenCalled();
+        expect(spyKeyringGetKeyStoreId).toHaveBeenCalledTimes(6);
+        expect(spyUnLock).toHaveBeenCalledWith(mockPassword);
+        expect(spyUnLock).toHaveBeenCalled();
+        expect(spyUnLock).toHaveBeenCalledTimes(1);
+
+        expect(spyLock).toHaveBeenCalled();
+        expect(spyLock).toHaveBeenCalledTimes(1);
+        expect(spySave).toHaveBeenCalled();
+        expect(spySave).toHaveBeenCalledTimes(1);
+        expect(spyGetMultiKeyStoreInfo).toHaveBeenCalled();
+        expect(spyGetMultiKeyStoreInfo).toHaveBeenCalledTimes(1);
+
+        expect(rs.keyStoreChanged).toBe(true);
+        expect(rs.multiKeyStoreInfo).toEqual(keyRing.getMultiKeyStoreInfo());
+      });
+      it('check KeyRing.getKeyStoreId(keyStore) === KeyRing.getKeyStoreId(this.keyStore) and multiKeyStore.length <= 0', async () => {
+        keyRing['keyStore'] = mockMultiKeyStore[1];
+        keyRing['multiKeyStore'] = [mockMultiKeyStore[1]];
+        const spySave = jest.spyOn(keyRing, 'save');
+        const spyGetMultiKeyStoreInfo = jest.spyOn(
+          keyRing,
+          'getMultiKeyStoreInfo'
+        );
+        const rs = await keyRing.deleteKeyRing(0, mockPassword);
+        expect(rs.keyStoreChanged).toBe(true);
+        expect(rs.multiKeyStoreInfo).toEqual([]);
+        expect(spySave).toHaveBeenCalled();
+        expect(spySave).toHaveBeenCalledTimes(1);
+        expect(spyGetMultiKeyStoreInfo).toHaveBeenCalled();
+        expect(spyGetMultiKeyStoreInfo).toHaveBeenCalledTimes(1);
+      });
+    });
+    it('check this.keyStore is null', async () => {
+      keyRing['multiKeyStore'] = mockMultiKeyStore;
+      const spySave = jest.spyOn(keyRing, 'save');
+      const spyGetMultiKeyStoreInfo = jest.spyOn(
+        keyRing,
+        'getMultiKeyStoreInfo'
+      );
+      const rs = await keyRing.deleteKeyRing(1, mockPassword);
+      expect(rs.keyStoreChanged).toBe(false);
+      expect(rs.multiKeyStoreInfo).toEqual([
+        mockMultiKeyStoreInfo[0],
+        mockMultiKeyStoreInfo[2]
+      ]);
+      expect(spySave).toHaveBeenCalled();
+      expect(spySave).toHaveBeenCalledTimes(1);
+      expect(spyGetMultiKeyStoreInfo).toHaveBeenCalled();
+      expect(spyGetMultiKeyStoreInfo).toHaveBeenCalledTimes(1);
     });
   });
 });
