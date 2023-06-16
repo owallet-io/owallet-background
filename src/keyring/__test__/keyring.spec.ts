@@ -1416,4 +1416,62 @@ describe('keyring', () => {
       jest.clearAllMocks();
     });
   });
+  describe('loadKey', () => {
+    it('test case this.status !== KeyRingStatus.UNLOCKED', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.LOCKED,
+        writable: true
+      });
+      expect(() => keyRing['loadKey'](mockCoinType)).toThrow(
+        'Key ring is not unlocked'
+      );
+    });
+    it('test for case this.keyStore is null', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      expect(() => keyRing['loadKey'](mockCoinType)).not.toThrow(
+        'Key ring is not unlocked'
+      );
+      expect(() => keyRing['loadKey'](mockCoinType)).toThrow(
+        'Key Store is empty'
+      );
+    });
+    describe('test for case this.keyStore.type === ledger', () => {
+      it('test throw for this.ledgerPublicKey is null', () => {
+        Object.defineProperty(keyRing, 'status', {
+          value: KeyRingStatus.UNLOCKED,
+          writable: true
+        });
+        keyRing['keyStore'] = mockKeyStore.ledger.pbkdf2;
+        expect(() => keyRing['loadKey'](mockCoinType)).not.toThrow(
+          'Key ring is not unlocked'
+        );
+        expect(() => keyRing['loadKey'](mockCoinType)).not.toThrow(
+          'Key Store is empty'
+        );
+        expect(() => keyRing['loadKey'](mockCoinType)).toThrow(
+          'Ledger public key not set'
+        );
+      });
+      it('test case for ledgerPublicKey is not null', () => {
+        Object.defineProperty(keyRing, 'status', {
+          value: KeyRingStatus.UNLOCKED,
+          writable: true
+        });
+        keyRing['keyStore'] = mockKeyStore.ledger.pbkdf2;
+        keyRing['ledgerPublicKey'] = mockKeyCosmos.publicKeyHex;
+        const rs = keyRing['loadKey'](mockCoinType);
+        expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
+          '0407e5b99e7849b4c2f6af0ee7e7f094b8859f1109962ad6e94fa3672fc8003a301c28c6ba894f7a08c3ca761abf39285c46614d7d8727b1ecd67b2c33d1ee81c1'
+        );
+        expect(Buffer.from(rs.address).toString('hex')).toBe(
+          'eb90d36cdb04b7a06b63e5736ac76cad7f3a112d'
+        );
+        expect(rs.algo).toBe('secp256k1');
+        expect(rs.isNanoLedger).toBe(true);
+      });
+    });
+  });
 });
