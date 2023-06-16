@@ -6,94 +6,9 @@ import {
   mockCoinTypeEth,
   mockPathBip44
 } from './../__mocks__/keyring';
-// Mock Crypto module
-
-// Mock @owallet/crypto module
-// jest.mock('@owallet/crypto', () => ({
-//   Mnemonic: jest.fn(),
-//   PrivKeySecp256k1: jest.fn(),
-//   PubKeySecp256k1: jest.fn(),
-//   RNG: jest.fn()
-// }));
-
-// Mock eccrypto-js module
-jest.mock('eccrypto-js', () => ({
-  // Mock functions here
-}));
-
-// Mock ethereumjs-abi module
-jest.mock('ethereumjs-abi', () => ({
-  rawEncode: jest.fn(),
-  soliditySHA3: jest.fn()
-}));
-
-// Mock @owallet/common module
-jest.mock('@owallet/common', () => ({
-  KVStore: jest.fn(),
-  getNetworkTypeByChainId: jest.fn(),
-  getCoinTypeByChainI: jest.fn()
-}));
-jest.mock('../../ledger', () => ({
-  LedgerAppType: jest.fn(),
-  LedgerService: jest.fn().mockImplementation(() => ({
-    getPublicKey: jest.fn()
-  }))
-}));
-
-// Mock @owallet/router module
-// jest.mock('@owallet/router', () => ({
-//   Env: jest.fn(),
-//   OWalletError: jest.fn()
-// }));
-
-// // Mock buffer module
-// jest.mock('buffer', () => ({
-//   Buffer: jest.fn()
-// }));
-
-// Mock @owallet/types module
-jest.mock('@owallet/types', () => ({
-  ChainInfo: jest.fn()
-}));
-
-// Mock proxy-recrypt-js module
-jest.mock('proxy-recrypt-js', () => ({
-  // Mock functions here
-}));
-
-// Mock @ethereumjs/common module
-jest.mock('@ethereumjs/common', () => ({
-  default: jest.fn()
-}));
-
-// Mock ethereumjs-tx module
-jest.mock('ethereumjs-tx', () => ({
-  TransactionOptions: jest.fn(),
-  Transaction: jest.fn()
-}));
-// Mock tx module
-jest.mock('../../tx', () => ({
-  request: jest.fn()
-}));
-jest.mock('../../utils/helper.ts', () => ({
-  formatNeworkTypeToLedgerAppName: jest.fn(),
-  getNetworkTypeByBip44HDPath: jest.fn().mockReturnValue('cosmos'),
-  splitPath: jest.fn()
-}));
-// Mock @ethersproject/transactions module
-jest.mock('@ethersproject/transactions', () => ({
-  serialize: jest.fn()
-  // Mock functions here
-}));
-// Mock tronweb module
-jest.mock('tronweb', () => ({
-  // Mock functions here
-}));
-
 import { KeyRing, KeyRingStatus } from '../keyring';
 import { LedgerService } from '../../ledger';
-import { ScryptParams, CommonCrypto } from '../types';
-import { getNetworkTypeByBip44HDPath } from '../../utils/helper';
+
 import {
   mockBip44HDPath,
   mockCrypto,
@@ -111,10 +26,8 @@ import { Crypto, KeyStore } from '../crypto';
 import { KeyMultiStoreKey, KeyStoreKey } from '../__mocks__/types';
 import { Env, OWalletError } from '@owallet/router';
 import { Mnemonic, PrivKeySecp256k1 } from '@owallet/crypto';
-import { getNetworkTypeByChainId } from '@owallet/common';
 import { ChainIdHelper } from '@owallet/cosmos';
-// import { Mnemonic } from '@owallet/crypto';
-
+const helper = require('../../utils/helper');
 const mockKvStore = {
   get: jest.fn().mockResolvedValue(undefined),
   set: jest.fn().mockResolvedValue(undefined),
@@ -124,7 +37,7 @@ const mockEmbedChain: any = null;
 export let keyRing = new KeyRing(
   mockEmbedChain,
   mockKvStore,
-  new LedgerService(null, null, null),
+  new LedgerService(null, null, {defaultMode:null}),
   mockRng,
   mockCrypto
 );
@@ -133,7 +46,7 @@ describe('keyring', () => {
     keyRing = new KeyRing(
       mockEmbedChain,
       mockKvStore,
-      new LedgerService(null, null, null),
+      new LedgerService(null, null, {defaultMode:null}),
       mockRng,
       mockCrypto
     );
@@ -933,6 +846,10 @@ describe('keyring', () => {
         isInternalMsg: false,
         requestInteraction: jest.fn()
       };
+      const spyGetNetworkTypeByBip44HDPath = jest.spyOn(
+        helper,
+        'getNetworkTypeByBip44HDPath'
+      );
       // Gọi phương thức createMnemonicKey()
       const result = await keyRing.createLedgerKey(
         mockEnv,
@@ -961,7 +878,7 @@ describe('keyring', () => {
       );
       expect(keyRing['assignKeyStoreIdMeta']).toHaveBeenCalled();
       expect(keyRing.save).toHaveBeenCalled();
-      expect(getNetworkTypeByBip44HDPath).toHaveBeenCalled();
+      expect(spyGetNetworkTypeByBip44HDPath).toHaveBeenCalled();
       expect(keyRing['ledgerKeeper'].getPublicKey).toHaveBeenCalled();
     });
   });
@@ -1000,7 +917,10 @@ describe('keyring', () => {
         .mockResolvedValue(mockMetaHasId);
 
       jest.spyOn(keyRing, 'save');
-
+      const spyGetNetworkTypeByBip44HDPath = jest.spyOn(
+        helper,
+        'getNetworkTypeByBip44HDPath'
+      );
       // Gọi phương thức createMnemonicKey()
       const result = await keyRing.addLedgerKey(
         mockEnv,
@@ -1024,7 +944,7 @@ describe('keyring', () => {
       );
       expect(keyRing['assignKeyStoreIdMeta']).toHaveBeenCalled();
       expect(keyRing.save).toHaveBeenCalled();
-      expect(getNetworkTypeByBip44HDPath).toHaveBeenCalled();
+      expect(spyGetNetworkTypeByBip44HDPath).toHaveBeenCalled();
       expect(keyRing['ledgerKeeper'].getPublicKey).toHaveBeenCalled();
     });
   });

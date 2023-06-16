@@ -5,4 +5,14 @@ Object.defineProperty(globalThis, 'crypto', {
     getRandomValues: (arr) => nodeCrypto.randomBytes(arr.length)
   }
 });
-// jest.setTimeout(30000);
+class ChannelMock {
+  onmessage: (event: { data: any }) => void;
+
+  postMessage(data: any): void {
+    if (this.onmessage) {
+      this.onmessage({ data });
+    }
+  }
+}
+
+(global as any).BroadcastChannel = ChannelMock;
