@@ -19,6 +19,9 @@ export const mockMultiKeyStore: KeyStore[] = [
   mockKeyStorePbkdf2PrivateKey
 ];
 export const mockCoinType = 118;
+export const mockChainId = 'Oraichain';
+export const mockCoinTypeEth = 60;
+export const mockChainIdEth = '0x01';
 export const mockKvStore = {
   get: jest.fn().mockResolvedValue(undefined),
   set: jest.fn().mockResolvedValue(undefined),
@@ -32,7 +35,12 @@ export const mockMultiKeyStoreInfo = [
     addresses: { cosmos: 'cosmos1eu2ecyzedvkvsfcd5vfht4whgx3uf22fjj9a4n' },
     meta: { name: 'orai', __id__: '1' },
     coinTypeForChain: {},
-    bip44HDPath: { coinType: mockCoinType, account: 0, change: 0, addressIndex: 0 },
+    bip44HDPath: {
+      coinType: mockCoinType,
+      account: 0,
+      change: 0,
+      addressIndex: 0
+    },
     selected: true
   },
   {
@@ -41,7 +49,12 @@ export const mockMultiKeyStoreInfo = [
     addresses: undefined,
     meta: { name: 'orai', __id__: '1' },
     coinTypeForChain: {},
-    bip44HDPath: { coinType: mockCoinType, account: 0, change: 0, addressIndex: 0 },
+    bip44HDPath: {
+      coinType: mockCoinType,
+      account: 0,
+      change: 0,
+      addressIndex: 0
+    },
     selected: true
   },
   {
@@ -50,7 +63,12 @@ export const mockMultiKeyStoreInfo = [
     addresses: undefined,
     meta: { name: 'orai', __id__: '1' },
     coinTypeForChain: {},
-    bip44HDPath: { coinType: mockCoinType, account: 0, change: 0, addressIndex: 0 },
+    bip44HDPath: {
+      coinType: mockCoinType,
+      account: 0,
+      change: 0,
+      addressIndex: 0
+    },
     selected: true
   }
 ];

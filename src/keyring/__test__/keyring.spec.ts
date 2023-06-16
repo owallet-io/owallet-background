@@ -1,6 +1,9 @@
 import {
   mockAddressLedger,
+  mockChainId,
+  mockChainIdEth,
   mockCoinType,
+  mockCoinTypeEth,
   mockPathBip44
 } from './../__mocks__/keyring';
 // Mock Crypto module
@@ -26,14 +29,14 @@ jest.mock('eccrypto-js', () => ({
 }));
 
 // Mock ethereumjs-util module
-jest.mock('ethereumjs-util', () => ({
-  privateToAddress: jest.fn(),
-  ecsign: jest.fn(),
-  keccak: jest.fn(),
-  privateToPublic: jest.fn(),
-  toBuffer: jest.fn(),
-  publicToAddress: jest.fn()
-}));
+// jest.mock('ethereumjs-util', () => ({
+//   privateToAddress: jest.fn(),
+//   ecsign: jest.fn(),
+//   keccak: jest.fn(),
+//   privateToPublic: jest.fn(),
+//   toBuffer: jest.fn(),
+//   publicToAddress: jest.fn()
+// }));
 
 // Mock ethereumjs-abi module
 jest.mock('ethereumjs-abi', () => ({
@@ -130,6 +133,7 @@ import { Crypto, KeyStore } from '../crypto';
 import { KeyMultiStoreKey, KeyStoreKey } from '../__mocks__/types';
 import { Env, OWalletError } from '@owallet/router';
 import { Mnemonic, PrivKeySecp256k1 } from '@owallet/crypto';
+import { getNetworkTypeByChainId } from '@owallet/common';
 // import { Mnemonic } from '@owallet/crypto';
 
 const mockKvStore = {
@@ -1471,6 +1475,52 @@ describe('keyring', () => {
         );
         expect(rs.algo).toBe('secp256k1');
         expect(rs.isNanoLedger).toBe(true);
+      });
+    });
+    describe('test case for this.keyStore.type !== ledger', () => {
+      it('test for case network type is cosmos', () => {
+        Object.defineProperty(keyRing, 'status', {
+          value: KeyRingStatus.UNLOCKED,
+          writable: true
+        });
+        keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+        keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
+        const spyLoadPrivKey = jest.spyOn(keyRing as any, 'loadPrivKey');
+        const rs = keyRing['loadKey'](mockCoinType, mockChainId);
+        expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinType);
+        expect(rs.algo).toBe('secp256k1');
+        expect(rs.isNanoLedger).toBe(false);
+        expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
+          '034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c'
+        );
+        expect(Buffer.from(rs.address).toString('hex')).toBe(
+          'cf159c10596b2cc8270da31375d5d741a3c4a949'
+        );
+      });
+      it('test for case network type is evm', () => {
+        Object.defineProperty(keyRing, 'status', {
+          value: KeyRingStatus.UNLOCKED,
+          writable: true
+        });
+        keyRing['keyStore'] = {
+          ...mockKeyStore.mnemonic.pbkdf2,
+          bip44HDPath: {
+            ...mockKeyStore.mnemonic.pbkdf2.bip44HDPath,
+            coinType: mockCoinTypeEth
+          }
+        };
+        keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
+        const spyLoadPrivKey = jest.spyOn(keyRing as any, 'loadPrivKey');
+        const rs = keyRing['loadKey'](mockCoinTypeEth, mockChainIdEth);
+        expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinTypeEth);
+        expect(rs.algo).toBe('ethsecp256k1');
+        expect(rs.isNanoLedger).toBe(false);
+        expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
+          '034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c'
+        );
+        expect(Buffer.from(rs.address).toString('hex')).toBe(
+          'a7942620580e6b7940518d90b0f7aaea2f6a9f73'
+        );
       });
     });
   });
