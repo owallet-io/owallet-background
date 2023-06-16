@@ -1711,4 +1711,21 @@ describe('keyring', () => {
       expect(rs.isNanoLedger).toBe(false);
     });
   });
+  describe('getKeyStoreMeta', () => {
+    it('this.keyStore is null', () => {
+      keyRing['keyStore'] = null;
+      const rs = keyRing.getKeyStoreMeta('name');
+      expect(rs).toBe('');
+    });
+    it('this.keyStore.meta is null', () => {
+      keyRing['keyStore'] = { ...mockKeyStore.mnemonic.pbkdf2, meta: null };
+      const rs = keyRing.getKeyStoreMeta('name');
+      expect(rs).toBe('');
+    });
+    it('this.keyStore is not null', () => {
+      keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+      const rs = keyRing.getKeyStoreMeta('name');
+      expect(rs).toBe('orai');
+    });
+  });
 });
