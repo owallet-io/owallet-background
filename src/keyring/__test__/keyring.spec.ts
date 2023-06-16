@@ -41,10 +41,10 @@ jest.mock('../../ledger', () => ({
 }));
 
 // Mock @owallet/router module
-jest.mock('@owallet/router', () => ({
-  Env: jest.fn(),
-  OWalletError: jest.fn()
-}));
+// jest.mock('@owallet/router', () => ({
+//   Env: jest.fn(),
+//   OWalletError: jest.fn()
+// }));
 
 // // Mock buffer module
 // jest.mock('buffer', () => ({
@@ -54,11 +54,6 @@ jest.mock('@owallet/router', () => ({
 // Mock @owallet/types module
 jest.mock('@owallet/types', () => ({
   ChainInfo: jest.fn()
-}));
-
-// Mock @owallet/cosmos module
-jest.mock('@owallet/cosmos', () => ({
-  ChainIdHelper: jest.fn()
 }));
 
 // Mock proxy-recrypt-js module
@@ -117,6 +112,7 @@ import { KeyMultiStoreKey, KeyStoreKey } from '../__mocks__/types';
 import { Env, OWalletError } from '@owallet/router';
 import { Mnemonic, PrivKeySecp256k1 } from '@owallet/crypto';
 import { getNetworkTypeByChainId } from '@owallet/common';
+import { ChainIdHelper } from '@owallet/cosmos';
 // import { Mnemonic } from '@owallet/crypto';
 
 const mockKvStore = {
@@ -759,6 +755,22 @@ describe('keyring', () => {
     });
   });
   describe('addMnemonicKey', () => {
+    it('throw Key ring is locked or not initialized', async () => {
+      await expect(() =>
+        keyRing.addMnemonicKey(
+          mockKdfMobile,
+          mockKeyCosmos.mnemonic,
+          mockMeta,
+          mockBip44HDPath
+        )
+      ).rejects.toThrow(
+        new OWalletError(
+          'keyring',
+          141,
+          'Key ring is locked or not initialized'
+        )
+      );
+    });
     it('should add mnemonic key and update keyStore and multiKeyStore', async () => {
       // Mock các phương thức liên quan
       const spyCreateMnemonicKeyStore = jest
@@ -843,6 +855,21 @@ describe('keyring', () => {
     });
   });
   describe('addPrivateKey', () => {
+    it('throw Key ring is locked or not initialized', async () => {
+      await expect(() =>
+        keyRing.addPrivateKey(
+          mockKdfMobile,
+          mockKeyCosmos.privateKeyHex,
+          mockMeta
+        )
+      ).rejects.toThrow(
+        new OWalletError(
+          'keyring',
+          141,
+          'Key ring is locked or not initialized'
+        )
+      );
+    });
     it('should add private key and update keyStore and multiKeyStore', async () => {
       keyRing['password'] = mockPassword;
       // Mock các phương thức liên quan
@@ -939,6 +966,21 @@ describe('keyring', () => {
     });
   });
   describe('addLedgerKey', () => {
+    const mockEnv: Env = {
+      isInternalMsg: false,
+      requestInteraction: jest.fn()
+    };
+    it('throw Key ring is locked or not initialized', async () => {
+      await expect(() =>
+        keyRing.addLedgerKey(mockEnv, mockKdfMobile, mockMeta, mockBip44HDPath)
+      ).rejects.toThrow(
+        new OWalletError(
+          'keyring',
+          141,
+          'Error: Key ring is locked or not initialized'
+        )
+      );
+    });
     it('should create ledger key and update keyStore and multiKeyStore', async () => {
       keyRing['password'] = mockPassword;
       // Mock các phương thức liên quan
@@ -958,10 +1000,7 @@ describe('keyring', () => {
         .mockResolvedValue(mockMetaHasId);
 
       jest.spyOn(keyRing, 'save');
-      const mockEnv: Env = {
-        isInternalMsg: false,
-        requestInteraction: jest.fn()
-      };
+
       // Gọi phương thức createMnemonicKey()
       const result = await keyRing.addLedgerKey(
         mockEnv,
@@ -973,7 +1012,6 @@ describe('keyring', () => {
       // Kiểm tra kết quả
       expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
       expect(keyRing['password']).toBe(mockPassword);
-
       expect(spyCreateLedgerKeyStore).toHaveBeenCalledWith(
         mockRng,
         mockCrypto,
@@ -1616,6 +1654,42 @@ describe('keyring', () => {
       expect(spySave).toHaveBeenCalledTimes(1);
       expect(spyGetMultiKeyStoreInfo).toHaveBeenCalled();
       expect(spyGetMultiKeyStoreInfo).toHaveBeenCalledTimes(1);
+    });
+  });
+  describe('getKeyFromCoinType', () => {
+    it('getKeyFrom by coin type', () => {
+      Object.defineProperty(keyRing, 'status', {
+        value: KeyRingStatus.UNLOCKED,
+        writable: true
+      });
+      keyRing['keyStore'] = mockMultiKeyStore[1];
+      keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
+      const rs = keyRing.getKeyFromCoinType(mockCoinType);
+      expect(Buffer.from(rs.address).toString('hex')).toBe(
+        'cf159c10596b2cc8270da31375d5d741a3c4a949'
+      );
+      expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
+        '034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c'
+      );
+      expect(rs.algo).toBe('secp256k1');
+      expect(rs.isNanoLedger).toBe(false);
+    });
+  });
+  describe('computeKeyStoreCoinType', () => {
+    it('Throw err when this.keyStore is null', () => {
+      expect(() =>
+        keyRing.computeKeyStoreCoinType(mockChainId, mockCoinType)
+      ).toThrow('Key Store is empty');
+    });
+    it('get data return from computeKeyStoreCoinType', () => {
+      keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
+      const spyChainIdHelperParse = jest.spyOn(ChainIdHelper, 'parse');
+      const rs = keyRing.computeKeyStoreCoinType(mockChainId, mockCoinType);
+
+      expect(rs).toBe(mockCoinType);
+      expect(spyChainIdHelperParse).toHaveBeenCalled();
+      expect(spyChainIdHelperParse).toHaveBeenCalledTimes(1);
+      expect(spyChainIdHelperParse).toHaveBeenCalledWith(mockChainId);
     });
   });
 });

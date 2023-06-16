@@ -336,19 +336,13 @@ export class KeyRing {
     // }
     const ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath);
 
-    console.log('bip44HDPath', bip44HDPath);
-
     // detect network type here when create ledger
     // Get public key first
     const { publicKey, address } =
       (await this.ledgerKeeper.getPublicKey(env, bip44HDPath, ledgerAppType)) ||
       {};
 
-    console.log('publicKey---', publicKey, address);
-
     this.ledgerPublicKey = publicKey;
-
-    console.log('ledgerPublicKey ===', this.ledgerPublicKey);
 
     const keyStore = await KeyRing.CreateLedgerKeyStore(
       this.rng,
@@ -644,7 +638,6 @@ export class KeyRing {
     }
 
     this.multiKeyStore = multiKeyStore;
-    console.log('multiKeyStore: ', multiKeyStore);
     await this.save();
     return {
       multiKeyStoreInfo: await this.getMultiKeyStoreInfo(),
@@ -794,8 +787,6 @@ export class KeyRing {
     if (!this.keyStore) {
       throw new OWalletError('keyring', 130, 'Key store is empty');
     }
-
-    console.log('message Uint8Array ===', message);
 
     const networkType = getNetworkTypeByChainId(chainId);
     const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
@@ -1663,7 +1654,6 @@ export class KeyRing {
           'Key ring is locked or not initialized'
         );
       }
-      console.log('HERE');
       const ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath);
       const { publicKey, address } =
         (await this.ledgerKeeper.getPublicKey(
@@ -1862,8 +1852,6 @@ export class KeyRing {
     bip44HDPath: BIP44HDPath,
     addresses?: AddressesLedger
   ): Promise<KeyStore> {
-    console.log('address CreateLedgerKeyStore', addresses);
-
     return await Crypto.encrypt(
       rng,
       crypto,

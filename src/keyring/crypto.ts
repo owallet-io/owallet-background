@@ -53,8 +53,6 @@ export class Crypto {
     bip44HDPath?: BIP44HDPath,
     addresses?: AddressesLedger
   ): Promise<KeyStore> {
-    console.log('addresses Crypto ==- ', addresses);
-
     let random = new Uint8Array(32);
     const salt = Buffer.from(await rng(random)).toString('hex');
 
