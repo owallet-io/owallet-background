@@ -358,16 +358,20 @@ export class KeyRing {
 
     if (saving) {
       this.password = password;
-      const key = this.getKeyExpired();
-      const aesCtr = new AES.ModeOfOperation.ctr(key);
-      const prefix = Buffer.alloc(password.length);
-      // add prefix to make passcode more obfuscated
-      crypto.getRandomValues(prefix);
-      const encryptedBytes = aesCtr.encrypt(Buffer.from(this._iv + password));
-
-      await this.kvStore.set('passcode', Buffer.from(encryptedBytes).toString('base64'));
-      console.log(encryptedBytes, await this.kvStore.get<string>('passcode'));
+      await this.savePasscode(password);
     }
+  }
+
+  public async savePasscode(password) {
+    const key = this.getKeyExpired();
+    const aesCtr = new AES.ModeOfOperation.ctr(key);
+    const prefix = Buffer.alloc(password.length);
+    // add prefix to make passcode more obfuscated
+    crypto.getRandomValues(prefix);
+    const encryptedBytes = aesCtr.encrypt(Buffer.from(this._iv + password));
+
+    await this.kvStore.set('passcode', Buffer.from(encryptedBytes).toString('base64'));
+    console.log(encryptedBytes, await this.kvStore.get<string>('passcode'));
   }
 
   public async save() {
@@ -415,6 +419,8 @@ export class KeyRing {
             } catch {
               await this.kvStore.set('passcode', null);
             }
+          } else {
+            await this.savePasscode(this.password);
           }
         }
         const multiKeyStore = await this.kvStore.get<KeyStore[]>(KeyMultiStoreKey);
