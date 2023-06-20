@@ -574,6 +574,7 @@ export class KeyRing {
           this.keyStore = null;
           this.mnemonic = undefined;
           this.privateKey = undefined;
+          await this.kvStore.set('passcode', null);
         }
 
         keyStoreChanged = true;
