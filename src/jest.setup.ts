@@ -16,3 +16,13 @@ class ChannelMock {
 }
 
 (global as any).BroadcastChannel = ChannelMock;
+(global as any).alert = (data) => {
+  console.log('err by alert: ', data);
+};
+class WebSocket {
+  constructor(url) {}
+  onopen() {}
+  onmessage() {}
+  onclose() {}
+}
+(global as any).WebSocket = WebSocket;

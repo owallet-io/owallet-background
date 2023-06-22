@@ -135,7 +135,7 @@ export class BackgroundTxService {
       const txHash = Buffer.from(txResponse.txhash, 'hex');
 
       const txTracer = new TendermintTxTracer(chainInfo.rpc, '/websocket');
-      txTracer.traceTx(txHash).then(tx => {
+      txTracer.traceTx(txHash).then((tx) => {
         txTracer.close();
         BackgroundTxService.processTxResultNotification(this.notification, tx);
       });
