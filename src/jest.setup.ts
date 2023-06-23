@@ -16,6 +16,8 @@ class ChannelMock {
 }
 
 (global as any).BroadcastChannel = ChannelMock;
+(global as any).window = {};
+(global as any).navigator = {};
 (global as any).alert = (data) => {
   console.log('err by alert: ', data);
 };

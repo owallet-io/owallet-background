@@ -48,7 +48,7 @@ export class LedgerInternal {
     ledgerAppType: LedgerAppType
   ): Promise<LedgerInternal> {
     const transportIniter = LedgerInternal.transportIniters[mode];
-    console.log('transportIniter', transportIniter);
+    // console.log('transportIniter', transportIniter);
 
     if (!transportIniter) {
       throw new OWalletError('ledger', 112, `Unknown mode: ${mode}`);
@@ -58,7 +58,7 @@ export class LedgerInternal {
 
     const transport = await transportIniter(...initArgs);
 
-    console.log('transport ===', transport);
+    // console.log('transport ===', transport);
 
     try {
       if (ledgerAppType === 'trx') {
@@ -81,10 +81,10 @@ export class LedgerInternal {
           throw new Error('Device is on screen saver');
         }
       }
-      console.log('transportIniter ledger', ledger);
+      // console.log('transportIniter ledger', ledger);
       return ledger;
     } catch (e) {
-      console.log(e);
+      // console.log(e);
       if (transport) {
         await transport.close();
       }
