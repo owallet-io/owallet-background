@@ -134,14 +134,6 @@ export class LedgerInternal {
       throw new Error(`${this.LedgerAppTypeDesc} not initialized`);
     }
 
-    console.log(
-      'get this.ledgerAp',
-      this.ledgerApp,
-      this.ledgerApp instanceof TrxApp,
-      this.ledgerApp instanceof EthApp,
-      this.ledgerApp instanceof CosmosApp
-    );
-
     if (this.ledgerApp instanceof CosmosApp) {
       // make compartible with ledger-cosmos-js
       const { publicKey, address } = await this.ledgerApp.getAddress(

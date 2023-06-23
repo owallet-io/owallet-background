@@ -180,13 +180,96 @@ describe('LedgerInternal', () => {
     // afterEach(() => {
     //   jest.resetAllMocks();
     // });
+    const mockPathNumber = [44, 118, 0, 0, 0];
     it.each([['cosmos'], ['eth'], ['trx']])('test err %s', async (type) => {
       (ledgerInternal['type'] as any) = type;
-      const mockPathNumber = [44, 118, 0, 0, 0];
       await expect(ledgerInternal.getPublicKey(mockPathNumber)).rejects.toThrow(
         `${ledgerInternal['LedgerAppTypeDesc']} not initialized`
       );
     });
+    it.each([
+      [
+        {
+          publicKey: 'A1TFLB1j5R6xDWpaUrWnjYcKLTZUjwa53o1C+Q9djjkQ',
+          address: 'cosmos1t68n2ezn5zt8frhjg0yv8ls0jv62xkcg7v8rs0'
+        },
+        mockPathNumber,
+        CosmosApp,
+        {
+          publicKey:
+            '0354c52c1d63e51eb10d6a5a52b5a78d870a2d36548f06b9de8d42f90f5d8e3910',
+          address: 'cosmos1t68n2ezn5zt8frhjg0yv8ls0jv62xkcg7v8rs0'
+        }
+      ],
+      [
+        {
+          publicKey: 'A/IbKy/sdYZwwpBuaFr6a97Eo2VaK81fEsq/Dr+8yD1E',
+          address: '0x1ABC7154748D1CE5144478CDEB574AE244B939B5'
+        },
+        mockPathNumber,
+        EthApp,
+        {
+          publicKey:
+            '04f21b2b2fec758670c2906e685afa6bdec4a3655a2bcd5f12cabf0ebfbcc83d44eba21d1ba84e520cdd163d510a1e27f8f803c0ad941c7b50a91bd5e11556edaf',
+          address: '0x1ABC7154748D1CE5144478CDEB574AE244B939B5'
+        }
+      ],
+      [
+        {
+          publicKey: 'A6GiCxN7eDSlX2A9Py090kbt/5Tfx+IMOa03x0I/K2bR',
+          address: 'TQytohYEbXZFJnSAXkEoCRdHDpM2Kp3KAW'
+        },
+        mockPathNumber,
+        TrxApp,
+        {
+          publicKey:
+            '03a1a20b137b7834a55f603d3f2d3dd246edff94dfc7e20c39ad37c7423f2b66d1',
+          address: 'TQytohYEbXZFJnSAXkEoCRdHDpM2Kp3KAW'
+        }
+      ]
+    ])(
+      'test getPublicKey %s',
+      async (
+        expectResult: {
+          publicKey: any;
+          address: string;
+        },
+        path: number[],
+        ledgerApp: CosmosApp | TrxApp | EthApp,
+        getAddress
+      ) => {
+        (ledgerInternal['ledgerApp'] as any) = new ledgerApp(null);
+        const spyMethodSign = jest
+          .spyOn(ledgerInternal['ledgerApp'], 'getAddress')
+          .mockResolvedValue({
+            publicKey: getAddress.publicKey,
+            address: getAddress.address
+          });
+
+        const rs = (await ledgerInternal.getPublicKey(path)) as {
+          publicKey: any;
+          address: string;
+        };
+        console.log(
+          '🚀 ~ file: ledger-internal.spec.ts:221 ~ describe ~ rs:',
+          Buffer.from(rs.publicKey).toString('base64')
+        );
+        expect(Buffer.from(rs.publicKey).toString('base64')).toBe(
+          expectResult.publicKey
+        );
+        expect(rs.address).toBe(expectResult.address);
+        expect(spyMethodSign).toHaveBeenCalledTimes(1);
+        expect(spyMethodSign).toHaveBeenCalled();
+        if (ledgerInternal['ledgerApp'] instanceof CosmosApp) {
+          expect(spyMethodSign).toHaveBeenCalledWith(
+            stringifyPath(path),
+            'cosmos'
+          );
+        } else {
+          expect(spyMethodSign).toHaveBeenCalledWith(stringifyPath(path));
+        }
+      }
+    );
   });
 
   describe('sign', () => {
@@ -254,7 +337,7 @@ describe('LedgerInternal', () => {
         expect(Buffer.from(rs).toString('hex')).toEqual(expectResult);
         expect(spyMethodSign).toHaveBeenCalled();
         expect(spyMethodSign).toHaveBeenCalledTimes(1);
-        
+
         if (ledgerApp == EthApp) {
           expect(spyMethodSign).toHaveBeenCalledWith(
             stringifyPath(path),
