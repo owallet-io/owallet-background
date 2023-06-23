@@ -17,6 +17,7 @@ import { OWalletError } from '@owallet/router';
 import CosmosApp from '@ledgerhq/hw-app-cosmos';
 import EthApp from '@ledgerhq/hw-app-eth';
 import TrxApp from '@ledgerhq/hw-app-trx';
+import { stringifyPath } from '../../utils/helper';
 
 // const ledgerInternalMock =
 //   jest.createMockFromModule<LedgerInternal>('./ledger-internal');
@@ -188,6 +189,86 @@ describe('LedgerInternal', () => {
     });
   });
 
+  describe('sign', () => {
+    it.each([['cosmos'], ['eth'], ['trx']])('test err %s', async (type) => {
+      (ledgerInternal['type'] as any) = type;
+      const mockPathNumber = [44, 118, 0, 0, 0];
+      await expect(
+        ledgerInternal.sign(mockPathNumber, 'message sign')
+      ).rejects.toThrow(
+        `${ledgerInternal['LedgerAppTypeDesc']} not initialized`
+      );
+    });
+    const mockMessage =
+      '3045022100e3cb8c2abc8b1973c79ebd19a9bba6a4f04efbcefde0f1561a3fe85184aef2b9022008320e35f2d274fbf1bc48a9344412b589396ea86ce0e0b4dcc904650c51c320';
+    it.each([
+      [
+        'case1',
+        'e3cb8c2abc8b1973c79ebd19a9bba6a4f04efbcefde0f1561a3fe85184aef2b908320e35f2d274fbf1bc48a9344412b589396ea86ce0e0b4dcc904650c51c320',
+        [44, 118, 0, 0, 0],
+        mockMessage,
+        CosmosApp,
+        'sign'
+      ],
+      [
+        'case2',
+        '3045022100e3cb8c2abc8b1973c79ebd19a9bba6a4f04efbcefde0f1561a3fe85184aef2b9022008320e35f2d274fbf1bc48a9344412b589396ea86ce0e0b4dcc904650c51c320',
+        [44, 118, 0, 0, 0],
+        mockMessage,
+        EthApp,
+        'signTransaction'
+      ],
+      [
+        'case3',
+        '3045022100e3cb8c2abc8b1973c79ebd19a9bba6a4f04efbcefde0f1561a3fe85184aef2b9022008320e35f2d274fbf1bc48a9344412b589396ea86ce0e0b4dcc904650c51c320',
+        [44, 118, 0, 0, 0],
+        mockMessage,
+        TrxApp,
+        'signTransactionHash'
+      ]
+    ])(
+      'test case sign %s',
+      async (
+        caseTest: string,
+        expectResult: any,
+        path: number[],
+        message: any,
+        ledgerApp: CosmosApp | TrxApp | EthApp,
+        methodSign: string
+      ) => {
+        (ledgerInternal['ledgerApp'] as any) = new ledgerApp(null);
+        let spyMethodSign;
+        if (ledgerApp == CosmosApp) {
+          spyMethodSign = jest
+            .spyOn(ledgerInternal['ledgerApp'], methodSign)
+            .mockResolvedValue({
+              signature: new Uint8Array(Buffer.from(message, 'hex'))
+            });
+        } else {
+          spyMethodSign = jest
+            .spyOn(ledgerInternal['ledgerApp'], methodSign)
+            .mockResolvedValue(new Uint8Array(Buffer.from(message, 'hex')));
+        }
+
+        const rs = await ledgerInternal.sign(path, message);
+        expect(Buffer.from(rs).toString('hex')).toEqual(expectResult);
+        expect(spyMethodSign).toHaveBeenCalled();
+        expect(spyMethodSign).toHaveBeenCalledTimes(1);
+        
+        if (ledgerApp == EthApp) {
+          expect(spyMethodSign).toHaveBeenCalledWith(
+            stringifyPath(path),
+            Buffer.from(message).toString('hex')
+          );
+        } else {
+          expect(spyMethodSign).toHaveBeenCalledWith(
+            stringifyPath(path),
+            message
+          );
+        }
+      }
+    );
+  });
   describe('init', () => {
     it.each([
       [
