@@ -789,7 +789,9 @@ export class KeyRing {
     }
 
     const networkType = getNetworkTypeByChainId(chainId);
+    
     const coinType = this.computeKeyStoreCoinType(chainId, defaultCoinType);
+    
 
     // using ledger app
     if (this.keyStore.type === 'ledger') {
@@ -804,6 +806,7 @@ export class KeyRing {
       }
 
       const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
+      console.log('bip44HDPath: ', bip44HDPath);
       const path = [
         44,
         coinType,
@@ -811,11 +814,13 @@ export class KeyRing {
         bip44HDPath.change,
         bip44HDPath.addressIndex
       ];
+      console.log('path: ', path);
 
       const ledgerAppType: LedgerAppType = formatNeworkTypeToLedgerAppName(
         networkType,
         chainId
       );
+      console.log('ledgerAppType: ', ledgerAppType);
 
       // Need to check ledger here and ledger app type by chainId
       return await this.ledgerKeeper.sign(
@@ -828,6 +833,7 @@ export class KeyRing {
     } else {
       // Sign with Evmos/Ethereum
       const privKey = this.loadPrivKey(coinType);
+      console.log('privKey: ', privKey);
       // Check cointype = 60 in the case that network is evmos(still cosmos but need to sign with ethereum)
       if (networkType === 'evm' || coinType === 60) {
         // Only check coinType === 195 for Tron network, because tron is evm but had cointype = 195, not 60

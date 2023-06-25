@@ -13,15 +13,19 @@ import {
 import { KeyStore } from '../crypto';
 import { BIP44HDPath, CommonCrypto, ScryptParams } from '../types';
 import { TypeMockKeyStore } from './types';
+import { EmbedChainInfos } from '@owallet/common';
 export const mockMultiKeyStore: KeyStore[] = [
   mockKeyStorePbkdf2Ledger,
   mockKeyStorePbkdf2Mnemonic,
   mockKeyStorePbkdf2PrivateKey
 ];
+
 export const mockCoinType = 118;
 export const mockChainId = 'Oraichain';
 export const mockCoinTypeEth = 60;
-export const mockChainIdEth = '0x01';
+export const mockCoinTypeTron = 195;
+export const mockChainIdEth = '0x1ae6';
+export const mockChainIdTron = 'Tron';
 export const mockKvStore = {
   get: jest.fn().mockResolvedValue(undefined),
   set: jest.fn().mockResolvedValue(undefined),
@@ -98,6 +102,10 @@ export const mockBip44HDPath: BIP44HDPath = {
   account: 0,
   change: 0,
   addressIndex: 0
+};
+export const mockEnv = {
+  isInternalMsg: true,
+  requestInteraction: jest.fn()
 };
 export const mockPathBip44 = `m/44'/${mockCoinType}'/0'/0/0`;
 export const rng = (array) => {
