@@ -36,7 +36,13 @@ jest.mock('@owallet/common', () => {
     ...jest.requireActual<typeof import('@owallet/common')>('@owallet/common')
   };
 });
-// jest.mock('@owallet/common');
+jest.mock('ethereumjs-util', () => {
+  return {
+    __esModule: true, //    <----- this __esModule: true is important
+    ...jest.requireActual<typeof import('ethereumjs-util')>('ethereumjs-util')
+  };
+});
+import * as ethUtils from 'ethereumjs-util';
 import * as commonOwallet from '@owallet/common';
 // const commonOwallet = require('@owallet/common');
 
@@ -1989,9 +1995,33 @@ describe('keyring', () => {
             return;
           }
           expect(rs).toEqual(expectRs);
-          console.log('rs: ', rs);
         }
       }
     );
+  });
+  describe('signEthereum', () => {
+    it('sign Ethereum', async () => {
+      const message = Buffer.from(
+        'c429601ee7a6167356f15baa70fd8fe17b0325dab7047a658a31039e5384bffd',
+        'hex'
+      );
+      const privKey = new PrivKeySecp256k1(
+        Buffer.from(
+          'ae0e3814fad957fb1fdca450a9795f5e64b46061a8618cc4029fcbbfdf215221',
+          'hex'
+        )
+      );
+      const spyEcsign = jest.spyOn(ethUtils, 'ecsign');
+      const rs = await keyRing['signEthereum'](privKey, message);
+      expect(spyEcsign).toHaveBeenCalled();
+      expect(spyEcsign).toHaveBeenCalledTimes(1);
+      expect(spyEcsign).toHaveBeenCalledWith(
+        Buffer.from(message),
+        Buffer.from(privKey.toBytes())
+      );
+      expect(Buffer.from(rs).toString('hex')).toEqual(
+        '8221fe2793a3aa154523dbd9c8a90b11e9188855f077a2918606bd6abeb19b7452136e5416341d0c7a7ac216cd2066b494cb10fb19bfa117b7b1ba171dd8639f1b'
+      );
+    });
   });
 });
