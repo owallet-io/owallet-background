@@ -162,8 +162,6 @@ export class BackgroundTxService {
 
   async request(chainId: string, method: string, params: any[]): Promise<any> {
     let chainInfo: ChainInfoWithEmbed;
-    console.log('method in request: ', method);
-
     switch (method) {
       case 'eth_accounts':
       case 'eth_requestAccounts':
@@ -180,7 +178,6 @@ export class BackgroundTxService {
         return [`0x${Buffer.from(key.address).toString('hex')}`];
       case 'wallet_switchEthereumChain' as any:
         const { chainId: inputChainId, isEvm } = this.parseChainId(params[0]);
-        console.log('ChainId when switch: ', inputChainId);
         chainInfo = isEvm
           ? await this.chainsService.getChainInfo(inputChainId, 'evm')
           : await this.chainsService.getChainInfo(inputChainId);
