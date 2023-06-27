@@ -13,7 +13,6 @@ import {
 import { KeyStore } from '../crypto';
 import { BIP44HDPath, CommonCrypto, ScryptParams } from '../types';
 import { TypeMockKeyStore } from './types';
-import { EmbedChainInfos } from '@owallet/common';
 export const mockMultiKeyStore: KeyStore[] = [
   mockKeyStorePbkdf2Ledger,
   mockKeyStorePbkdf2Mnemonic,

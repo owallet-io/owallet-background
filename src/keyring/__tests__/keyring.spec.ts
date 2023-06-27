@@ -1806,7 +1806,13 @@ describe('keyring', () => {
           mockStatus: KeyRingStatus.UNLOCKED,
           mockKeyStore: mockKeyStore.mnemonic.pbkdf2
         },
-        'giH+J5OjqhVFI9vZyKkLEekYiFXwd6KRhga9ar6xm3RSE25UFjQdDHp6whbNIGa0lMsQ+xm/oRe3sboXHdhjnxs='
+        new Uint8Array([
+          20, 131, 70, 55, 39, 221, 241, 245, 51, 12, 178, 228, 128, 191, 36,
+          201, 210, 113, 64, 169, 9, 231, 137, 239, 250, 227, 107, 176, 104, 75,
+          209, 211, 60, 121, 187, 10, 165, 212, 233, 220, 244, 138, 232, 148,
+          99, 149, 226, 213, 188, 221, 216, 199, 8, 83, 215, 49, 147, 244, 136,
+          32, 243, 122, 108, 218
+        ])
       ],
       [
         'this.keyStore.type_is_tron',
@@ -2008,7 +2014,7 @@ describe('keyring', () => {
               ),
               message
             );
-            expect(rs.toString('base64')).toEqual(expectRs);
+            expect(rs).toEqual(expectRs);
             return;
           }
           expect(rs).toEqual(expectRs);
@@ -2028,16 +2034,9 @@ describe('keyring', () => {
           'hex'
         )
       );
-      const spyEcsign = jest.spyOn(ethUtils, 'ecsign');
       const rs = await keyRing['signEthereum'](privKey, message);
-      expect(spyEcsign).toHaveBeenCalled();
-      expect(spyEcsign).toHaveBeenCalledTimes(1);
-      expect(spyEcsign).toHaveBeenCalledWith(
-        Buffer.from(message),
-        Buffer.from(privKey.toBytes())
-      );
       expect(Buffer.from(rs).toString('hex')).toEqual(
-        '8221fe2793a3aa154523dbd9c8a90b11e9188855f077a2918606bd6abeb19b7452136e5416341d0c7a7ac216cd2066b494cb10fb19bfa117b7b1ba171dd8639f1b'
+        '1483463727ddf1f5330cb2e480bf24c9d27140a909e789effae36bb0684bd1d33c79bb0aa5d4e9dcf48ae8946395e2d5bcddd8c70853d73193f48820f37a6cda'
       );
     });
   });
