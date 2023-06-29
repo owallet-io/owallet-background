@@ -1281,6 +1281,10 @@ export class KeyRing {
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
     if (this.password == '') {
+      await this.restore();
+    }
+
+    if (this.password == '') {
       throw new OWalletError('keyring', 141, 'Key ring is locked or not initialized');
     }
 
@@ -1309,6 +1313,10 @@ export class KeyRing {
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
     if (this.password == '') {
+      await this.restore();
+    }
+
+    if (this.password == '') {
       throw new OWalletError('keyring', 141, 'Key ring is locked or not initialized');
     }
 
@@ -1330,6 +1338,10 @@ export class KeyRing {
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
     try {
+      if (this.password == '') {
+        await this.restore();
+      }
+
       if (this.password == '') {
         throw new OWalletError('keyring', 141, 'Key ring is locked or not initialized');
       }
@@ -1371,6 +1383,10 @@ export class KeyRing {
   public async changeKeyStoreFromMultiKeyStore(index: number): Promise<{
     multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
   }> {
+    if (this.password == '') {
+      await this.restore();
+    }
+
     if (this.password == '') {
       throw new OWalletError('keyring', 141, 'Key ring is locked or not initialized');
     }
