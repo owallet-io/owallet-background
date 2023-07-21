@@ -991,7 +991,7 @@ export class KeyRing {
         nonce,
         chainId: Number(chainId)
       };
-      delete finalMessage?.from;
+      // delete finalMessage?.from;
       delete finalMessage?.type;
       delete finalMessage?.gas;
       delete finalMessage?.memo;
