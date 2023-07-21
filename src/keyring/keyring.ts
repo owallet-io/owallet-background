@@ -521,7 +521,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -565,7 +565,7 @@ export class KeyRing {
 
     console.log('address 3> ===', address, publicKey);
 
-    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -981,18 +981,16 @@ export class KeyRing {
         address,
         'latest'
       ]);
-      console.log('nonce: ', nonce);
 
       let finalMessage: any = {
         ...message,
-        // from: address,
+        from: address,
         // gas: (message as any)?.gasLimit,
         gasLimit: (message as any)?.gasLimit,
         gasPrice: (message as any)?.gasPrice,
-        nonce
-        // chainId: Number(chainId)
+        nonce,
+        chainId: Number(chainId)
       };
-      delete finalMessage?.chainId;
       delete finalMessage?.from;
       delete finalMessage?.type;
       delete finalMessage?.gas;
@@ -1036,7 +1034,6 @@ export class KeyRing {
         networkId: chainIdNumber,
         chainId: chainIdNumber
       });
-      
 
       const nonce = await request(rpc, 'eth_getTransactionCount', [
         '0x' + Buffer.from(ethereumAddress).toString('hex'),
@@ -1183,7 +1180,7 @@ export class KeyRing {
       const privKey = this.loadPrivKey(60);
       const privKeyBuffer = Buffer.from(privKey.toBytes());
       const response = await Promise.all(
-        message[0].map(async (data) => {
+        message[0].map(async data => {
           const encryptedData = {
             ciphertext: Buffer.from(data.ciphertext, 'hex'),
             ephemPublicKey: Buffer.from(data.ephemPublicKey, 'hex'),
@@ -1477,7 +1474,7 @@ export class KeyRing {
         );
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map((item) =>
+      const typeValuePairs = value.map(item =>
         this.encodeField(types, name, parsedType, item, version)
       );
       return [
