@@ -974,8 +974,7 @@ export class KeyRing {
     }
 
     if (this.keyStore.type === 'ledger') {
-      const address = this.addresses.eth;
-      console.log('address: ', address);
+      const address = this.addresses?.eth;
 
       const nonce = await request(rpc, 'eth_getTransactionCount', [
         address,
