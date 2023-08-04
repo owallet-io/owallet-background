@@ -11,7 +11,6 @@ import { KVStore, Debouncer } from '@owallet/common';
 import { ChainUpdaterService } from '../updater';
 import { InteractionService } from '../interaction';
 import { Env } from '@owallet/router';
-import { SuggestChainInfoMsg } from './messages';
 import { ChainIdHelper } from '@owallet/cosmos';
 import { Mutable, Optional } from 'utility-types';
 
