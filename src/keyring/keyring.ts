@@ -1,3 +1,4 @@
+import { payments } from 'bitcoinjs-lib';
 import { Crypto, KeyStore } from './crypto';
 import {
   Mnemonic,
@@ -41,14 +42,19 @@ import Common from '@ethereumjs/common';
 import { TransactionOptions, Transaction } from 'ethereumjs-tx';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
-import { getNetworkTypeByChainId, getCoinTypeByChainId } from '@owallet/common';
+import {
+  getNetworkTypeByChainId,
+  getCoinTypeByChainId,
+  getNetworkConfigByChainId
+} from '@owallet/common';
 import {
   formatNeworkTypeToLedgerAppName,
   getNetworkTypeByBip44HDPath,
   splitPath
 } from '../utils/helper';
 import { serialize } from '@ethersproject/transactions';
-
+import { Bech32AddressBtc, getAddress, getKeyPair } from '@owallet/bitcoin';
+import { Bech32Address } from '@owallet/cosmos';
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
 
@@ -64,6 +70,7 @@ export interface Key {
   pubKey: Uint8Array;
   address: Uint8Array;
   isNanoLedger: boolean;
+  bech32Address?: string;
 }
 
 export type MultiKeyStoreInfoElem = Pick<
@@ -521,7 +528,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -565,7 +572,7 @@ export class KeyRing {
 
     console.log('address 3> ===', address, publicKey);
 
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -700,10 +707,45 @@ export class KeyRing {
       };
     } else {
       const privKey = this.loadPrivKey(coinType);
+      console.log('🚀 ~ file: keyring.ts:708 ~ loadKey ~ privKey:', privKey);
       const pubKey = privKey.getPubKey();
+      console.log('🚀 ~ file: keyring.ts:709 ~ loadKey ~ pubKey:', pubKey);
 
       const networkType = getNetworkTypeByChainId(chainId);
+      const keyPair = getKeyPair({
+        selectedCrypto: 'bitcoin',
+        mnemonic:
+          'wrist illness circle evidence accident loan thing mystery output inhale fat rookie'
+      });
+      console.log(
+        '🚀 ~ file: keyring.ts:717 ~ loadKey ~ keyPair:',
+        keyPair.privateKey
+      );
+      console.log(
+        '🚀 ~ file: keyring.ts:717 ~ loadKey ~ publicKey:',
+        keyPair.publicKey
+      );
+      const address = getAddress(keyPair, 'bitcoin', 'bech32');
+      // payments.p2wpkh({
+      //   pubkey: pubKey.toKeyPair(),
 
+      //   network: {
+      //     messagePrefix: '\x18Bitcoin Signed Message:\n',
+      //     bech32: 'bc',
+      //     bip32: {
+      //       public: 0x0488b21e,
+      //       private: 0x0488ade4
+      //     },
+      //     pubKeyHash: 0x00,
+      //     scriptHash: 0x05,
+      //     wif: 0x80
+      //   }
+      // });
+      console.log(
+        '🚀 ~ file: keyring.ts:719 ~ loadKey ~ pubKey.toKeyPair():',
+        pubKey.toKeyPair()
+      );
+      console.log('address22: ', address);
       if (coinType === 60 || networkType === 'evm') {
         // For Ethereum Key-Gen Only:
         const ethereumAddress = privateToAddress(
@@ -720,7 +762,22 @@ export class KeyRing {
           address: ethereumAddress,
           isNanoLedger: false
         };
-      }
+      } 
+      // else if (networkType === 'bitcoin') {
+      //   // console.log(
+      //   //   '🚀 ~ file: keyring.ts:770 ~ loadKey ~ new Bech32AddressBtc().toBech32(Buffer.from(pubKey.toBytes())):',
+      //   //   new Bech32Address(pubKey.getAddress()).toBech32Btc(0,"bc")
+      //   // );
+      //   // return {
+      //   //   algo: 'secp256k1',
+      //   //   pubKey: pubKey.toBytes(),
+      //   //   address: pubKey.getAddress(),
+      //   //   bech32Address: new Bech32Address().toBech32(
+      //   //     Buffer.from(pubKey.toBytes())
+      //   //   ),
+      //   //   isNanoLedger: false
+      //   // };
+      // }
 
       // Default
       return {
@@ -731,7 +788,6 @@ export class KeyRing {
       };
     }
   }
-
   private loadPrivKey(coinType: number): PrivKeySecp256k1 {
     if (
       this.status !== KeyRingStatus.UNLOCKED ||
@@ -745,8 +801,11 @@ export class KeyRing {
     // and here
     if (this.type === 'mnemonic') {
       const coinTypeModified = bip44HDPath.coinType ?? coinType;
-      const path = `m/44'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
+      const path = `m/84'/0'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
       const cachedKey = this.cached.get(path);
+      console.log('🚀 ~ file: keyring.ts:781 ~ path:', path);
+
+      console.log('🚀 ~ file: keyring.ts:750 ~ loadPrivKey ~ path:', path);
       if (cachedKey) {
         return new PrivKeySecp256k1(cachedKey);
       }
@@ -756,8 +815,10 @@ export class KeyRing {
           'Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly'
         );
       }
+
       // could use it here
       const privKey = Mnemonic.generateWalletFromMnemonic(this.mnemonic, path);
+      console.log('🚀 ~ file: keyring.ts:808 ~ this.mnemonic:', this.mnemonic);
 
       this.cached.set(path, privKey);
       return new PrivKeySecp256k1(privKey);
@@ -1100,7 +1161,7 @@ export class KeyRing {
       const privKey = this.loadPrivKey(60);
       const privKeyBuffer = Buffer.from(privKey.toBytes());
       const response = await Promise.all(
-        message[0].map(async data => {
+        message[0].map(async (data) => {
           const encryptedData = {
             ciphertext: Buffer.from(data.ciphertext, 'hex'),
             ephemPublicKey: Buffer.from(data.ephemPublicKey, 'hex'),
@@ -1394,7 +1455,7 @@ export class KeyRing {
         );
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map(item =>
+      const typeValuePairs = value.map((item) =>
         this.encodeField(types, name, parsedType, item, version)
       );
       return [
