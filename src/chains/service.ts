@@ -6,7 +6,7 @@ import {
   ChainInfoWithCoreTypes,
   ChainInfoWithEmbed
 } from './types';
-import { ChainInfo, ChainInfoWithoutEndpoints, NetworkChainConfigType } from '@owallet/types';
+import { ChainInfo, ChainInfoWithoutEndpoints } from '@owallet/types';
 import { KVStore, Debouncer } from '@owallet/common';
 import { ChainUpdaterService } from '../updater';
 import { InteractionService } from '../interaction';
@@ -170,17 +170,7 @@ export class ChainsService {
 
     return chainInfo.bip44.coinType;
   }
-  async getNetworkChainConfig(chainId: string): Promise<NetworkChainConfigType> {
-    const chainInfo = await this.getChainInfo(chainId);
-
-    if (!chainInfo) {
-      throw new Error(`There is no chain info for ${chainId}`);
-    }
-    if(!chainInfo.networkChainConfig){
-      throw new Error(`There is no network chain info for ${chainId}`);
-    }
-    return chainInfo.networkChainConfig;
-  }
+  
 
   async hasChainInfo(chainId: string): Promise<boolean> {
     return (

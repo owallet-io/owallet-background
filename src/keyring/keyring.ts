@@ -1,4 +1,3 @@
-import { payments } from 'bitcoinjs-lib';
 import { Crypto, KeyStore } from './crypto';
 import {
   Mnemonic,
@@ -45,7 +44,7 @@ import { TYPED_MESSAGE_SCHEMA } from './constants';
 import {
   getNetworkTypeByChainId,
   getCoinTypeByChainId,
-  getNetworkConfigByChainId
+  
 } from '@owallet/common';
 import {
   formatNeworkTypeToLedgerAppName,
@@ -53,11 +52,9 @@ import {
   splitPath
 } from '../utils/helper';
 import { serialize } from '@ethersproject/transactions';
-import { Bech32AddressBtc, getAddress, getKeyPair } from '@owallet/bitcoin';
-import { Bech32Address } from '@owallet/cosmos';
+
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
-
 export enum KeyRingStatus {
   NOTLOADED,
   EMPTY,
@@ -555,11 +552,6 @@ export class KeyRing {
     }
     const networkType = getNetworkTypeByChainId(chainId);
 
-    console.log('env 3===', env);
-
-    console.log('bip44HDPath ===', bip44HDPath);
-
-    console.log('splitPath ===', splitPath(bip44HDPath));
     const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
     // Update ledger address here with this function below
 
@@ -707,54 +699,16 @@ export class KeyRing {
       };
     } else {
       const privKey = this.loadPrivKey(coinType);
-      console.log('🚀 ~ file: keyring.ts:708 ~ loadKey ~ privKey:', privKey);
+
       const pubKey = privKey.getPubKey();
-      console.log('🚀 ~ file: keyring.ts:709 ~ loadKey ~ pubKey:', pubKey);
 
       const networkType = getNetworkTypeByChainId(chainId);
-      const keyPair = getKeyPair({
-        selectedCrypto: 'bitcoin',
-        mnemonic:
-          'wrist illness circle evidence accident loan thing mystery output inhale fat rookie'
-      });
-      console.log(
-        '🚀 ~ file: keyring.ts:717 ~ loadKey ~ keyPair:',
-        keyPair.privateKey
-      );
-      console.log(
-        '🚀 ~ file: keyring.ts:717 ~ loadKey ~ publicKey:',
-        keyPair.publicKey
-      );
-      const address = getAddress(keyPair, 'bitcoin', 'bech32');
-      // payments.p2wpkh({
-      //   pubkey: pubKey.toKeyPair(),
 
-      //   network: {
-      //     messagePrefix: '\x18Bitcoin Signed Message:\n',
-      //     bech32: 'bc',
-      //     bip32: {
-      //       public: 0x0488b21e,
-      //       private: 0x0488ade4
-      //     },
-      //     pubKeyHash: 0x00,
-      //     scriptHash: 0x05,
-      //     wif: 0x80
-      //   }
-      // });
-      console.log(
-        '🚀 ~ file: keyring.ts:719 ~ loadKey ~ pubKey.toKeyPair():',
-        pubKey.toKeyPair()
-      );
-      console.log('address22: ', address);
       if (coinType === 60 || networkType === 'evm') {
         // For Ethereum Key-Gen Only:
         const ethereumAddress = privateToAddress(
           Buffer.from(privKey.toBytes())
         );
-
-        // get the ledgerPublicKey here and get address from pubKey.getAddress()
-        // const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
-        // From that address, generate evmosHexAddress
 
         return {
           algo: 'ethsecp256k1',
@@ -762,22 +716,7 @@ export class KeyRing {
           address: ethereumAddress,
           isNanoLedger: false
         };
-      } 
-      // else if (networkType === 'bitcoin') {
-      //   // console.log(
-      //   //   '🚀 ~ file: keyring.ts:770 ~ loadKey ~ new Bech32AddressBtc().toBech32(Buffer.from(pubKey.toBytes())):',
-      //   //   new Bech32Address(pubKey.getAddress()).toBech32Btc(0,"bc")
-      //   // );
-      //   // return {
-      //   //   algo: 'secp256k1',
-      //   //   pubKey: pubKey.toBytes(),
-      //   //   address: pubKey.getAddress(),
-      //   //   bech32Address: new Bech32Address().toBech32(
-      //   //     Buffer.from(pubKey.toBytes())
-      //   //   ),
-      //   //   isNanoLedger: false
-      //   // };
-      // }
+      }
 
       // Default
       return {
@@ -796,16 +735,12 @@ export class KeyRing {
     ) {
       throw new Error('Key ring is not unlocked');
     }
-
     const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
     // and here
     if (this.type === 'mnemonic') {
       const coinTypeModified = bip44HDPath.coinType ?? coinType;
-      const path = `m/84'/0'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
+      const path = `m/84'/1'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
       const cachedKey = this.cached.get(path);
-      console.log('🚀 ~ file: keyring.ts:781 ~ path:', path);
-
-      console.log('🚀 ~ file: keyring.ts:750 ~ loadPrivKey ~ path:', path);
       if (cachedKey) {
         return new PrivKeySecp256k1(cachedKey);
       }
@@ -815,11 +750,8 @@ export class KeyRing {
           'Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly'
         );
       }
-
       // could use it here
       const privKey = Mnemonic.generateWalletFromMnemonic(this.mnemonic, path);
-      console.log('🚀 ~ file: keyring.ts:808 ~ this.mnemonic:', this.mnemonic);
-
       this.cached.set(path, privKey);
       return new PrivKeySecp256k1(privKey);
     } else if (this.type === 'privateKey') {
