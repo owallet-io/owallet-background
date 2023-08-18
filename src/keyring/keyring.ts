@@ -41,13 +41,10 @@ import Common from '@ethereumjs/common';
 import { TransactionOptions, Transaction } from 'ethereumjs-tx';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
-import {
-  getNetworkTypeByChainId,
-  getCoinTypeByChainId,
-  
-} from '@owallet/common';
+import { getNetworkTypeByChainId, getCoinTypeByChainId } from '@owallet/common';
 import {
   formatNeworkTypeToLedgerAppName,
+  getHDPath,
   getNetworkTypeByBip44HDPath,
   splitPath
 } from '../utils/helper';
@@ -698,7 +695,7 @@ export class KeyRing {
         isNanoLedger: true
       };
     } else {
-      const privKey = this.loadPrivKey(coinType);
+      const privKey = this.loadPrivKey(coinType, chainId);
 
       const pubKey = privKey.getPubKey();
 
@@ -727,7 +724,10 @@ export class KeyRing {
       };
     }
   }
-  private loadPrivKey(coinType: number): PrivKeySecp256k1 {
+  private loadPrivKey(
+    coinType: number,
+    chainId?: string | number
+  ): PrivKeySecp256k1 {
     if (
       this.status !== KeyRingStatus.UNLOCKED ||
       this.type === 'none' ||
@@ -739,7 +739,15 @@ export class KeyRing {
     // and here
     if (this.type === 'mnemonic') {
       const coinTypeModified = bip44HDPath.coinType ?? coinType;
-      const path = `m/84'/1'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
+
+      const path = getHDPath({
+        chainId,
+        coinType: coinTypeModified,
+        bip44HDPath
+      });
+      console.log('🚀 ~ file: keyring.ts:759 ~ path:', path);
+
+      // const path = `m/44'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
       const cachedKey = this.cached.get(path);
       if (cachedKey) {
         return new PrivKeySecp256k1(cachedKey);
