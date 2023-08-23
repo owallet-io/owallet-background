@@ -751,6 +751,43 @@ export class RequestSignEthereumMsg extends Message<{
   }
 }
 
+export class RequestSignBitcoinMsg extends Message<{
+  readonly rawTxHex: string; // raw tx signature to broadcast
+}> {
+  public static type() {
+    return 'request-sign-bitcoin';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: object // public readonly signOptions: OWalletSignOptions = {} // public readonly signer: string, // public readonly signDoc: { //   bodyBytes?: Uint8Array | null; //   authInfoBytes?: Uint8Array | null; //   chainId?: string | null; //   accountNumber?: string | null; // }
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignBitcoinMsg.type();
+  }
+}
+
 export class RequestSignEthereumTypedDataMsg extends Message<{
   readonly result: string; // raw tx signature to broadcast
 }> {

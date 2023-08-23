@@ -1,6 +1,9 @@
-
 import { Env, Handler, InternalHandler, Message } from '@owallet/router';
-import { getAddressFromBech32, bufferToHex } from '@owallet/common';
+import {
+  getAddressFromBech32,
+  bufferToHex,
+  getNetworkTypeByChainId
+} from '@owallet/common';
 import {
   CreateMnemonicKeyMsg,
   CreatePrivateKeyMsg,
@@ -34,7 +37,8 @@ import {
   RequestSignTronMsg,
   GetDefaultAddressTronMsg,
   RequestSignProxyReEncryptionDataMsg,
-  RequestSignProxyDecryptionDataMsg
+  RequestSignProxyDecryptionDataMsg,
+  RequestSignBitcoinMsg
 } from './messages';
 import { KeyRingService } from './service';
 import { Bech32Address, cosmos } from '@owallet/cosmos';
@@ -103,6 +107,11 @@ export const getHandler: (service: KeyRingService) => Handler = (
         return handleRequestSignEthereumMsg(service)(
           env,
           msg as RequestSignEthereumMsg
+        );
+      case RequestSignBitcoinMsg:
+        return handleRequestSignBitcoinMsg(service)(
+          env,
+          msg as RequestSignBitcoinMsg
         );
       case RequestSignTronMsg:
         return handleRequestSignTronMsg(service)(
@@ -308,18 +317,24 @@ const handleGetKeyMsg: (
 
     const key = await service.getKey(msg.chainId);
     // console.log('🚀 ~ file: handler.ts:310 ~ return ~ key:', key?.bech32Address);
+    const networkType = getNetworkTypeByChainId(msg.chainId);
 
-    
     // hereeee
     return {
       name: service.getKeyStoreMeta('name'),
       algo: 'secp256k1',
       pubKey: key.pubKey,
       address: key.address,
-      bech32Address: new Bech32Address(key.address).toBech32(
-        (await service.chainsService.getChainInfo(msg.chainId)).bech32Config
-          .bech32PrefixAccAddr
-      ),
+      bech32Address:
+        networkType === 'bitcoin'
+          ? new Bech32Address(key.address).toBech32Btc(
+              (await service.chainsService.getChainInfo(msg.chainId))
+                .bech32Config.bech32PrefixAccAddr
+            )
+          : new Bech32Address(key.address).toBech32(
+              (await service.chainsService.getChainInfo(msg.chainId))
+                .bech32Config.bech32PrefixAccAddr
+            ),
       isNanoLedger: key.isNanoLedger
     };
   };
@@ -499,6 +514,19 @@ const handleRequestSignProxyReEncryptionData: (
   };
 };
 
+const handleRequestSignBitcoinMsg: (
+  service: KeyRingService
+) => InternalHandler<RequestSignBitcoinMsg> = (service) => {
+  return async (env, msg) => {
+    const response = await service.requestSignBitcoin(
+      env,
+      msg.chainId,
+      msg.data
+    );
+
+    return { rawTxHex: response };
+  };
+};
 const handleRequestSignEthereumMsg: (
   service: KeyRingService
 ) => InternalHandler<RequestSignEthereumMsg> = (service) => {

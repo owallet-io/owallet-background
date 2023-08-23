@@ -521,6 +521,38 @@ export class KeyRingService {
       );
     }
   }
+  async requestSignBitcoin(
+    env: Env,
+    chainId: string,
+    data: object
+  ): Promise<string> {
+    // here
+    const newData = (await this.interactionService.waitApprove(
+      env,
+      '/sign-bitcoin',
+      'request-sign-bitcoin',
+      data
+    )) as any;
+    console.log(newData, 'NEW DATA IN BITCOIN');
+
+    // Need to check ledger here and ledger app type by chainId
+    try {
+      const txHash = await this.keyRing.signAndBroadcastBitcoin(
+        env,
+        chainId,
+        newData
+      );
+      return txHash;
+    } catch (error) {
+      console.log({ error });
+    } finally {
+      this.interactionService.dispatchEvent(
+        APP_PORT,
+        'request-sign-bitcoin-end',
+        {}
+      );
+    }
+  }
 
   async requestSignEthereumTypedData(
     env: Env,
