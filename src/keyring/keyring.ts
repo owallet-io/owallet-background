@@ -997,10 +997,6 @@ export class KeyRing {
     chainId: string,
     message: any
   ): Promise<string> {
-    // console.log(
-    //   '🚀 ~ file: keyring.ts ~ line 733 ~ KeyRing ~ message',
-    //   message
-    // );
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -1009,7 +1005,6 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    // // const cType = this.computeKeyStoreCoinType(chainId, coinType);
     const networkType = getNetworkTypeByChainId(chainId);
     if (networkType !== 'bitcoin') {
       throw new Error(
@@ -1018,73 +1013,28 @@ export class KeyRing {
     }
 
     if (this.keyStore.type === 'ledger') {
-      //   const address = this.addresses?.eth;
-      //   const nonce = await request(rpc, 'eth_getTransactionCount', [
-      //     address,
-      //     'latest'
-      //   ]);
-      //   let finalMessage: any = {
-      //     ...message,
-      //     from: address,
-      //     // gas: (message as any)?.gasLimit,
-      //     gasLimit: (message as any)?.gasLimit,
-      //     gasPrice: (message as any)?.gasPrice,
-      //     nonce,
-      //     chainId: Number(chainId)
-      //   };
-      //   delete finalMessage?.from;
-      //   delete finalMessage?.type;
-      //   delete finalMessage?.gas;
-      //   delete finalMessage?.memo;
-      //   delete finalMessage?.fees;
-      //   delete finalMessage?.maxPriorityFeePerGas;
-      //   delete finalMessage?.maxFeePerGas;
-      //   // console.log(
-      //   //   '🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage',
-      //   //   finalMessage
-      //   // );
-      //   const serializedTx = serialize(finalMessage).replace('0x', '');
-      //   console.log('serializedTx: ', serializedTx);
-      //   const signature = await this.sign(
-      //     env,
-      //     chainId,
-      //     60,
-      //     Buffer.from(serializedTx, 'hex')
-      //   );
-      //   const signedTx = serialize(finalMessage, {
-      //     r: `0x${signature.r}`,
-      //     s: `0x${signature.s}`,
-      //     v: parseInt(signature.v, 16)
-      //   });
-      //   // console.log('signedT === 1', signedTx);
-      //   const response = await request(rpc, 'eth_sendRawTransaction', [signedTx]);
-      //   // console.log('response eth ===', response);
-      //   return response;
     } else {
-      const res = (await signAndCreateTransaction({
+      const res = (await createTransaction({
         selectedCrypto: chainId,
         mnemonic: this.mnemonic,
         utxos: message.utxos,
         blacklistedUtxos: message.blacklistedUtxos,
-        targets: message.msgs
+        address: message.msgs.address,
+        amount: message.msgs.amount,
+        confirmedBalance: message.msgs.confirmedBalance,
+        changeAddress: message.msgs.changeAddress,
+        message: message.msgs.message
       })) as { error: boolean; data: string };
       if (res.error) {
         throw Error('Transaction failed');
       }
-      const { data: txHash } = await wallet.pushtx.default({
-        rawTx: res.data,
-        selectedCrypto: chainId
-      });
-      console.log("🚀 ~ file: keyring.ts:1078 ~ txHash:", txHash)
 
       // if (typeof txHash === "string") {
       //   console.log(`$/tx/${txHash}?expand`);
       // }
       console.log('🚀 ~ file: keyring.ts:1067 ~ res:', res);
       console.log('🚀 ~ file: keyring.ts:1069 ~ res:', message);
-      return txHash;
-      //   const response = await request(rpc, 'eth_sendRawTransaction', [rawTxHex]);
-      //   return response;
+      return res.data;
     }
   }
 

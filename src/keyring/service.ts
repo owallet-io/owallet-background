@@ -544,6 +544,7 @@ export class KeyRingService {
       );
       return txHash;
     } catch (error) {
+      console.log("🚀 ~ file: service.ts:547 ~ KeyRingService ~ error:", error)
       console.log({ error });
     } finally {
       this.interactionService.dispatchEvent(
