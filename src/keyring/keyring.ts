@@ -1028,13 +1028,19 @@ export class KeyRing {
       if (res.error) {
         throw Error('Transaction failed');
       }
-
+      const { data: txHash } = await wallet.pushtx.default({
+        rawTx: res.data,
+        selectedCrypto: chainId
+      });
+      if(txHash?.code){
+        throw Error('Transaction failed');
+      }
       // if (typeof txHash === "string") {
       //   console.log(`$/tx/${txHash}?expand`);
       // }
-      console.log('🚀 ~ file: keyring.ts:1067 ~ res:', res);
+      console.log('🚀 ~ file: keyring.ts:1067 ~ res:', txHash);
       console.log('🚀 ~ file: keyring.ts:1069 ~ res:', message);
-      return res.data;
+      return txHash;
     }
   }
 
