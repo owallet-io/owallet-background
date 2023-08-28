@@ -54,6 +54,7 @@ import {
   signAndCreateTransaction,
   wallet
 } from '@owallet/bitcoin';
+import { isArray, isNumber, isString } from 'util';
 
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
@@ -1014,6 +1015,22 @@ export class KeyRing {
 
     if (this.keyStore.type === 'ledger') {
     } else {
+      if (!chainId) throw Error('ChainID Not Empty');
+      if (!this.mnemonic) throw Error('Mnemonic Not Empty');
+      if (!message?.utxos) throw Error('UTXOS Not Empty');
+      if (!isArray(message?.blacklistedUtxos))
+        throw Error('BlacklistedUtxos must be Array type');
+      if (!message?.msgs?.address) throw Error('Address Not Empty');
+      if (!message?.msgs?.amount) throw Error('Amount Not Empty');
+      if (!isNumber(message?.msgs?.amount))
+        throw Error('Amount must be Number type');
+      if (!isNumber(message.msgs.confirmedBalance))
+        throw Error('ConfirmedBalance must be Number type');
+      if (!message.msgs.confirmedBalance)
+        throw Error('ConfirmedBalance Not Empty');
+      if (!message.msgs.changeAddress) throw Error('Change Address Not Empty');
+      if (!isString(message.msgs.message))
+        throw Error('Message must be string type');
       const res = (await createTransaction({
         selectedCrypto: chainId,
         mnemonic: this.mnemonic,
@@ -1023,24 +1040,29 @@ export class KeyRing {
         amount: message.msgs.amount,
         confirmedBalance: message.msgs.confirmedBalance,
         changeAddress: message.msgs.changeAddress,
-        message: message.msgs.message
+        message: message.msgs.message,
+        transactionFee: 3
       })) as { error: boolean; data: string };
       if (res.error) {
         throw Error('Transaction failed');
       }
-      const { data: txHash } = await wallet.pushtx.default({
+      const txRes = await wallet.pushtx.default({
         rawTx: res.data,
         selectedCrypto: chainId
       });
-      if(txHash?.code){
-        throw Error('Transaction failed');
+      console.log('🚀 ~ file: keyring.ts:1035 ~ txRes:', txRes);
+      if (txRes?.error) {
+        throw Error('Transaction Failed');
+      }
+      if (txRes?.data?.code) {
+        throw Error(txRes?.data?.message);
       }
       // if (typeof txHash === "string") {
       //   console.log(`$/tx/${txHash}?expand`);
       // }
-      console.log('🚀 ~ file: keyring.ts:1067 ~ res:', txHash);
+      console.log('🚀 ~ file: keyring.ts:1067 ~ res:', txRes?.data);
       console.log('🚀 ~ file: keyring.ts:1069 ~ res:', message);
-      return txHash;
+      return txRes?.data;
     }
   }
 

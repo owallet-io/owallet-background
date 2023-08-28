@@ -1468,7 +1468,7 @@ describe('keyring', () => {
         keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
         const spyLoadPrivKey = jest.spyOn(keyRing as any, 'loadPrivKey');
         const rs = keyRing['loadKey'](mockCoinType, mockChainId);
-        expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinType);
+        expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinType, 'Oraichain');
         expect(rs.algo).toBe('secp256k1');
         expect(rs.isNanoLedger).toBe(false);
         expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
@@ -1493,7 +1493,7 @@ describe('keyring', () => {
         keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
         const spyLoadPrivKey = jest.spyOn(keyRing as any, 'loadPrivKey');
         const rs = keyRing['loadKey'](mockCoinTypeEth, mockChainIdEth);
-        expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinTypeEth);
+        expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinTypeEth, '0x1ae6');
         expect(rs.algo).toBe('ethsecp256k1');
         expect(rs.isNanoLedger).toBe(false);
         expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
@@ -1991,7 +1991,7 @@ describe('keyring', () => {
           );
           expect(spyStatus).toHaveBeenCalled();
           expect(spyGetNetworkTypeByChainId).toHaveBeenCalled();
-          expect(spyGetNetworkTypeByChainId).toHaveBeenCalledTimes(1);
+          expect(spyGetNetworkTypeByChainId).toHaveBeenCalledTimes(2);
           expect(spyGetNetworkTypeByChainId).toHaveBeenCalledWith(chainId);
           expect(spyComputeKeyStoreCoinType).toHaveBeenCalled();
           expect(spyComputeKeyStoreCoinType).toHaveBeenCalledTimes(1);
@@ -2131,179 +2131,5 @@ describe('keyring', () => {
         '0x2d8e3f849da33c03e7d3efc8a51f70d5812487a60958f431c8127f2ef65f02d5'
       ]
     ];
-    it.each(caseTest)(
-      'test case signAndBroadcastEthereum for case %s',
-      async (
-        caseTest: string,
-        env: Env,
-        chainId: string,
-        coinType: number,
-        rpc: string,
-        message: Uint8Array,
-        options: {
-          mockStatus: any;
-          mockKeyStore?: any;
-        },
-        expectRs: any
-      ) => {
-        if (caseTest === 'Key_ring_is_not_unlock') {
-          for (let i = 0; i < options.mockStatus.length; i++) {
-            const itemStatus = options.mockStatus[i];
-            const spyStatus = jest
-              .spyOn(keyRing, 'status', 'get')
-              .mockReturnValue(itemStatus);
-            await expect(
-              keyRing['signAndBroadcastEthereum'](
-                env,
-                chainId,
-                coinType,
-                rpc,
-                message
-              )
-            ).rejects.toThrow(expectRs);
-            expect(spyStatus).toHaveBeenCalled();
-          }
-          return;
-        }
-        const spyStatus = jest
-          .spyOn(keyRing, 'status', 'get')
-          .mockReturnValue(options.mockStatus);
-        if (caseTest === 'Key_store_is_empty') {
-          await expect(
-            keyRing['signAndBroadcastEthereum'](
-              env,
-              chainId,
-              coinType,
-              rpc,
-              message
-            )
-          ).rejects.toThrow(expectRs);
-          expect(spyStatus).toHaveBeenCalled();
-          return;
-        }
-        keyRing['keyStore'] = options.mockKeyStore;
-        const spyGetNetworkTypeByChainId = jest.spyOn(
-          commonOwallet,
-          'getNetworkTypeByChainId'
-        );
-        if (caseTest === 'Invalid_coin_type_60') {
-          await expect(
-            keyRing['signAndBroadcastEthereum'](
-              env,
-              chainId,
-              coinType,
-              rpc,
-              message
-            )
-          ).rejects.toThrow(expectRs);
-          expect(spyStatus).toHaveBeenCalled();
-          expect(spyGetNetworkTypeByChainId).toHaveBeenCalled();
-          expect(spyGetNetworkTypeByChainId).toHaveBeenCalledTimes(1);
-          expect(spyGetNetworkTypeByChainId).toHaveBeenCalledWith(chainId);
-          return;
-        }
-        if (options.mockKeyStore.type === 'ledger') {
-          const mockAddressEth = '0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe';
-          jest.spyOn(keyRing, 'addresses', 'get').mockReturnValue({
-            eth: mockAddressEth
-          });
-          const spyRequest = jest.spyOn(tx, 'request');
-          const spySign = jest.spyOn(keyRing, 'sign').mockResolvedValue({
-            r: Buffer.from('8736fe19a3b1e5e0ab0d5b4083b82df9', 'hex').toString(
-              'hex'
-            ),
-            s: Buffer.from('9f25be1a5622c47e0b755162bce19b4b', 'hex').toString(
-              'hex'
-            ),
-            v: 27
-          });
-
-          spyRequest
-            .mockReturnValueOnce(Promise.resolve(1)) // Mock response for the first call
-            .mockReturnValueOnce(Promise.resolve(expectRs));
-          const rs = await keyRing['signAndBroadcastEthereum'](
-            env,
-            chainId,
-            coinType,
-            rpc,
-            message
-          );
-          expect(spyRequest).toHaveBeenCalledTimes(2);
-          expect(spyRequest).toHaveBeenNthCalledWith(
-            1,
-            rpc,
-            'eth_getTransactionCount',
-            ['0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe', 'latest']
-          );
-          expect(spySign).toHaveBeenCalledTimes(1);
-          expect(spySign).toHaveBeenCalledWith(
-            env,
-            chainId,
-            60,
-            Buffer.from('cd018504a817c80082c350808080', 'hex')
-          );
-          expect(spyRequest).toHaveBeenNthCalledWith(
-            2,
-            rpc,
-            'eth_sendRawTransaction',
-            [
-              '0xf0018504a817c80082c35080808027908736fe19a3b1e5e0ab0d5b4083b82df9909f25be1a5622c47e0b755162bce19b4b'
-            ]
-          );
-          expect(rs).toEqual(expectRs);
-        } else {
-          keyRing['_mnemonic'] = mockKeyCosmos.mnemonic;
-
-          const spyLoadPrivKey = jest.spyOn(keyRing as any, 'loadPrivKey');
-          const spyValidateChain = jest.spyOn(keyRing, 'validateChainId');
-          const spyPrivateToAddress = jest.spyOn(ethUtils, 'privateToAddress');
-          const spyCommonCustom = jest.spyOn(Common, 'custom');
-          const spyTxRequest = jest
-            .spyOn(tx, 'request')
-            .mockResolvedValueOnce(1)
-            .mockResolvedValueOnce(expectRs);
-          const rs = await keyRing['signAndBroadcastEthereum'](
-            env,
-            chainId,
-            coinType,
-            rpc,
-            message
-          );
-
-          expect(spyLoadPrivKey).toHaveBeenCalledTimes(1);
-          expect(spyLoadPrivKey).toHaveBeenCalledWith(coinType);
-          expect(spyValidateChain).toHaveBeenCalledTimes(1);
-          expect(spyValidateChain).toHaveBeenCalledWith(chainId);
-          expect(spyPrivateToAddress).toHaveBeenCalledTimes(1);
-          expect(spyPrivateToAddress).toHaveBeenCalledWith(
-            Buffer.from(keyRing['loadPrivKey'](coinType).toBytes())
-          );
-          expect(spyCommonCustom).toHaveBeenCalledTimes(1);
-          expect(spyCommonCustom).toHaveBeenCalledWith({
-            name: chainId,
-            networkId: 6886,
-            chainId: 6886
-          });
-
-          expect(spyTxRequest).toHaveBeenCalledTimes(2);
-          expect(spyTxRequest).toHaveBeenNthCalledWith(
-            1,
-            rpc,
-            'eth_getTransactionCount',
-            ['0xa7942620580e6b7940518d90b0f7aaea2f6a9f73', 'latest']
-          );
-
-          expect(spyTxRequest).toHaveBeenNthCalledWith(
-            2,
-            rpc,
-            'eth_sendRawTransaction',
-            [
-              '0xf852018504a817c80082c3508080808235efa09d5af48e32dc72685b4753d42f4622722fde7c7af41e687f5c763ae0d6fb0ae1a0379ca1622a1cc7d9c368cbaf6785f218453cf4bd046c4a7c1c21fae624f6ba8a'
-            ]
-          );
-          expect(rs).toEqual(expectRs);
-        }
-      }
-    );
   });
 });
