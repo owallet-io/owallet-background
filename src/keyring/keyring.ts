@@ -51,6 +51,8 @@ import {
 import { serialize } from '@ethersproject/transactions';
 import {
   createTransaction,
+  getAddress,
+  getKeyPair,
   signAndCreateTransaction,
   wallet
 } from '@owallet/bitcoin';
@@ -71,6 +73,7 @@ export interface Key {
   address: Uint8Array;
   isNanoLedger: boolean;
   bech32Address?: string;
+  legacyAddress?: string;
 }
 
 export type MultiKeyStoreInfoElem = Pick<
@@ -717,6 +720,22 @@ export class KeyRing {
           algo: 'ethsecp256k1',
           pubKey: pubKey.toBytes(),
           address: ethereumAddress,
+          isNanoLedger: false
+        };
+      } else if (networkType === 'bitcoin') {
+        const keyPair = getKeyPair({
+          mnemonic: this.mnemonic,
+          selectedCrypto: chainId as string,
+          keyDerivationPath: '44'
+        });
+        // console.log('private key length: ', keyPair.privateKey.length);
+
+        const legacyAddress = getAddress(keyPair, chainId, 'legacy');
+        return {
+          algo: 'secp256k1',
+          pubKey: pubKey.toBytes(),
+          address: pubKey.getAddress(),
+          legacyAddress: legacyAddress,
           isNanoLedger: false
         };
       }
