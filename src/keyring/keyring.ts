@@ -1060,7 +1060,8 @@ export class KeyRing {
         confirmedBalance: message.msgs.confirmedBalance,
         changeAddress: message.msgs.changeAddress,
         message: message.msgs.message,
-        transactionFee: 3
+        transactionFee: 1,
+        addressType: 'legacy'
       })) as { error: boolean; data: string };
       if (res.error) {
         throw Error('Transaction failed');
