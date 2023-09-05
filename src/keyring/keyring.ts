@@ -1047,6 +1047,7 @@ export class KeyRing {
         throw Error('ConfirmedBalance must be Number type');
       if (!message.msgs.confirmedBalance)
         throw Error('ConfirmedBalance Not Empty');
+      if (!message.msgs.gasPriceStep) throw Error('GasPriceStep Not Empty');
       if (!message.msgs.changeAddress) throw Error('Change Address Not Empty');
       if (!isString(message.msgs.message))
         throw Error('Message must be string type');
@@ -1059,23 +1060,30 @@ export class KeyRing {
         amount: message.msgs.amount,
         confirmedBalance: message.msgs.confirmedBalance,
         changeAddress: message.msgs.changeAddress,
-        message: message.msgs.message,
-        transactionFee: 1,
+        message: message.msgs.message ?? '',
+        transactionFee: message.msgs.gasPriceStep ?? 1,
         addressType: 'legacy'
       })) as { error: boolean; data: string };
       if (res.error) {
-        throw Error('Transaction failed');
+        console.log('🚀 ~ file: keyring.ts:1067 ~ res.error:', res);
+        throw Error(res?.data?.message || 'Transaction Failed');
       }
+      console.log(
+        '🚀 ~ file: keyring.ts:1072 ~ message.msgs.message:',
+        message.msgs.gasPriceStep
+      );
+      console.log('🚀 ~ file: keyring.ts:1071 ~ message.msgs:', message.msgs);
       const txRes = await wallet.pushtx.default({
         rawTx: res.data,
         selectedCrypto: chainId
       });
       console.log('🚀 ~ file: keyring.ts:1035 ~ txRes:', txRes);
       if (txRes?.error) {
-        throw Error('Transaction Failed');
+        console.log('🚀 ~ file: keyring.ts:1076 ~ txRes?.error:', txRes);
+        throw Error(txRes?.data?.message || 'Transaction Failed');
       }
       if (txRes?.data?.code) {
-        throw Error(txRes?.data?.message);
+        throw Error(txRes?.data?.message || 'Transaction Failed');
       }
       // if (typeof txHash === "string") {
       //   console.log(`$/tx/${txHash}?expand`);
