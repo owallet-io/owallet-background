@@ -1063,33 +1063,21 @@ export class KeyRing {
         message: message.msgs.message ?? '',
         transactionFee: message.msgs.gasPriceStep ?? 1,
         addressType: 'legacy'
-      })) as { error: boolean; data: string };
+      })) as any;
       if (res.error) {
-        console.log('🚀 ~ file: keyring.ts:1067 ~ res.error:', res);
         throw Error(res?.data?.message || 'Transaction Failed');
       }
-      console.log(
-        '🚀 ~ file: keyring.ts:1072 ~ message.msgs.message:',
-        message.msgs.gasPriceStep
-      );
-      console.log('🚀 ~ file: keyring.ts:1071 ~ message.msgs:', message.msgs);
       const txRes = await wallet.pushtx.default({
         rawTx: res.data,
         selectedCrypto: chainId
       });
-      console.log('🚀 ~ file: keyring.ts:1035 ~ txRes:', txRes);
+
       if (txRes?.error) {
-        console.log('🚀 ~ file: keyring.ts:1076 ~ txRes?.error:', txRes);
         throw Error(txRes?.data?.message || 'Transaction Failed');
       }
       if (txRes?.data?.code) {
         throw Error(txRes?.data?.message || 'Transaction Failed');
       }
-      // if (typeof txHash === "string") {
-      //   console.log(`$/tx/${txHash}?expand`);
-      // }
-      console.log('🚀 ~ file: keyring.ts:1067 ~ res:', txRes?.data);
-      console.log('🚀 ~ file: keyring.ts:1069 ~ res:', message);
       return txRes?.data;
     }
   }
