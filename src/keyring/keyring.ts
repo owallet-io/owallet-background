@@ -726,7 +726,7 @@ export class KeyRing {
         const keyPair = getKeyPair({
           mnemonic: this.mnemonic,
           selectedCrypto: chainId as string,
-          keyDerivationPath: '44'
+          keyDerivationPath: '84'
         });
         // console.log('private key length: ', keyPair.privateKey.length);
 
@@ -1062,7 +1062,7 @@ export class KeyRing {
         changeAddress: message.msgs.changeAddress,
         message: message.msgs.message ?? '',
         transactionFee: message.msgs.gasPriceStep ?? 1,
-        addressType: 'legacy'
+        addressType: 'bech32'
       })) as any;
       if (res.error) {
         throw Error(res?.data?.message || 'Transaction Failed');
