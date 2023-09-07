@@ -13,6 +13,7 @@ export type AddressesLedger = {
   cosmos?: string;
   eth?: string;
   trx?: string;
+  btc?: string;
 };
 
 export interface CommonCrypto {

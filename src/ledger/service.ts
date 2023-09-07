@@ -43,7 +43,7 @@ export class LedgerService {
         console.log('it gone here===', ledgerType);
 
         return await ledger.getPublicKey([
-          44,
+          ledgerType === 'btc' ? 84 : 44,
           bip44HDPath.coinType,
           bip44HDPath.account,
           bip44HDPath.change,

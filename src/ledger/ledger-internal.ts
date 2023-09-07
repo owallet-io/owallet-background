@@ -2,6 +2,7 @@ import Transport from '@ledgerhq/hw-transport';
 import CosmosApp from '@ledgerhq/hw-app-cosmos';
 import EthApp from '@ledgerhq/hw-app-eth';
 import TrxApp from '@ledgerhq/hw-app-trx';
+import BtcApp from '@ledgerhq/hw-app-btc';
 import TransportWebHID from '@ledgerhq/hw-transport-webhid';
 import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
 import { signatureImport, publicKeyConvert } from 'secp256k1';
@@ -27,11 +28,11 @@ export class LedgerInitError extends Error {
 }
 
 export type TransportMode = 'webusb' | 'webhid' | 'ble';
-export type LedgerAppType = 'cosmos' | 'eth' | 'trx';
+export type LedgerAppType = 'cosmos' | 'eth' | 'trx' | 'btc';
 
 export class LedgerInternal {
   constructor(
-    private readonly ledgerApp: CosmosApp | EthApp | TrxApp,
+    private readonly ledgerApp: CosmosApp | EthApp | TrxApp | BtcApp,
     private readonly type: LedgerAppType
   ) {}
 
@@ -47,6 +48,7 @@ export class LedgerInternal {
     initArgs: any[] = [],
     ledgerAppType: LedgerAppType
   ): Promise<LedgerInternal> {
+    console.log("🚀 ~ file: ledger-internal.ts:51 ~ LedgerInternal ~ ledgerAppType:", ledgerAppType)
     const transportIniter = LedgerInternal.transportIniters[mode];
     // console.log('transportIniter', transportIniter);
 
@@ -54,7 +56,7 @@ export class LedgerInternal {
       throw new OWalletError('ledger', 112, `Unknown mode: ${mode}`);
     }
 
-    let app: CosmosApp | EthApp | TrxApp;
+    let app: CosmosApp | EthApp | TrxApp | BtcApp;
 
     const transport = await transportIniter(...initArgs);
 
@@ -65,6 +67,8 @@ export class LedgerInternal {
         app = new TrxApp(transport);
       } else if (ledgerAppType === 'eth') {
         app = new EthApp(transport);
+      } else if (ledgerAppType === 'btc') {
+        app = new BtcApp(transport);
       } else {
         app = new CosmosApp(transport);
       }
@@ -126,6 +130,8 @@ export class LedgerInternal {
         return 'Ethereum App';
       case 'trx':
         return 'Tron App';
+      case 'btc':
+        return 'Bitcoin App';
     }
   }
 
@@ -153,6 +159,22 @@ export class LedgerInternal {
       return {
         publicKey: publicKeyConvert(pubKey, true),
         address
+      };
+    } else if (this.ledgerApp instanceof BtcApp) {
+      const { publicKey, bitcoinAddress } =
+        await this.ledgerApp.getWalletPublicKey(stringifyPath(path), {
+          format: 'bech32'
+        });
+      console.log(
+        '🚀 ~ file: ledger-internal.ts:164 ~ LedgerInternal ~ getPublicKey ~ bitcoinAddress:',
+        bitcoinAddress
+      );
+
+      const pubKey = Buffer.from(publicKey, 'hex');
+      // Compress the public key
+      return {
+        publicKey: publicKeyConvert(pubKey, true),
+        address: bitcoinAddress
       };
     } else {
       console.log('get here trx === ', path, stringifyPath(path));
@@ -191,6 +213,14 @@ export class LedgerInternal {
       );
       return signature;
       // return convertEthSignature(signature);
+    } else if (this.ledgerApp instanceof BtcApp) {
+      const rawTxHex = Buffer.from(message).toString('hex');
+
+      const signature = await this.ledgerApp.signMessageNew(
+        stringifyPath(path),
+        rawTxHex
+      );
+      return signature;
     } else {
       // const rawTxHex = Buffer.from(message).toString('hex');
       const trxSignature = await this.ledgerApp.signTransactionHash(

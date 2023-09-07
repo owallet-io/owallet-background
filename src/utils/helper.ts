@@ -9,6 +9,8 @@ export function splitPath(path: string): BIP44HDPath {
   const components = path.split('/');
   if (path.startsWith('44')) {
     components.shift();
+  } else if (path.startsWith('84')) {
+    components.shift();
   }
   components.forEach((element, index) => {
     result[bip44HDPathOrder[index]] = element.replace("'", '');
@@ -29,12 +31,10 @@ export const getHDPath = ({
   if (networkType === 'bitcoin') {
     return getBaseDerivationPath({
       selectedCrypto: chainId as string,
-      keyDerivationPath:'84'
+      keyDerivationPath: '84'
     }) as string;
   }
-  const path = `m/44'/${coinType}'/${
-    bip44HDPath.account
-  }'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
+  const path = `m/44'/${coinType}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
   return path;
 };
 export function stringifyPath(paths: number[]): string {
@@ -64,6 +64,9 @@ export function getNetworkTypeByBip44HDPath(path: BIP44HDPath): LedgerAppType {
       return 'eth';
     case 195:
       return 'trx';
+    case 1:
+    case 0:
+      return 'btc';
     default:
       return 'cosmos';
   }

@@ -559,6 +559,7 @@ export class KeyRing {
     const networkType = getNetworkTypeByChainId(chainId);
 
     const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
+    console.log("🚀 ~ file: keyring.ts:562 ~ ledgerAppType:", ledgerAppType)
     // Update ledger address here with this function below
 
     const { publicKey, address } =
@@ -835,7 +836,7 @@ export class KeyRing {
       const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
       console.log('bip44HDPath: ', bip44HDPath);
       const path = [
-        44,
+        networkType === 'bitcoin' ? 84 : 44,
         coinType,
         bip44HDPath.account,
         bip44HDPath.change,
@@ -1033,6 +1034,49 @@ export class KeyRing {
     }
 
     if (this.keyStore.type === 'ledger') {
+      const address = this.addresses?.btc;
+
+      
+
+      // let finalMessage: any = {
+      //   ...message,
+      //   from: address,
+      //   // gas: (message as any)?.gasLimit,
+      //   gasLimit: (message as any)?.gasLimit,
+      //   gasPrice: (message as any)?.gasPrice,
+      //   nonce,
+      //   chainId: Number(chainId)
+      // };
+      // delete finalMessage?.from;
+      // delete finalMessage?.type;
+      // delete finalMessage?.gas;
+      // delete finalMessage?.memo;
+      // delete finalMessage?.fees;
+      // delete finalMessage?.maxPriorityFeePerGas;
+      // delete finalMessage?.maxFeePerGas;
+      // console.log(
+      //   '🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage',
+      //   finalMessage
+      // );
+      // const serializedTx = serialize(finalMessage).replace('0x', '');
+      // console.log('serializedTx: ', serializedTx);
+      // const signature = await this.sign(
+      //   env,
+      //   chainId,
+      //   60,
+      //   Buffer.from(serializedTx, 'hex')
+      // );
+      // const signedTx = serialize(finalMessage, {
+      //   r: `0x${signature.r}`,
+      //   s: `0x${signature.s}`,
+      //   v: parseInt(signature.v, 16)
+      // });
+
+      // // console.log('signedT === 1', signedTx);
+      // const response = await request(rpc, 'eth_sendRawTransaction', [signedTx]);
+      // // console.log('response eth ===', response);
+
+      // return response;
     } else {
       if (!chainId) throw Error('ChainID Not Empty');
       if (!this.mnemonic) throw Error('Mnemonic Not Empty');
