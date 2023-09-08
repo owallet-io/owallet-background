@@ -9,8 +9,17 @@ import { signatureImport, publicKeyConvert } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
 import { stringifyPath } from '../utils/helper';
-
+import { payments } from 'bitcoinjs-lib';
+import { getCoinNetwork, toBufferLE } from '@owallet/bitcoin';
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
+export interface UTXO {
+  txid: string;
+  value: number;
+  vout: number;
+  addr: string;
+
+  key(): string;
+}
 
 export enum LedgerInitErrorOn {
   Transport,
@@ -48,7 +57,10 @@ export class LedgerInternal {
     initArgs: any[] = [],
     ledgerAppType: LedgerAppType
   ): Promise<LedgerInternal> {
-    console.log("🚀 ~ file: ledger-internal.ts:51 ~ LedgerInternal ~ ledgerAppType:", ledgerAppType)
+    console.log(
+      '🚀 ~ file: ledger-internal.ts:51 ~ LedgerInternal ~ ledgerAppType:',
+      ledgerAppType
+    );
     const transportIniter = LedgerInternal.transportIniters[mode];
     // console.log('transportIniter', transportIniter);
 
@@ -88,6 +100,7 @@ export class LedgerInternal {
       // console.log('transportIniter ledger', ledger);
       return ledger;
     } catch (e) {
+      console.log("🚀 ~ file: ledger-internal.ts:103 ~ LedgerInternal ~ e:", JSON.stringify(e))
       // console.log(e);
       if (transport) {
         await transport.close();
@@ -214,13 +227,25 @@ export class LedgerInternal {
       return signature;
       // return convertEthSignature(signature);
     } else if (this.ledgerApp instanceof BtcApp) {
-      const rawTxHex = Buffer.from(message).toString('hex');
-
-      const signature = await this.ledgerApp.signMessageNew(
-        stringifyPath(path),
-        rawTxHex
+      const messageStr = Buffer.from(message).toString('utf-8');
+      if (!messageStr) {
+        throw new Error('Not found messageStr for ledger app type BTC');
+      }
+      const msgObject = JSON.parse(messageStr);
+      console.log(
+        '🚀 ~ file: ledger-internal.ts:218 ~ LedgerInternal ~ sign ~ messageObject:',
+        msgObject
       );
-      return signature;
+      console.log(
+        '🚀 ~ file: ledger-internal.ts:218 ~ LedgerInternal ~ sign ~ messageObject:',
+        messageStr
+      );
+      // const signature = await this.signTransactionBtc(
+      //   stringifyPath(path),
+
+      // );
+      // return signature;
+      return 'ok';
     } else {
       // const rawTxHex = Buffer.from(message).toString('hex');
       const trxSignature = await this.ledgerApp.signTransactionHash(
@@ -237,7 +262,47 @@ export class LedgerInternal {
       await this.ledgerApp.transport.close();
     }
   }
+  async signTransactionBtc(
+    path: string,
+    amount: number,
+    utxos: Array<UTXO & { hex: string }>,
+    toAddress: string
+  ): Promise<string> {
+    const txs = utxos.map((utxo) => {
+      return {
+        tx: this.ledgerApp.splitTransaction(utxo.hex, true),
+        ...utxo
+      };
+    });
 
+    const script = payments.p2wpkh({
+      address: toAddress,
+      network: getCoinNetwork('bitcoinTestnet')
+    });
+
+    const outputScript = this.ledgerApp
+      .serializeTransactionOutputs({
+        version: Buffer.from('01000000', 'hex'),
+        inputs: [],
+        outputs: [
+          {
+            amount: toBufferLE(BigInt(amount), 8),
+            script: script.output!
+          }
+        ]
+      })
+      .toString('hex');
+
+    return this.ledgerApp.createPaymentTransactionNew({
+      inputs: txs.map((utxo) => {
+        return [utxo.tx, utxo.vout, null, null];
+      }),
+      associatedKeysets: txs.map((tx) => path),
+      outputScriptHex: outputScript,
+      segwit: true,
+      additionals: ['bitcoin', 'bech32']
+    });
+  }
   static async isWebHIDSupported(): Promise<boolean> {
     return await TransportWebHID.isSupported();
   }

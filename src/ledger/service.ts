@@ -68,6 +68,9 @@ export class LedgerService {
     message: Uint8Array,
     ledgerType: LedgerAppType
   ): Promise<Uint8Array | any> {
+    console.log("🚀 ~ file: service.ts:71 ~ LedgerService ~ env:", env)
+    console.log("🚀 ~ file: service.ts:71 ~ LedgerService ~ ledgerType:", ledgerType)
+    console.log("🚀 ~ file: service.ts:71 ~ LedgerService ~ message:", message)
     return await this.useLedger(
       env,
       ledgerType,
@@ -116,11 +119,11 @@ export class LedgerService {
 
     try {
       ledger = await this.initLedger(env, ledgerType);
-      console.log('ledger ===', ledger);
+      console.log('ledger ===', JSON.stringify(ledger));
 
       return await fn(ledger.ledger, ledger.retryCount);
     } catch (error) {
-      console.log('ERROR IN USE LEDGER ,', error);
+      console.log('ERROR IN USE LEDGER ,', JSON.stringify(error));
     } finally {
       if (ledger) {
         await ledger.ledger.close();
