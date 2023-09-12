@@ -327,10 +327,12 @@ const handleGetKeyMsg: (
       address: key.address,
       bech32Address:
         networkType === 'bitcoin'
-          ? new Bech32Address(key.address).toBech32Btc(
-              (await service.chainsService.getChainInfo(msg.chainId))
-                .bech32Config.bech32PrefixAccAddr
-            )
+          ? key.isNanoLedger
+            ? key.bech32Address ?? ''
+            : new Bech32Address(key.address).toBech32Btc(
+                (await service.chainsService.getChainInfo(msg.chainId))
+                  .bech32Config.bech32PrefixAccAddr
+              )
           : new Bech32Address(key.address).toBech32(
               (await service.chainsService.getChainInfo(msg.chainId))
                 .bech32Config.bech32PrefixAccAddr

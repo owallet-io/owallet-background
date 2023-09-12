@@ -689,15 +689,29 @@ export class KeyRing {
     if (!this.keyStore) {
       throw new Error('Key Store is empty');
     }
-
+    const networkType = getNetworkTypeByChainId(chainId);
     if (this.keyStore.type === 'ledger') {
       if (!this.ledgerPublicKey) {
         throw new Error('Ledger public key not set');
       }
+
+      console.log(
+        '🚀 ~ file: keyring.ts:698 ~ loadKey ~ this.addresses2:',
+        this.addresses.btc
+      );
       // goes here
       // This need to be check by network type or cointype, cause now we support ledger with evm too, but this pubKey.getAddress() is hardcoded by cosmos address
       const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
 
+      if (networkType === 'bitcoin') {
+        return {
+          algo: 'secp256k1',
+          pubKey: pubKey.toBytes(),
+          address: pubKey.getAddress(),
+          bech32Address: this.addresses.btc,
+          isNanoLedger: true
+        };
+      }
       return {
         algo: 'secp256k1',
         pubKey: pubKey.toBytes(),
@@ -708,8 +722,6 @@ export class KeyRing {
       const privKey = this.loadPrivKey(coinType, chainId);
 
       const pubKey = privKey.getPubKey();
-
-      const networkType = getNetworkTypeByChainId(chainId);
 
       if (coinType === 60 || networkType === 'evm') {
         // For Ethereum Key-Gen Only:
