@@ -23,11 +23,8 @@ export const ledgerProxy = async (
       try {
         [currentMode, initArgs, ledgerType] = args;
         ledger = await LedgerInternal.init(currentMode, initArgs, ledgerType);
-        console.log('ledger init ===', JSON.stringify(ledger));
-
         response = true;
       } catch (error) {
-        console.log('ledger init err ===', JSON.stringify(error));
         response = false;
       }
       break;

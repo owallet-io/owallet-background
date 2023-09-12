@@ -57,10 +57,6 @@ export class LedgerInternal {
     initArgs: any[] = [],
     ledgerAppType: LedgerAppType
   ): Promise<LedgerInternal> {
-    console.log(
-      '🚀 ~ file: ledger-internal.ts:51 ~ LedgerInternal ~ ledgerAppType:',
-      ledgerAppType
-    );
     const transportIniter = LedgerInternal.transportIniters[mode];
     // console.log('transportIniter', transportIniter);
 
@@ -100,7 +96,8 @@ export class LedgerInternal {
       // console.log('transportIniter ledger', ledger);
       return ledger;
     } catch (e) {
-      console.log("🚀 ~ file: ledger-internal.ts:103 ~ LedgerInternal ~ e:", JSON.stringify(e))
+      console.log('🚀 ~ file: ledger-internal.ts:99 ~ LedgerInternal ~ e:', e);
+
       // console.log(e);
       if (transport) {
         await transport.close();
@@ -203,8 +200,6 @@ export class LedgerInternal {
   }
 
   async sign(path: number[], message: any): Promise<Uint8Array | any> {
-    console.log('sign ledger === ', message, path);
-
     if (!this.ledgerApp) {
       throw new Error(`${this.LedgerAppTypeDesc} not initialized`);
     }
@@ -232,14 +227,6 @@ export class LedgerInternal {
         throw new Error('Not found messageStr for ledger app type BTC');
       }
       const msgObject = JSON.parse(messageStr);
-      console.log(
-        '🚀 ~ file: ledger-internal.ts:218 ~ LedgerInternal ~ sign ~ messageObject:',
-        msgObject
-      );
-      console.log(
-        '🚀 ~ file: ledger-internal.ts:218 ~ LedgerInternal ~ sign ~ messageObject:',
-        messageStr
-      );
       // const signature = await this.signTransactionBtc(
       //   stringifyPath(path),
 

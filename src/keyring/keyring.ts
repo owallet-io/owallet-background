@@ -559,7 +559,7 @@ export class KeyRing {
     const networkType = getNetworkTypeByChainId(chainId);
 
     const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
-    console.log('🚀 ~ file: keyring.ts:562 ~ ledgerAppType:', ledgerAppType);
+
     // Update ledger address here with this function below
 
     const { publicKey, address } =
@@ -1051,23 +1051,14 @@ export class KeyRing {
       throw Error('Message must be string type');
 
     if (this.keyStore.type === 'ledger') {
-      console.log('🚀 ~ file: keyring.ts:1051 ~ message:', message);
       const messageHex = Buffer.from(JSON.stringify(message));
-      console.log(
-        "🚀 ~ file: keyring.ts:1056 ~ messageHex.toString('hex'):",
-        messageHex.toString('utf-8')
-      );
-      console.log(
-        '🚀 ~ file: keyring.ts:1038 ~ messageHex:',
-        JSON.parse(messageHex.toString('utf-8'))?.address
-      );
+
       const signature = await this.sign(
         env,
         chainId,
         getCoinTypeByChainId(chainId),
         messageHex
       );
-      console.log('🚀 ~ file: keyring.ts:1045 ~ signature:', signature);
 
       // let finalMessage: any = {
       //   ...message,
