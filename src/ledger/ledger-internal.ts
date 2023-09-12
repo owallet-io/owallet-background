@@ -173,13 +173,9 @@ export class LedgerInternal {
     } else if (this.ledgerApp instanceof BtcApp) {
       const { publicKey, bitcoinAddress } =
         await this.ledgerApp.getWalletPublicKey(stringifyPath(path), {
-          format: 'bech32'
+          format: 'bech32',
+          verify: true
         });
-      console.log(
-        '🚀 ~ file: ledger-internal.ts:164 ~ LedgerInternal ~ getPublicKey ~ bitcoinAddress:',
-        bitcoinAddress
-      );
-
       const pubKey = Buffer.from(publicKey, 'hex');
       // Compress the public key
       return {

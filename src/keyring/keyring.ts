@@ -570,7 +570,8 @@ export class KeyRing {
       )) || {};
 
     console.log('address 3> ===', address, publicKey);
-
+    console.log('🚀 ~ file: keyring.ts:573 ~ publicKey:', publicKey);
+    this.ledgerPublicKey = publicKey;
     const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
@@ -703,15 +704,6 @@ export class KeyRing {
       // This need to be check by network type or cointype, cause now we support ledger with evm too, but this pubKey.getAddress() is hardcoded by cosmos address
       const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
 
-      if (networkType === 'bitcoin') {
-        return {
-          algo: 'secp256k1',
-          pubKey: pubKey.toBytes(),
-          address: pubKey.getAddress(),
-          bech32Address: this.addresses.btc,
-          isNanoLedger: true
-        };
-      }
       return {
         algo: 'secp256k1',
         pubKey: pubKey.toBytes(),
