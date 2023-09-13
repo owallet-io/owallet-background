@@ -10,7 +10,12 @@ import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
 import { stringifyPath } from '../utils/helper';
 import { payments } from 'bitcoinjs-lib';
-import { getCoinNetwork, getTransaction, toBufferLE } from '@owallet/bitcoin';
+import {
+  convertStringToMessage,
+  getCoinNetwork,
+  getTransaction,
+  toBufferLE
+} from '@owallet/bitcoin';
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 export interface UTXO {
   txid: string;
@@ -289,7 +294,8 @@ export class LedgerInternal {
           msgObject.msgs.selectedCrypto,
           msgObject.msgs.changeAddress,
           msgObject.msgs.confirmedBalance,
-          msgObject.msgs.totalFee
+          msgObject.msgs.totalFee,
+          msgObject.msgs.message
         );
 
         return signature;
@@ -323,7 +329,8 @@ export class LedgerInternal {
     selectCrypto: string,
     changeAddress: string,
     confirmAmount: number,
-    feeAmount: number
+    feeAmount: number,
+    message: string
   ): Promise<string> {
     const txs = utxos.map((utxo) => {
       console.log(
@@ -363,20 +370,42 @@ export class LedgerInternal {
       '🚀 ~ file: ledger-internal.ts:361 ~ LedgerInternal ~ refundBalance:',
       refundBalance
     );
+    const targets = [
+      {
+        amount: toBufferLE(BigInt(amount), 8),
+        script: script.output!
+      },
+      {
+        amount: toBufferLE(refundBalance, 8),
+        script: scriptChangeAddress.output!
+      }
+    ];
+    if (!!message) {
+      const msgCobvert = convertStringToMessage(message);
+      const messageLength = msgCobvert.length;
+      const lengthMin = 5;
+      //This is a patch for the following: https://github.com/coreyphillips/moonshine/issues/52
+      const buffers: any = [msgCobvert];
+      if (messageLength > 0 && messageLength < lengthMin)
+        buffers.push(
+          Buffer.from(' '.repeat(lengthMin - messageLength), 'utf8')
+        );
+      const data = Buffer.concat(buffers);
+      const embed = payments.embed({
+        data: [data],
+        network: getCoinNetwork(selectCrypto)
+      });
+      targets.push({ script: embed.output, amount: toBufferLE(0, 8) });
+    }
+    console.log(
+      '🚀 ~ file: ledger-internal.ts:399 ~ LedgerInternal ~ targets:',
+      targets
+    );
     const outputScript = this.ledgerApp
       .serializeTransactionOutputs({
         version: Buffer.from('01000000', 'hex'),
         inputs: [],
-        outputs: [
-          {
-            amount: toBufferLE(BigInt(amount), 8),
-            script: script.output!
-          },
-          {
-            amount: toBufferLE(refundBalance, 8),
-            script: scriptChangeAddress.output!
-          }
-        ]
+        outputs: targets
       })
       .toString('hex');
     console.log(
