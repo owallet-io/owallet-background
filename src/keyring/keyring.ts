@@ -1076,45 +1076,6 @@ export class KeyRing {
         throw Error(txRes?.data?.message || 'Transaction Failed');
       }
       return txRes?.data;
-      // let finalMessage: any = {
-      //   ...message,
-      //   from: address,
-      //   // gas: (message as any)?.gasLimit,
-      //   gasLimit: (message as any)?.gasLimit,
-      //   gasPrice: (message as any)?.gasPrice,
-      //   nonce,
-      //   chainId: Number(chainId)
-      // };
-      // delete finalMessage?.from;
-      // delete finalMessage?.type;
-      // delete finalMessage?.gas;
-      // delete finalMessage?.memo;
-      // delete finalMessage?.fees;
-      // delete finalMessage?.maxPriorityFeePerGas;
-      // delete finalMessage?.maxFeePerGas;
-      // console.log(
-      //   '🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage',
-      //   finalMessage
-      // );
-      // const serializedTx = serialize(finalMessage).replace('0x', '');
-      // console.log('serializedTx: ', serializedTx);
-      // const signature = await this.sign(
-      //   env,
-      //   chainId,
-      //   60,
-      //   Buffer.from(serializedTx, 'hex')
-      // );
-      // const signedTx = serialize(finalMessage, {
-      //   r: `0x${signature.r}`,
-      //   s: `0x${signature.s}`,
-      //   v: parseInt(signature.v, 16)
-      // });
-
-      // // console.log('signedT === 1', signedTx);
-      // const response = await request(rpc, 'eth_sendRawTransaction', [signedTx]);
-      // // console.log('response eth ===', response);
-
-      // return response;
     } else {
       if (!this.mnemonic) throw Error('Mnemonic Not Empty');
       const res = (await createTransaction({

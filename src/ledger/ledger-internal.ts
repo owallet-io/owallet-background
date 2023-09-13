@@ -269,12 +269,27 @@ export class LedgerInternal {
           '🚀 ~ file: ledger-internal.ts:265 ~ LedgerInternal ~ sign ~ res:',
           utxos
         );
+        console.log(
+          '🚀 ~ file: ledger-internal.ts:279 ~ LedgerInternal ~ sign ~ msgObject.msgs.changeAddress:',
+          msgObject.msgs.changeAddress
+        );
+        console.log(
+          '🚀 ~ file: ledger-internal.ts:282 ~ LedgerInternal ~ sign ~ msgObject.msgs.confirmedBalance:',
+          msgObject.msgs.confirmedBalance
+        );
+        console.log(
+          '🚀 ~ file: ledger-internal.ts:285 ~ LedgerInternal ~ sign ~ msgObject.msgs.totalFee:',
+          msgObject.msgs.totalFee
+        );
         const signature = await this.signTransactionBtc(
           stringifyPath(path),
           msgObject.msgs.amount,
           utxos,
           msgObject.msgs.address,
-          msgObject.msgs.selectedCrypto
+          msgObject.msgs.selectedCrypto,
+          msgObject.msgs.changeAddress,
+          msgObject.msgs.confirmedBalance,
+          msgObject.msgs.totalFee
         );
 
         return signature;
@@ -305,7 +320,10 @@ export class LedgerInternal {
     amount: number,
     utxos: Array<UTXO & { hex: string }>,
     toAddress: string,
-    selectCrypto: string
+    selectCrypto: string,
+    changeAddress: string,
+    confirmAmount: number,
+    feeAmount: number
   ): Promise<string> {
     const txs = utxos.map((utxo) => {
       console.log(
@@ -327,11 +345,24 @@ export class LedgerInternal {
       address: toAddress,
       network: getCoinNetwork(selectCrypto)
     });
+    const scriptChangeAddress = payments.p2wpkh({
+      address: changeAddress,
+      network: getCoinNetwork(selectCrypto)
+    });
+    console.log(
+      '🚀 ~ file: ledger-internal.ts:352 ~ LedgerInternal ~ scriptChangeAddress:',
+      scriptChangeAddress
+    );
     console.log(
       '🚀 ~ file: ledger-internal.ts:269 ~ LedgerInternal ~ script:',
       script
     );
-
+    const refundBalance =
+      BigInt(confirmAmount) - (BigInt(amount) + BigInt(feeAmount));
+    console.log(
+      '🚀 ~ file: ledger-internal.ts:361 ~ LedgerInternal ~ refundBalance:',
+      refundBalance
+    );
     const outputScript = this.ledgerApp
       .serializeTransactionOutputs({
         version: Buffer.from('01000000', 'hex'),
@@ -340,6 +371,10 @@ export class LedgerInternal {
           {
             amount: toBufferLE(BigInt(amount), 8),
             script: script.output!
+          },
+          {
+            amount: toBufferLE(refundBalance, 8),
+            script: scriptChangeAddress.output!
           }
         ]
       })
