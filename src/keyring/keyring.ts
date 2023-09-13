@@ -1063,8 +1063,19 @@ export class KeyRing {
         getCoinTypeByChainId(chainId),
         messageHex
       );
-      console.log("🚀 ~ file: keyring.ts:1066 ~ signature:", signature)
-
+      console.log('🚀 ~ file: keyring.ts:1066 ~ signature:', signature);
+      const txRes = await wallet.pushtx.default({
+        rawTx: signature,
+        selectedCrypto: chainId
+      });
+      console.log('🚀 ~ file: keyring.ts:1071 ~ txRes:', txRes);
+      if (txRes?.error) {
+        throw Error(txRes?.data?.message || 'Transaction Failed');
+      }
+      if (txRes?.data?.code) {
+        throw Error(txRes?.data?.message || 'Transaction Failed');
+      }
+      return txRes?.data;
       // let finalMessage: any = {
       //   ...message,
       //   from: address,

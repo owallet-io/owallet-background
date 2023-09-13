@@ -174,7 +174,7 @@ export class LedgerInternal {
       const { publicKey, bitcoinAddress } =
         await this.ledgerApp.getWalletPublicKey(stringifyPath(path), {
           format: 'bech32',
-          verify: true
+          verify: false
         });
       const pubKey = Buffer.from(publicKey, 'hex');
       // Compress the public key
