@@ -1063,6 +1063,7 @@ export class KeyRing {
         getCoinTypeByChainId(chainId),
         messageHex
       );
+      console.log("🚀 ~ file: keyring.ts:1066 ~ signature:", signature)
 
       // let finalMessage: any = {
       //   ...message,
