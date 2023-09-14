@@ -72,6 +72,21 @@ export function getNetworkTypeByBip44HDPath(path: BIP44HDPath): LedgerAppType {
   }
 }
 
+export const handleAddressLedgerByChainId = (
+  keyStoreAddresses,
+  ledgerAppType,
+  address,
+  chainId
+) => {
+  if (chainId === 'bitcoinTestnet') {
+    return Object.assign(keyStoreAddresses, {
+      ['tbtc']: address
+    });
+  }
+  return Object.assign(keyStoreAddresses, {
+    [ledgerAppType]: address
+  });
+};
 export function formatNeworkTypeToLedgerAppName(
   network: string,
   chainId?: string | number

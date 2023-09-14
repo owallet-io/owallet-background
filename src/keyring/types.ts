@@ -14,6 +14,7 @@ export type AddressesLedger = {
   eth?: string;
   trx?: string;
   btc?: string;
+  tbtc?: string;
 };
 
 export interface CommonCrypto {

@@ -46,6 +46,7 @@ import {
   formatNeworkTypeToLedgerAppName,
   getHDPath,
   getNetworkTypeByBip44HDPath,
+  handleAddressLedgerByChainId,
   splitPath
 } from '../utils/helper';
 import { serialize } from '@ethersproject/transactions';
@@ -582,9 +583,13 @@ export class KeyRing {
 
     if (keyStoreInMulti) {
       const keyStoreAddresses = { ...keyStoreInMulti.addresses };
-      const returnedAddresses = Object.assign(keyStoreAddresses, {
-        [ledgerAppType]: address
-      });
+
+      const returnedAddresses = handleAddressLedgerByChainId(
+        keyStoreAddresses,
+        ledgerAppType,
+        address,
+        chainId
+      );
       keyStoreInMulti.addresses = returnedAddresses;
       this.keyStore.addresses = returnedAddresses;
     }
