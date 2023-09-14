@@ -572,7 +572,6 @@ export class KeyRing {
 
     console.log('address 3> ===', address, publicKey);
     console.log('🚀 ~ file: keyring.ts:573 ~ publicKey:', publicKey);
-    this.ledgerPublicKey = publicKey;
     const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
