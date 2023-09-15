@@ -572,6 +572,7 @@ export class KeyRing {
 
     console.log('address 3> ===', address, publicKey);
     console.log('🚀 ~ file: keyring.ts:573 ~ publicKey:', publicKey);
+    this.ledgerPublicKey = publicKey;
     const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
@@ -581,10 +582,9 @@ export class KeyRing {
     });
 
     if (keyStoreInMulti) {
-      const keyStoreAddresses = { ...keyStoreInMulti.addresses };
+      // const keyStoreAddresses = { ...keyStoreInMulti.addresses };
 
       const returnedAddresses = handleAddressLedgerByChainId(
-        keyStoreAddresses,
         ledgerAppType,
         address,
         chainId
