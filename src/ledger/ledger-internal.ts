@@ -228,31 +228,6 @@ export class LedgerInternal {
         throw new Error('Not found messageStr for ledger app type BTC');
       }
       const msgObject = JSON.parse(messageStr);
-      console.log(
-        '🚀 ~ file: ledger-internal.ts:226 ~ LedgerInternal ~ sign ~ msgObject:',
-        msgObject
-      );
-      console.log(
-        '🚀 ~ file: ledger-internal.ts:235 ~ LedgerInternal ~ sign ~ msgObject.msgs.amount:',
-        msgObject.msgs.amount
-      );
-      console.log(
-        '🚀 ~ file: ledger-internal.ts:235 ~ LedgerInternal ~ sign ~ stringifyPath(path):',
-        stringifyPath(path)
-      );
-      console.log(
-        '🚀 ~ file: ledger-internal.ts:239 ~ LedgerInternal ~ sign ~ msgObject.utxos:',
-        msgObject.utxos
-      );
-      console.log(
-        '🚀 ~ file: ledger-internal.ts:242 ~ LedgerInternal ~ sign ~ msgObject.msgs.address:',
-        msgObject.msgs.address
-      );
-      console.log(
-        ' ~ file: ledger-internal.ts:247 ~ LedgerInternal ~ sign ~ msgObject.msgs.selectedCrypto:',
-        msgObject.msgs.selectedCrypto
-      );
-
       try {
         const utxos = await Promise.all(
           msgObject.utxos.map(async (utxo) => {
@@ -260,31 +235,11 @@ export class LedgerInternal {
               txHash: utxo.txid,
               coin: msgObject.msgs.selectedCrypto
             });
-            console.log(
-              '🚀 ~ file: ledger-internal.ts:260 ~ LedgerInternal ~ [...msgObject.utxos].map ~ transaction:',
-              transaction
-            );
             return {
               hex: transaction.data.hex,
               ...utxo
             };
           })
-        );
-        console.log(
-          '🚀 ~ file: ledger-internal.ts:265 ~ LedgerInternal ~ sign ~ res:',
-          utxos
-        );
-        console.log(
-          '🚀 ~ file: ledger-internal.ts:279 ~ LedgerInternal ~ sign ~ msgObject.msgs.changeAddress:',
-          msgObject.msgs.changeAddress
-        );
-        console.log(
-          '🚀 ~ file: ledger-internal.ts:282 ~ LedgerInternal ~ sign ~ msgObject.msgs.confirmedBalance:',
-          msgObject.msgs.confirmedBalance
-        );
-        console.log(
-          '🚀 ~ file: ledger-internal.ts:285 ~ LedgerInternal ~ sign ~ msgObject.msgs.totalFee:',
-          msgObject.msgs.totalFee
         );
         const signature = await this.signTransactionBtc(
           stringifyPath(path),
@@ -333,21 +288,11 @@ export class LedgerInternal {
     message: string
   ): Promise<string> {
     const txs = utxos.map((utxo) => {
-      console.log(
-        '🚀 ~ file: ledger-internal.ts:318 ~ LedgerInternal ~ txs ~ utxo:',
-        utxo
-      );
       return {
         tx: this.ledgerApp.splitTransaction(utxo.hex, true),
         ...utxo
       };
     });
-
-    console.log(
-      '🚀 ~ file: ledger-internal.ts:263 ~ LedgerInternal ~ txs ~ txs:',
-      txs
-    );
-
     const script = payments.p2wpkh({
       address: toAddress,
       network: getCoinNetwork(selectCrypto)
@@ -356,20 +301,8 @@ export class LedgerInternal {
       address: changeAddress,
       network: getCoinNetwork(selectCrypto)
     });
-    console.log(
-      '🚀 ~ file: ledger-internal.ts:352 ~ LedgerInternal ~ scriptChangeAddress:',
-      scriptChangeAddress
-    );
-    console.log(
-      '🚀 ~ file: ledger-internal.ts:269 ~ LedgerInternal ~ script:',
-      script
-    );
     const refundBalance =
       BigInt(confirmAmount) - (BigInt(amount) + BigInt(feeAmount));
-    console.log(
-      '🚀 ~ file: ledger-internal.ts:361 ~ LedgerInternal ~ refundBalance:',
-      refundBalance
-    );
     const targets = [
       {
         amount: toBufferLE(BigInt(amount), 8),
@@ -397,10 +330,6 @@ export class LedgerInternal {
       });
       targets.push({ script: embed.output, amount: toBufferLE(0, 8) });
     }
-    console.log(
-      '🚀 ~ file: ledger-internal.ts:399 ~ LedgerInternal ~ targets:',
-      targets
-    );
     const outputScript = this.ledgerApp
       .serializeTransactionOutputs({
         version: Buffer.from('01000000', 'hex'),
@@ -408,16 +337,9 @@ export class LedgerInternal {
         outputs: targets
       })
       .toString('hex');
-    console.log(
-      '🚀 ~ file: ledger-internal.ts:283 ~ LedgerInternal ~ outputScript:',
-      outputScript
-    );
+
     const associatedKeysets = txs.map((tx) => path);
-    console.log(
-      '🚀 ~ file: ledger-internal.ts:357 ~ LedgerInternal ~ associatedKeysets:',
-      associatedKeysets
-    );
-    return this.ledgerApp.createPaymentTransactionNew({
+    const signature = this.ledgerApp.createPaymentTransactionNew({
       inputs: txs.map((utxo) => {
         return [utxo.tx, utxo.vout, null, null];
       }),
@@ -426,6 +348,8 @@ export class LedgerInternal {
       segwit: true,
       additionals: ['bitcoin', 'bech32']
     });
+    console.log("🚀 ~ file: ledger-internal.ts:351 ~ LedgerInternal ~ signature:", signature)
+    return signature;
   }
   static async isWebHIDSupported(): Promise<boolean> {
     return await TransportWebHID.isSupported();

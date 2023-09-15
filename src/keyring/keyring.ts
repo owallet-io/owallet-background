@@ -700,10 +700,6 @@ export class KeyRing {
         throw new Error('Ledger public key not set');
       }
 
-      console.log(
-        '🚀 ~ file: keyring.ts:698 ~ loadKey ~ this.addresses2:',
-        this.addresses.btc
-      );
       // goes here
       // This need to be check by network type or cointype, cause now we support ledger with evm too, but this pubKey.getAddress() is hardcoded by cosmos address
       const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
@@ -738,7 +734,7 @@ export class KeyRing {
           keyDerivationPath: '84'
         });
         // console.log('private key length: ', keyPair.privateKey.length);
-
+        //this is address type legacyAddress using path m44'/0'/0/0/0 for bitcoin
         const legacyAddress = getAddress(keyPair, chainId, 'legacy');
         return {
           algo: 'secp256k1',
