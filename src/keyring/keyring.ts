@@ -521,7 +521,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -565,7 +565,7 @@ export class KeyRing {
 
     console.log('address 3> ===', address, publicKey);
 
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -836,6 +836,7 @@ export class KeyRing {
       const privKey = this.loadPrivKey(coinType);
       console.log('privKey: ', privKey);
       // Check cointype = 60 in the case that network is evmos(still cosmos but need to sign with ethereum)
+      console.log('🚀 ~ file: keyring.ts:840 ~ coinType:', coinType);
       if (networkType === 'evm' || coinType === 60) {
         // Only check coinType === 195 for Tron network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
@@ -848,6 +849,7 @@ export class KeyRing {
 
           return Buffer.from(transactionSign?.signature?.[0], 'hex');
         }
+
         return this.signEthereum(privKey, message);
       }
       return privKey.sign(message);
@@ -1100,7 +1102,7 @@ export class KeyRing {
       const privKey = this.loadPrivKey(60);
       const privKeyBuffer = Buffer.from(privKey.toBytes());
       const response = await Promise.all(
-        message[0].map(async data => {
+        message[0].map(async (data) => {
           const encryptedData = {
             ciphertext: Buffer.from(data.ciphertext, 'hex'),
             ephemPublicKey: Buffer.from(data.ephemPublicKey, 'hex'),
@@ -1394,7 +1396,7 @@ export class KeyRing {
         );
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map(item =>
+      const typeValuePairs = value.map((item) =>
         this.encodeField(types, name, parsedType, item, version)
       );
       return [
