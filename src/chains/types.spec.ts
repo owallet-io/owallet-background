@@ -503,8 +503,8 @@ describe('Test chain info schema', () => {
         rpc: 'http://test.com',
         rest: 'http://test.com',
         chainId: 'test-1',
+        networkType: 'cosmos',
         chainName: 'Test',
-        networkType: "cosmos",
         stakeCurrency: {
           coinDenom: 'TEST',
           coinMinimalDenom: 'utest',

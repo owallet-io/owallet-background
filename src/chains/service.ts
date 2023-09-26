@@ -1,15 +1,18 @@
 import { delay, inject, singleton } from 'tsyringe';
 import { TYPES } from '../types';
 
-import { ChainInfoSchema, ChainInfoWithCoreTypes, ChainInfoWithEmbed } from './types';
+import {
+  ChainInfoSchema,
+  ChainInfoWithCoreTypes,
+  ChainInfoWithEmbed
+} from './types';
 import { ChainInfo, ChainInfoWithoutEndpoints } from '@owallet/types';
 import { KVStore, Debouncer } from '@owallet/common';
 import { ChainUpdaterService } from '../updater';
 import { InteractionService } from '../interaction';
 import { Env } from '@owallet/router';
-import { SuggestChainInfoMsg } from './messages';
 import { ChainIdHelper } from '@owallet/cosmos';
-import { Mutable, Optional } from "utility-types";
+import { Mutable, Optional } from 'utility-types';
 
 type ChainRemovedHandler = (chainId: string, identifier: string) => void;
 
@@ -27,7 +30,7 @@ export class ChainsService {
     protected readonly chainUpdaterKeeper: ChainUpdaterService,
     @inject(delay(() => InteractionService))
     protected readonly interactionKeeper: InteractionService
-  ) { }
+  ) {}
 
   readonly getChainInfos: () => Promise<ChainInfoWithEmbed[]> =
     Debouncer.promise(async () => {
@@ -35,7 +38,7 @@ export class ChainsService {
         return this.cachedChainInfos;
       }
 
-      const chainInfos = this.embedChainInfos.map((chainInfo) => {
+      const chainInfos = this.embedChainInfos.map(chainInfo => {
         return {
           ...chainInfo,
           embeded: true
@@ -53,7 +56,7 @@ export class ChainsService {
       const savedChainInfos: ChainInfoWithEmbed[] = (
         (await this.kvStore.get<ChainInfo[]>('chain-infos')) ?? []
       )
-        .filter((chainInfo) => {
+        .filter(chainInfo => {
           // Filter the overlaped chain info with the embeded chain infos.
           return !embedChainInfoIdentifierMap.get(
             ChainIdHelper.parse(chainInfo.chainId).identifier
@@ -70,7 +73,7 @@ export class ChainsService {
 
       // Set the updated property of the chain.
       result = await Promise.all(
-        result.map(async (chainInfo) => {
+        result.map(async chainInfo => {
           const updated: ChainInfo =
             await this.chainUpdaterKeeper.putUpdatedPropertyToChainInfo(
               chainInfo
@@ -94,14 +97,14 @@ export class ChainsService {
 
   async getChainInfosWithoutEndpoints(): Promise<ChainInfoWithoutEndpoints[]> {
     return (await this.getChainInfos()).map<ChainInfoWithoutEndpoints>(
-      (chainInfo) => {
+      chainInfo => {
         const chainInfoMutable: Mutable<
           Optional<
             ChainInfoWithCoreTypes,
-            "rpc" | "rest" | "updateFromRepoDisabled" | "embeded"
+            'rpc' | 'rest' | 'updateFromRepoDisabled' | 'embeded'
           >
         > = {
-          ...chainInfo,
+          ...chainInfo
         };
 
         // Should remove fields not related to `ChainInfoWithoutEndpoints`
@@ -118,12 +121,15 @@ export class ChainsService {
     );
   }
 
-  async getChainInfo(chainId: string, networkType?: string): Promise<ChainInfoWithEmbed> {
-
+  async getChainInfo(
+    chainId: string,
+    networkType?: string
+  ): Promise<ChainInfoWithEmbed> {
     var chainInfo: ChainInfoWithEmbed;
+
     if (networkType) {
       if (networkType === 'evm') {
-         // need to check if network type is evm, then we will convert chain id to number from hex
+        // need to check if network type is evm, then we will convert chain id to number from hex
         chainInfo = (await this.getChainInfos()).find(chainInfo => {
           return (
             ChainIdHelper.parse(Number(chainInfo.chainId)).identifier ===
@@ -141,7 +147,7 @@ export class ChainsService {
         });
       }
     } else {
-      chainInfo = (await this.getChainInfos()).find((chainInfo) => {
+      chainInfo = (await this.getChainInfos()).find(chainInfo => {
         return (
           ChainIdHelper.parse(chainInfo.chainId).identifier ===
           ChainIdHelper.parse(chainId).identifier
@@ -167,7 +173,7 @@ export class ChainsService {
 
   async hasChainInfo(chainId: string): Promise<boolean> {
     return (
-      (await this.getChainInfos()).find((chainInfo) => {
+      (await this.getChainInfos()).find(chainInfo => {
         return (
           ChainIdHelper.parse(chainInfo.chainId).identifier ===
           ChainIdHelper.parse(chainId).identifier
@@ -185,32 +191,38 @@ export class ChainsService {
       stripUnknown: true
     });
 
-    await this.interactionKeeper.waitApprove(
-      env,
-      '/suggest-chain',
-      SuggestChainInfoMsg.type(),
-      {
-        ...chainInfo,
-        origin
-      }
-    );
+    // await this.interactionKeeper.waitApprove(
+    //   env,
+    //   '/suggest-chain',
+    //   SuggestChainInfoMsg.type(),
+    //   {
+    //     ...chainInfo,
+    //     origin
+    //   }
+    // );
+
+    console.log('chainInfo 1 ===', chainInfo);
 
     await this.addChainInfo(chainInfo);
   }
 
   async addChainInfo(chainInfo: ChainInfo): Promise<void> {
-    if (await this.hasChainInfo(chainInfo.chainId)) {
-      throw new Error('Same chain is already registered');
+    try {
+      if (await this.hasChainInfo(chainInfo.chainId)) {
+        throw new Error('Same chain is already registered');
+      }
+
+      const savedChainInfos =
+        (await this.kvStore.get<ChainInfo[]>('chain-infos')) ?? [];
+
+      savedChainInfos.push(chainInfo);
+
+      await this.kvStore.set<ChainInfo[]>('chain-infos', savedChainInfos);
+
+      this.clearCachedChainInfos();
+    } catch (error) {
+      console.log('addChainInfo err ===', error);
     }
-
-    const savedChainInfos =
-      (await this.kvStore.get<ChainInfo[]>('chain-infos')) ?? [];
-
-    savedChainInfos.push(chainInfo);
-
-    await this.kvStore.set<ChainInfo[]>('chain-infos', savedChainInfos);
-
-    this.clearCachedChainInfos();
   }
 
   async removeChainInfo(chainId: string): Promise<void> {
@@ -225,7 +237,7 @@ export class ChainsService {
     const savedChainInfos =
       (await this.kvStore.get<ChainInfo[]>('chain-infos')) ?? [];
 
-    const resultChainInfo = savedChainInfos.filter((chainInfo) => {
+    const resultChainInfo = savedChainInfos.filter(chainInfo => {
       return (
         ChainIdHelper.parse(chainInfo.chainId).identifier !==
         ChainIdHelper.parse(chainId).identifier

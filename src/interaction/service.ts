@@ -6,7 +6,7 @@ import {
   Env,
   FnRequestInteractionOptions,
   MessageRequester,
-  OWalletError,
+  OWalletError
 } from '@owallet/router';
 import { PushEventDataMsg, PushInteractionDataMsg } from './foreground';
 import { RNG } from '@owallet/crypto';
@@ -34,10 +34,10 @@ export class InteractionService {
 
     const msg = new PushEventDataMsg({
       type,
-      data,
+      data
     });
 
-    this.eventMsgRequester.sendMessage(port, msg).catch((e) => {
+    this.eventMsgRequester.sendMessage(port, msg).catch(e => {
       console.log(`Failed to send the event to ${port}: ${e.message}`);
     });
   }
@@ -59,12 +59,18 @@ export class InteractionService {
       env.isInternalMsg,
       data
     );
-    console.log("🚀 ~ file: service.ts ~ line 62 ~ InteractionService ~ interactionWaitingData", interactionWaitingData)
+    console.log(
+      '🚀 ~ file: service.ts ~ line 62 ~ InteractionService ~ interactionWaitingData',
+      interactionWaitingData
+    );
 
     // console.log('interactionWaitingData', interactionWaitingData);
 
     const msg = new PushInteractionDataMsg(interactionWaitingData);
-    console.log("🚀 ~ file: service.ts ~ line 65 ~ InteractionService ~ msg", msg)
+    console.log(
+      '🚀 ~ file: service.ts ~ line 65 ~ InteractionService ~ msg',
+      msg
+    );
 
     return await this.wait(msg.data.id, () => {
       env.requestInteraction(url, msg, options);
@@ -79,9 +85,8 @@ export class InteractionService {
     return new Promise<unknown>((resolve, reject) => {
       this.resolverMap.set(id, {
         onApprove: resolve,
-        onReject: reject,
+        onReject: reject
       });
-
       fn();
     });
   }
@@ -115,7 +120,7 @@ export class InteractionService {
   ): Promise<InteractionWaitingData> {
     const bytes = new Uint8Array(8);
     const id: string = Array.from(await this.rng(bytes))
-      .map((value) => {
+      .map(value => {
         return value.toString(16);
       })
       .join('');
@@ -124,7 +129,7 @@ export class InteractionService {
       id,
       type,
       isInternal,
-      data,
+      data
     };
 
     if (this.waitingMap.has(id)) {

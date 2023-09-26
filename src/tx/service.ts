@@ -96,6 +96,7 @@ export class BackgroundTxService {
       message: 'Wait a second'
     });
 
+    // here
     const isProtoTx = Buffer.isBuffer(tx) || tx instanceof Uint8Array;
 
     const params = isProtoTx
@@ -142,6 +143,7 @@ export class BackgroundTxService {
       return txHash;
     } catch (e: any) {
       console.log(e);
+      alert(e.message);
       BackgroundTxService.processTxErrorNotification(this.notification, e);
       throw e;
     }
@@ -160,8 +162,6 @@ export class BackgroundTxService {
 
   async request(chainId: string, method: string, params: any[]): Promise<any> {
     let chainInfo: ChainInfoWithEmbed;
-    console.log('method in request: ', method);
-
     switch (method) {
       case 'eth_accounts':
       case 'eth_requestAccounts':
@@ -169,16 +169,15 @@ export class BackgroundTxService {
         if (chainInfo.coinType !== 60) return undefined;
         const chainIdOrCoinType = params.length ? parseInt(params[0]) : chainId; // default is cointype 60 for ethereum based
         const key = await this.keyRingService.getKey(chainIdOrCoinType);
-
         const ledgerCheck = await this.keyRingService.getKeyRingType();
         if (ledgerCheck === 'ledger') {
-          const addresses = await this.keyRingService.getKeyRingLedgerAddress();
+          const addresses =
+            await this.keyRingService.getKeyRingLedgerAddresses();
           return [`${addresses?.eth}`];
         }
         return [`0x${Buffer.from(key.address).toString('hex')}`];
       case 'wallet_switchEthereumChain' as any:
         const { chainId: inputChainId, isEvm } = this.parseChainId(params[0]);
-        console.log('ChainId when switch: ', inputChainId);
         chainInfo = isEvm
           ? await this.chainsService.getChainInfo(inputChainId, 'evm')
           : await this.chainsService.getChainInfo(inputChainId);

@@ -18,6 +18,7 @@ import {
   AddLedgerKeyMsg,
   GetIsKeyStoreCoinTypeSetMsg,
   SetKeyStoreCoinTypeMsg,
+  SetKeyStoreLedgerAddressMsg,
   RestoreKeyRingMsg,
   CheckPasswordMsg,
   ExportKeyRingDatasMsg,
@@ -26,7 +27,6 @@ import {
   RequestSignEthereumTypedDataMsg,
   RequestSignReEncryptDataMsg,
   RequestSignDecryptDataMsg,
-  SetKeyStoreLedgerAddressMsg,
   RequestPublicKeyMsg,
   ChangeChainMsg,
   RequestSignTronMsg,
@@ -56,7 +56,6 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(RequestSignEthereumMsg);
   router.registerMessage(RequestSignTronMsg);
   router.registerMessage(RequestSignEthereumTypedDataMsg);
-  // thang3
   router.registerMessage(RequestPublicKeyMsg);
   router.registerMessage(SetKeyStoreLedgerAddressMsg);
   router.registerMessage(RequestSignDecryptDataMsg);
@@ -69,7 +68,6 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(CheckPasswordMsg);
   router.registerMessage(ExportKeyRingDatasMsg);
 
-  //
   router.registerMessage(ChangeChainMsg);
 
   router.addHandler(ROUTE, getHandler(service));

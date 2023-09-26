@@ -630,6 +630,68 @@ export class RequestSignDirectMsg extends Message<{
   }
 }
 
+// request sign tron goes here
+export class RequestSignTronMsg extends Message<{}> {
+  public static type() {
+    return 'request-sign-tron';
+  }
+
+  constructor(public readonly chainId: string, public readonly data: object) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignTronMsg.type();
+  }
+}
+
+export class GetDefaultAddressTronMsg extends Message<{
+  hex?: string;
+  base58?: string;
+  name?: string;
+  type?: number;
+}> {
+  public static type() {
+    return 'get-default-address-tron';
+  }
+
+  constructor(public readonly chainId: string) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return GetDefaultAddressTronMsg.type();
+  }
+}
+
 // request sign ethereum goes here
 export class RequestSignEthereumMsg extends Message<{
   readonly rawTxHex: string; // raw tx signature to broadcast
@@ -686,70 +748,6 @@ export class RequestSignEthereumMsg extends Message<{
 
   type(): string {
     return RequestSignEthereumMsg.type();
-  }
-}
-
-// request sign tron  goes here
-export class RequestSignTronMsg extends Message<object> {
-  public static type() {
-    return 'request-sign-tron';
-  }
-
-  constructor(public readonly chainId: string, public readonly data: object) {
-    super();
-  }
-
-  validateBasic(): void {
-    if (!this.chainId) {
-      throw new OWalletError('keyring', 270, 'chain id not set');
-    }
-
-    if (!this.data) {
-      throw new OWalletError('keyring', 231, 'data not set');
-    }
-  }
-
-  approveExternal(): boolean {
-    return true;
-  }
-
-  route(): string {
-    return ROUTE;
-  }
-
-  type(): string {
-    return RequestSignTronMsg.type();
-  }
-}
-
-export class SetKeyStoreLedgerAddressMsg extends Message<KeyRingStatus> {
-  public static type() {
-    return 'set-keystore-ledger-address';
-  }
-
-  constructor(
-    public readonly bip44HDPath: string,
-    public readonly chainId: number | string
-  ) {
-    super();
-  }
-
-  validateBasic(): void {
-    if (this.bip44HDPath === '') {
-      throw new OWalletError(
-        'keyring',
-        240,
-        'bip44HDPath address can not be empty'
-      );
-    }
-  }
-
-  route(): string {
-    return ROUTE;
-  }
-
-  type(): string {
-    return SetKeyStoreLedgerAddressMsg.type();
   }
 }
 
@@ -869,6 +867,88 @@ export class RequestSignDecryptDataMsg extends Message<{
   }
 }
 
+export class RequestSignProxyReEncryptionDataMsg extends Message<{
+  readonly result: string; // raw tx signature to broadcast
+}> {
+  public static type() {
+    return 'request-sign-proxy-re-encryption-data';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: object // public readonly signOptions: OWalletSignOptions = {}
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+
+    // if (!this.signOptions) {
+    //   throw new Error('Sign options are null');
+    // }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignProxyReEncryptionDataMsg.type();
+  }
+}
+
+export class RequestSignProxyDecryptionDataMsg extends Message<{
+  readonly result: string; // raw tx signature to broadcast
+}> {
+  public static type() {
+    return 'request-sign-proxy-deryption-data';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: object // public readonly signOptions: OWalletSignOptions = {}
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+
+    // if (!this.signOptions) {
+    //   throw new Error('Sign options are null');
+    // }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignProxyDecryptionDataMsg.type();
+  }
+}
+
 export class RequestSignReEncryptDataMsg extends Message<{
   readonly result: string; // raw tx signature to broadcast
 }> {
@@ -975,35 +1055,6 @@ export class GetMultiKeyStoreInfoMsg extends Message<{
 
   type(): string {
     return GetMultiKeyStoreInfoMsg.type();
-  }
-}
-
-export class GetDefaultAddressTronMsg extends Message<{
-  hex?: string;
-  base58?: string;
-  name?: string;
-  type?: number;
-}> {
-  public static type() {
-    return 'get-default-address-tron';
-  }
-
-  constructor(public readonly chainId: string) {
-    super();
-  }
-
-  validateBasic(): void {
-    if (!this.chainId) {
-      throw new OWalletError('keyring', 270, 'chain id not set');
-    }
-  }
-
-  route(): string {
-    return ROUTE;
-  }
-
-  type(): string {
-    return GetDefaultAddressTronMsg.type();
   }
 }
 
@@ -1130,6 +1181,44 @@ export class SetKeyStoreCoinTypeMsg extends Message<KeyRingStatus> {
 
   type(): string {
     return SetKeyStoreCoinTypeMsg.type();
+  }
+}
+
+export class SetKeyStoreLedgerAddressMsg extends Message<KeyRingStatus> {
+  public static type() {
+    return 'set-keystore-ledger-address';
+  }
+
+  constructor(
+    public readonly bip44HDPath: string,
+    public readonly chainId: string | number
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (this.bip44HDPath === '') {
+      throw new OWalletError(
+        'keyring',
+        240,
+        'bip44HDPath address can not be empty'
+      );
+    }
+    if (this.chainId === '') {
+      throw new OWalletError(
+        'keyring',
+        240,
+        'chainId address can not be empty'
+      );
+    }
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return SetKeyStoreLedgerAddressMsg.type();
   }
 }
 
