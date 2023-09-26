@@ -33,7 +33,7 @@ import {
   CommonCrypto,
   ECDSASignature,
   ExportKeyRingData,
-  ledgerAddresses,
+  AddressesLedger,
   MessageTypeProperty,
   MessageTypes,
   SignTypedDataVersion,
@@ -59,7 +59,7 @@ export type MultiKeyStoreInfoElem = Pick<KeyStore, 'version' | 'type' | 'meta' |
 export type MultiKeyStoreInfo = MultiKeyStoreInfoElem[];
 export type MultiKeyStoreInfoWithSelectedElem = MultiKeyStoreInfoElem & {
   selected: boolean;
-  addresses?: ledgerAddresses;
+  addresses?: AddressesLedger;
 };
 export type MultiKeyStoreInfoWithSelected = MultiKeyStoreInfoWithSelectedElem[];
 
@@ -126,15 +126,15 @@ export class KeyRing {
     }
   }
 
-  public static getLedgerAddressOfKeyStore(keyStore: Omit<KeyStore, 'crypto'>): ledgerAddresses {
+  public static getLedgerAddressOfKeyStore(keyStore: Omit<KeyStore, 'crypto'>): AddressesLedger {
     const addresses = keyStore.addresses;
     console.log('keyStore getLedgerAddressOfKeyStore==', keyStore?.addresses);
     return addresses;
   }
 
-  public get addresses(): ledgerAddresses {
+  public get addresses(): AddressesLedger {
     if (!this.keyStore) {
-      return {} as ledgerAddresses;
+      return {} as AddressesLedger;
     } else {
       return KeyRing.getLedgerAddressOfKeyStore(this.keyStore);
     }
@@ -1557,7 +1557,7 @@ export class KeyRing {
     password: string,
     meta: Record<string, string>,
     bip44HDPath: BIP44HDPath,
-    addresses?: ledgerAddresses
+    addresses?: AddressesLedger
   ): Promise<KeyStore> {
     return await Crypto.encrypt(rng, crypto, kdf, 'ledger', Buffer.from(publicKey).toString('hex'), password, meta, bip44HDPath, addresses);
   }

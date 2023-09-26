@@ -5,7 +5,7 @@ import { Key, KeyRing, KeyRingStatus, MultiKeyStoreInfoWithSelected } from './ke
 
 import { Bech32Address, checkAndValidateADR36AminoSignDoc, makeADR36AminoSignDoc, verifyADR36AminoSignDoc } from '@owallet/cosmos';
 import {
-  ledgerAddresses,
+  AddressesLedger,
   BIP44HDPath,
   CommonCrypto,
   ECDSASignature,
@@ -212,7 +212,7 @@ export class KeyRingService {
   //   );
   // }
 
-  getKeyRingLedgerAddress(): ledgerAddresses {
+  getKeyRingLedgerAddress(): AddressesLedger {
     return this.keyRing.addresses;
   }
 
