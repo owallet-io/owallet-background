@@ -222,8 +222,8 @@ export class KeyRingService {
     return this.keyRing.status;
   }
 
-  async unlock(password: string): Promise<KeyRingStatus> {
-    await this.keyRing.unlock(password);
+  async unlock(password: string, saving: boolean): Promise<KeyRingStatus> {
+    await this.keyRing.unlock(password, saving);
 
     return this.keyRing.status;
   }

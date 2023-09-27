@@ -370,7 +370,6 @@ export class KeyRing {
     const encryptedBytes = aesCtr.encrypt(Buffer.from(this._iv + password));
 
     await this.kvStore.set('passcode', Buffer.from(encryptedBytes).toString('base64'));
-    console.log(encryptedBytes, await this.kvStore.get<string>('passcode'));
   }
 
   public async save() {
@@ -513,7 +512,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -548,7 +547,7 @@ export class KeyRing {
 
     console.log('address 3> ===', address, publicKey);
 
-    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -993,7 +992,7 @@ export class KeyRing {
       const privKey = this.loadPrivKey(60);
       const privKeyBuffer = Buffer.from(privKey.toBytes());
       const response = await Promise.all(
-        message[0].map(async (data) => {
+        message[0].map(async data => {
           const encryptedData = {
             ciphertext: Buffer.from(data.ciphertext, 'hex'),
             ephemPublicKey: Buffer.from(data.ephemPublicKey, 'hex'),
@@ -1220,7 +1219,7 @@ export class KeyRing {
         throw new Error('Arrays are unimplemented in encodeData; use V4 extension');
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map((item) => this.encodeField(types, name, parsedType, item, version));
+      const typeValuePairs = value.map(item => this.encodeField(types, name, parsedType, item, version));
       return [
         'bytes32',
         keccak(
