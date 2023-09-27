@@ -9,6 +9,7 @@ import {
   getNetworkTypeByBip44HDPath,
   getNetworkTypeByChainId,
   KVStore,
+  KVStoreType,
   splitPath
 } from '@owallet/common';
 import { ChainIdHelper } from '@owallet/cosmos';
@@ -368,7 +369,7 @@ export class KeyRing {
     // add prefix to make passcode more obfuscated
     crypto.getRandomValues(prefix);
     const encryptedBytes = aesCtr.encrypt(Buffer.from(this._iv + password));
-    if (this.kvStore.type() === 'extension') {
+    if (this.kvStore.type() === KVStoreType.extension) {
       await this.kvStore.set('passcode', Buffer.from(encryptedBytes).toString('base64'));
     }
   }
