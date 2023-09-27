@@ -354,9 +354,9 @@ export class KeyRing {
     } else {
       throw new Error('Unexpected type of keyring');
     }
+    this.password = password;
 
     if (saving) {
-      this.password = password;
       await this.savePasscode(password);
     }
   }
@@ -385,7 +385,7 @@ export class KeyRing {
     return key;
   }
 
-  public async restore() {
+  public async restore(saving = true) {
     if (this.loading) return this.loading;
     this.loading = new Promise(async (resolve, reject) => {
       try {
@@ -418,7 +418,9 @@ export class KeyRing {
               await this.kvStore.set('passcode', null);
             }
           } else {
-            await this.savePasscode(this.password);
+            if (saving) {
+              await this.savePasscode(this.password);
+            }
           }
         }
         const multiKeyStore = await this.kvStore.get<KeyStore[]>(KeyMultiStoreKey);
