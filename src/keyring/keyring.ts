@@ -368,8 +368,9 @@ export class KeyRing {
     // add prefix to make passcode more obfuscated
     crypto.getRandomValues(prefix);
     const encryptedBytes = aesCtr.encrypt(Buffer.from(this._iv + password));
-
-    await this.kvStore.set('passcode', Buffer.from(encryptedBytes).toString('base64'));
+    if (this.kvStore.type() === 'extension') {
+      await this.kvStore.set('passcode', Buffer.from(encryptedBytes).toString('base64'));
+    }
   }
 
   public async save() {
@@ -385,7 +386,7 @@ export class KeyRing {
     return key;
   }
 
-  public async restore(saving = true) {
+  public async restore() {
     if (this.loading) return this.loading;
     this.loading = new Promise(async (resolve, reject) => {
       try {
@@ -418,9 +419,7 @@ export class KeyRing {
               await this.kvStore.set('passcode', null);
             }
           } else {
-            if (saving) {
-              await this.savePasscode(this.password);
-            }
+            await this.savePasscode(this.password);
           }
         }
         const multiKeyStore = await this.kvStore.get<KeyStore[]>(KeyMultiStoreKey);
