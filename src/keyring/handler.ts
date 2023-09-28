@@ -45,9 +45,7 @@ import { Bech32Address, cosmos } from '@owallet/cosmos';
 import { Address } from '@owallet/crypto';
 import Long from 'long';
 
-export const getHandler: (service: KeyRingService) => Handler = (
-  service: KeyRingService
-) => {
+export const getHandler: (service: KeyRingService) => Handler = (service: KeyRingService) => {
   return (env: Env, msg: Message<unknown>) => {
     switch (msg.constructor) {
       case RestoreKeyRingMsg:
@@ -55,31 +53,19 @@ export const getHandler: (service: KeyRingService) => Handler = (
       case DeleteKeyRingMsg:
         return handleDeleteKeyRingMsg(service)(env, msg as DeleteKeyRingMsg);
       case UpdateNameKeyRingMsg:
-        return handleUpdateNameKeyRingMsg(service)(
-          env,
-          msg as UpdateNameKeyRingMsg
-        );
+        return handleUpdateNameKeyRingMsg(service)(env, msg as UpdateNameKeyRingMsg);
       case ShowKeyRingMsg:
         return handleShowKeyRingMsg(service)(env, msg as ShowKeyRingMsg);
       case CreateMnemonicKeyMsg:
-        return handleCreateMnemonicKeyMsg(service)(
-          env,
-          msg as CreateMnemonicKeyMsg
-        );
+        return handleCreateMnemonicKeyMsg(service)(env, msg as CreateMnemonicKeyMsg);
       case AddMnemonicKeyMsg:
         return handleAddMnemonicKeyMsg(service)(env, msg as AddMnemonicKeyMsg);
       case CreatePrivateKeyMsg:
-        return handleCreatePrivateKeyMsg(service)(
-          env,
-          msg as CreatePrivateKeyMsg
-        );
+        return handleCreatePrivateKeyMsg(service)(env, msg as CreatePrivateKeyMsg);
       case AddPrivateKeyMsg:
         return handleAddPrivateKeyMsg(service)(env, msg as AddPrivateKeyMsg);
       case CreateLedgerKeyMsg:
-        return handleCreateLedgerKeyMsg(service)(
-          env,
-          msg as CreateLedgerKeyMsg
-        );
+        return handleCreateLedgerKeyMsg(service)(env, msg as CreateLedgerKeyMsg);
       case AddLedgerKeyMsg:
         return handleAddLedgerKeyMsg(service)(env, msg as AddLedgerKeyMsg);
       case LockKeyRingMsg:
@@ -89,20 +75,11 @@ export const getHandler: (service: KeyRingService) => Handler = (
       case GetKeyMsg:
         return handleGetKeyMsg(service)(env, msg as GetKeyMsg);
       case RequestSignAminoMsg:
-        return handleRequestSignAminoMsg(service)(
-          env,
-          msg as RequestSignAminoMsg
-        );
+        return handleRequestSignAminoMsg(service)(env, msg as RequestSignAminoMsg);
       case RequestVerifyADR36AminoSignDoc:
-        return handleRequestVerifyADR36AminoSignDoc(service)(
-          env,
-          msg as RequestVerifyADR36AminoSignDoc
-        );
+        return handleRequestVerifyADR36AminoSignDoc(service)(env, msg as RequestVerifyADR36AminoSignDoc);
       case RequestSignDirectMsg:
-        return handleRequestSignDirectMsg(service)(
-          env,
-          msg as RequestSignDirectMsg
-        );
+        return handleRequestSignDirectMsg(service)(env, msg as RequestSignDirectMsg);
       case RequestSignEthereumMsg:
         return handleRequestSignEthereumMsg(service)(
           env,
@@ -114,58 +91,31 @@ export const getHandler: (service: KeyRingService) => Handler = (
           msg as RequestSignBitcoinMsg
         );
       case RequestSignTronMsg:
-        return handleRequestSignTronMsg(service)(
-          env,
-          msg as RequestSignTronMsg
-        );
+        return handleRequestSignTronMsg(service)(env, msg as RequestSignTronMsg);
       case RequestSignEthereumTypedDataMsg:
-        return handleRequestSignEthereumTypedData(service)(
-          env,
-          msg as RequestSignEthereumTypedDataMsg
-        );
+        return handleRequestSignEthereumTypedData(service)(env, msg as RequestSignEthereumTypedDataMsg);
       case RequestPublicKeyMsg:
         return handleRequestPublicKey(service)(env, msg as RequestPublicKeyMsg);
       case RequestSignDecryptDataMsg:
-        return handleRequestSignDecryptionData(service)(
-          env,
-          msg as RequestSignDecryptDataMsg
-        );
+        return handleRequestSignDecryptionData(service)(env, msg as RequestSignDecryptDataMsg);
       case RequestSignProxyReEncryptionDataMsg:
-        return handleRequestSignProxyReEncryptionData(service)(
-          env,
-          msg as RequestSignReEncryptDataMsg
-        );
+        return handleRequestSignProxyReEncryptionData(service)(env, msg as RequestSignReEncryptDataMsg);
       case GetMultiKeyStoreInfoMsg:
-        return handleGetMultiKeyStoreInfoMsg(service)(
-          env,
-          msg as GetMultiKeyStoreInfoMsg
-        );
+        return handleGetMultiKeyStoreInfoMsg(service)(env, msg as GetMultiKeyStoreInfoMsg);
       case GetDefaultAddressTronMsg:
         return handleGetDefaultAddressMsg(service)(env, msg as any);
       case ChangeKeyRingMsg:
         return handleChangeKeyRingMsg(service)(env, msg as ChangeKeyRingMsg);
       case GetIsKeyStoreCoinTypeSetMsg:
-        return handleGetIsKeyStoreCoinTypeSetMsg(service)(
-          env,
-          msg as GetIsKeyStoreCoinTypeSetMsg
-        );
+        return handleGetIsKeyStoreCoinTypeSetMsg(service)(env, msg as GetIsKeyStoreCoinTypeSetMsg);
       case SetKeyStoreCoinTypeMsg:
-        return handleSetKeyStoreCoinTypeMsg(service)(
-          env,
-          msg as SetKeyStoreCoinTypeMsg
-        );
+        return handleSetKeyStoreCoinTypeMsg(service)(env, msg as SetKeyStoreCoinTypeMsg);
       case SetKeyStoreLedgerAddressMsg:
-        return handleSetKeyStoreLedgerAddressMsg(service)(
-          env,
-          msg as SetKeyStoreLedgerAddressMsg
-        );
+        return handleSetKeyStoreLedgerAddressMsg(service)(env, msg as SetKeyStoreLedgerAddressMsg);
       case CheckPasswordMsg:
         return handleCheckPasswordMsg(service)(env, msg as CheckPasswordMsg);
       case ExportKeyRingDatasMsg:
-        return handleExportKeyRingDatasMsg(service)(
-          env,
-          msg as ExportKeyRingDatasMsg
-        );
+        return handleExportKeyRingDatasMsg(service)(env, msg as ExportKeyRingDatasMsg);
       case ChangeChainMsg:
         return handleChangeChainMsg(service)(env, msg as ChangeChainMsg);
       default:
@@ -190,9 +140,7 @@ const handleDeleteKeyRingMsg: (
   };
 };
 
-const handleUpdateNameKeyRingMsg: (
-  service: KeyRingService
-) => InternalHandler<UpdateNameKeyRingMsg> = (service) => {
+const handleUpdateNameKeyRingMsg: (service: KeyRingService) => InternalHandler<UpdateNameKeyRingMsg> = service => {
   return async (_, msg) => {
     return await service.updateNameKeyRing(msg.index, msg.name, msg?.email);
   };
@@ -210,13 +158,7 @@ const handleCreateMnemonicKeyMsg: (
   service: KeyRingService
 ) => InternalHandler<CreateMnemonicKeyMsg> = (service) => {
   return async (_, msg) => {
-    return await service.createMnemonicKey(
-      msg.kdf,
-      msg.mnemonic,
-      msg.password,
-      msg.meta,
-      msg.bip44HDPath
-    );
+    return await service.createMnemonicKey(msg.kdf, msg.mnemonic, msg.password, msg.meta, msg.bip44HDPath);
   };
 };
 
@@ -224,12 +166,7 @@ const handleAddMnemonicKeyMsg: (
   service: KeyRingService
 ) => InternalHandler<AddMnemonicKeyMsg> = (service) => {
   return async (_, msg) => {
-    return await service.addMnemonicKey(
-      msg.kdf,
-      msg.mnemonic,
-      msg.meta,
-      msg.bip44HDPath
-    );
+    return await service.addMnemonicKey(msg.kdf, msg.mnemonic, msg.meta, msg.bip44HDPath);
   };
 };
 
@@ -237,12 +174,7 @@ const handleCreatePrivateKeyMsg: (
   service: KeyRingService
 ) => InternalHandler<CreatePrivateKeyMsg> = (service) => {
   return async (_, msg) => {
-    return await service.createPrivateKey(
-      msg.kdf,
-      msg.privateKey,
-      msg.password,
-      msg.meta
-    );
+    return await service.createPrivateKey(msg.kdf, msg.privateKey, msg.password, msg.meta);
   };
 };
 
@@ -258,13 +190,7 @@ const handleCreateLedgerKeyMsg: (
   service: KeyRingService
 ) => InternalHandler<CreateLedgerKeyMsg> = (service) => {
   return async (env, msg) => {
-    return await service.createLedgerKey(
-      env,
-      msg.kdf,
-      msg.password,
-      msg.meta,
-      msg.bip44HDPath
-    );
+    return await service.createLedgerKey(env, msg.kdf, msg.password, msg.meta, msg.bip44HDPath);
   };
 };
 
@@ -272,12 +198,7 @@ const handleAddLedgerKeyMsg: (
   service: KeyRingService
 ) => InternalHandler<AddLedgerKeyMsg> = (service) => {
   return async (env, msg) => {
-    const result = await service.addLedgerKey(
-      env,
-      msg.kdf,
-      msg.meta,
-      msg.bip44HDPath
-    );
+    const result = await service.addLedgerKey(env, msg.kdf, msg.meta, msg.bip44HDPath);
     console.log(result, 'result ???');
     return result;
   };
@@ -298,7 +219,7 @@ const handleUnlockKeyRingMsg: (
 ) => InternalHandler<UnlockKeyRingMsg> = (service) => {
   return async (_, msg) => {
     return {
-      status: await service.unlock(msg.password)
+      status: await service.unlock(msg.password, msg.saving)
     };
   };
 };
@@ -309,11 +230,7 @@ const handleGetKeyMsg: (
   return async (env, msg) => {
     console.log('msg.chainId ===', msg.chainId);
 
-    await service.permissionService.checkOrGrantBasicAccessPermission(
-      env,
-      msg.chainId,
-      msg.origin
-    );
+    await service.permissionService.checkOrGrantBasicAccessPermission(env, msg.chainId, msg.origin);
 
     const key = await service.getKey(msg.chainId);
     // console.log('🚀 ~ file: handler.ts:310 ~ return ~ key:', key?.bech32Address);
@@ -345,20 +262,9 @@ const handleRequestSignAminoMsg: (
   service: KeyRingService
 ) => InternalHandler<RequestSignAminoMsg> = (service) => {
   return async (env, msg) => {
-    await service.permissionService.checkOrGrantBasicAccessPermission(
-      env,
-      msg.chainId,
-      msg.origin
-    );
+    await service.permissionService.checkOrGrantBasicAccessPermission(env, msg.chainId, msg.origin);
 
-    return await service.requestSignAmino(
-      env,
-      msg.origin,
-      msg.chainId,
-      msg.signer,
-      msg.signDoc,
-      msg.signOptions
-    );
+    return await service.requestSignAmino(env, msg.origin, msg.chainId, msg.signer, msg.signDoc, msg.signOptions);
   };
 };
 
@@ -366,18 +272,9 @@ const handleRequestVerifyADR36AminoSignDoc: (
   service: KeyRingService
 ) => InternalHandler<RequestVerifyADR36AminoSignDoc> = (service) => {
   return async (env, msg) => {
-    await service.permissionService.checkOrGrantBasicAccessPermission(
-      env,
-      msg.chainId,
-      msg.origin
-    );
+    await service.permissionService.checkOrGrantBasicAccessPermission(env, msg.chainId, msg.origin);
 
-    return await service.verifyADR36AminoSignDoc(
-      msg.chainId,
-      msg.signer,
-      msg.data,
-      msg.signature
-    );
+    return await service.verifyADR36AminoSignDoc(msg.chainId, msg.signer, msg.data, msg.signature);
   };
 };
 
@@ -385,29 +282,16 @@ const handleRequestSignDirectMsg: (
   service: KeyRingService
 ) => InternalHandler<RequestSignDirectMsg> = (service) => {
   return async (env, msg) => {
-    await service.permissionService.checkOrGrantBasicAccessPermission(
-      env,
-      msg.chainId,
-      msg.origin
-    );
+    await service.permissionService.checkOrGrantBasicAccessPermission(env, msg.chainId, msg.origin);
 
     const signDoc = cosmos.tx.v1beta1.SignDoc.create({
       bodyBytes: msg.signDoc.bodyBytes,
       authInfoBytes: msg.signDoc.authInfoBytes,
       chainId: msg.signDoc.chainId,
-      accountNumber: msg.signDoc.accountNumber
-        ? Long.fromString(msg.signDoc.accountNumber)
-        : undefined
+      accountNumber: msg.signDoc.accountNumber ? Long.fromString(msg.signDoc.accountNumber) : undefined
     });
 
-    const response = await service.requestSignDirect(
-      env,
-      msg.origin,
-      msg.chainId,
-      msg.signer,
-      signDoc,
-      msg.signOptions
-    );
+    const response = await service.requestSignDirect(env, msg.origin, msg.chainId, msg.signer, signDoc, msg.signOptions);
 
     return {
       signed: {
@@ -426,11 +310,7 @@ const handleRequestSignEthereumTypedData: (
 ) => InternalHandler<RequestSignEthereumTypedDataMsg> = (service) => {
   return async (env, msg) => {
     console.log('REACH HANDLE IN SIGN TYPED DATA');
-    const response = await service.requestSignEthereumTypedData(
-      env,
-      msg.chainId,
-      msg.data?.[0]
-    );
+    const response = await service.requestSignEthereumTypedData(env, msg.chainId, msg.data?.[0]);
     console.log(response, 'RESPONSE AFTER HANDLE SIGN TYPED DATA');
     return { result: JSON.stringify(response) };
   };
@@ -450,11 +330,7 @@ const handleRequestSignDecryptionData: (
   service: KeyRingService
 ) => InternalHandler<RequestSignProxyDecryptionDataMsg> = (service) => {
   return async (env, msg) => {
-    const response = await service.requestSignDecryptData(
-      env,
-      msg.chainId,
-      msg.data
-    );
+    const response = await service.requestSignDecryptData(env, msg.chainId, msg.data);
     console.log(response, 'RESPONSE SIGN HERE');
     return { result: JSON.stringify(response) };
   };
@@ -464,11 +340,7 @@ const handleRequestSignProxyDecryptionData: (
   service: KeyRingService
 ) => InternalHandler<RequestSignProxyDecryptionDataMsg> = (service) => {
   return async (env, msg) => {
-    const response = await service.requestSignProxyDecryptionData(
-      env,
-      msg.chainId,
-      msg.data
-    );
+    const response = await service.requestSignProxyDecryptionData(env, msg.chainId, msg.data);
     console.log(response, 'RESPONSE SIGN HERE');
     return { result: JSON.stringify(response) };
   };
@@ -479,17 +351,12 @@ const handleGetDefaultAddressMsg: (
 ) => InternalHandler<GetDefaultAddressTronMsg> = (service) => {
   return async (_, msg) => {
     const key = await service.getKey(msg.chainId);
-    const ledgerCheck = await service.getKeyRingType();
+    const ledgerCheck = service.getKeyRingType();
     let base58 = Address.getBase58Address(
-      getAddressFromBech32(
-        new Bech32Address(key.address).toBech32(
-          (await service.chainsService.getChainInfo(msg.chainId)).bech32Config
-            .bech32PrefixAccAddr
-        )
-      )
+      getAddressFromBech32(new Bech32Address(key.address).toBech32((await service.chainsService.getChainInfo(msg.chainId)).bech32Config.bech32PrefixAccAddr))
     );
     if (ledgerCheck === 'ledger') {
-      const ledgerAddress = await service.getKeyRingLedgerAddresses();
+      const ledgerAddress = service.getKeyRingLedgerAddresses();
       base58 = ledgerAddress?.trx;
     }
     return {
@@ -505,11 +372,7 @@ const handleRequestSignProxyReEncryptionData: (
   service: KeyRingService
 ) => InternalHandler<RequestSignProxyReEncryptionDataMsg> = (service) => {
   return async (env, msg) => {
-    const response = await service.requestSignReEncryptData(
-      env,
-      msg.chainId,
-      msg.data
-    );
+    const response = await service.requestSignReEncryptData(env, msg.chainId, msg.data);
     console.log(response, 'RESPONSE SIGN HERE');
     return { result: JSON.stringify(response) };
   };
@@ -532,11 +395,7 @@ const handleRequestSignEthereumMsg: (
   service: KeyRingService
 ) => InternalHandler<RequestSignEthereumMsg> = (service) => {
   return async (env, msg) => {
-    const response = await service.requestSignEthereum(
-      env,
-      msg.chainId,
-      msg.data
-    );
+    const response = await service.requestSignEthereum(env, msg.chainId, msg.data);
 
     return { rawTxHex: response };
   };

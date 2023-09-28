@@ -5,7 +5,9 @@
   "exclude": [
     "src/**/__mocks__/*",
     "src/**/__tests__/*",
+    "src/tx/tron.spec.ts",
     "src/**/*.test.ts",
-    "src/**/*.test.tsx"
+    "src/**/*.test.tsx",
+    "build/**/*"
   ]
 }
