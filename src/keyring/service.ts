@@ -586,8 +586,6 @@ export class KeyRingService {
   async requestSignTron(env: Env, chainId: string, data: object): Promise<object> {
     const newData = (await this.interactionService.waitApprove(env, '/sign-tron', 'request-sign-tron', data)) as any;
     try {
-      console.log('newData ===', newData);
-
       if (newData?.txID) {
         newData.signature = [Buffer.from(await this.keyRing.sign(env, chainId, 195, newData.txID)).toString('hex')];
         return newData;
@@ -631,7 +629,6 @@ export class KeyRingService {
       transaction.signature = [Buffer.from(await this.keyRing.sign(env, chainId, 195, transaction?.txID)).toString('hex')];
 
       const receipt = await tronWeb.trx.sendRawTransaction(transaction);
-      console.log('receipt ===', receipt);
       return receipt.txid ?? receipt.transaction.raw_data_hex;
     } finally {
       this.interactionService.dispatchEvent(APP_PORT, 'request-sign-tron-end', {});

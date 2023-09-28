@@ -872,10 +872,6 @@ export class RequestSignProxyDecryptionDataMsg extends Message<{
     if (!this.data) {
       throw new OWalletError('keyring', 231, 'data not set');
     }
-
-    // if (!this.signOptions) {
-    //   throw new Error('Sign options are null');
-    // }
   }
 
   approveExternal(): boolean {
