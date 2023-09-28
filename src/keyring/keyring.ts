@@ -537,17 +537,10 @@ export class KeyRing {
     }
     const networkType = getNetworkTypeByChainId(chainId);
 
-    console.log('env 3===', env);
-
-    console.log('bip44HDPath ===', bip44HDPath);
-
-    console.log('splitPath ===', splitPath(bip44HDPath));
     const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
     // Update ledger address here with this function below
 
     const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
-
-    console.log('address 3> ===', address, publicKey);
 
     const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
       return (

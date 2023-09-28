@@ -85,6 +85,8 @@ export const getHandler: (service: KeyRingService) => Handler = (service: KeyRin
         return handleRequestPublicKey(service)(env, msg as RequestPublicKeyMsg);
       case RequestSignDecryptDataMsg:
         return handleRequestSignDecryptionData(service)(env, msg as RequestSignDecryptDataMsg);
+      case RequestSignProxyDecryptionDataMsg:
+        return handleRequestSignProxyDecryptionData(service)(env, msg as RequestSignDecryptDataMsg);
       case RequestSignProxyReEncryptionDataMsg:
         return handleRequestSignProxyReEncryptionData(service)(env, msg as RequestSignReEncryptDataMsg);
       case GetMultiKeyStoreInfoMsg:

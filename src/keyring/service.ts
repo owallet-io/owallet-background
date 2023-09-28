@@ -203,20 +203,6 @@ export class KeyRingService {
     return await this.keyRing.createLedgerKey(env, kdf, password, meta, bip44HDPath);
   }
 
-  // async updateLedgerAddress(
-  //   env: Env,
-  //   bip44HDPath: string,
-  //   chainId: string | number
-  // ): Promise<{
-  //   status: KeyRingStatus;
-  // }> {
-  //   return await this.keyRing.setKeyStoreLedgerAddress(
-  //     env,
-  //     bip44HDPath,
-  //     chainId
-  //   );
-  // }
-
   lock(): KeyRingStatus {
     this.keyRing.lock();
     return this.keyRing.status;
@@ -229,8 +215,6 @@ export class KeyRingService {
   }
 
   async getKey(chainIdOrCoinType: string | number): Promise<Key> {
-    console.log('chainIdOrCoinType ===', chainIdOrCoinType);
-
     // if getKey directly from cointype as number
     if (typeof chainIdOrCoinType === 'number') {
       return this.keyRing.getKeyFromCoinType(chainIdOrCoinType);
@@ -361,10 +345,8 @@ export class KeyRingService {
     const coinType = await this.chainsService.getChainCoinType(chainId);
     const rpc = await this.chainsService.getChainInfo(chainId);
     const rpcCustom = EVMOS_NETWORKS.includes(chainId) ? rpc.evmRpc : rpc.rest;
-    // here
     // TODO: add UI here so users can change gas, memo & fee
     const newData = await this.estimateFeeAndWaitApprove(env, chainId, rpcCustom, data);
-    console.log(newData, 'NEW DATA IN HEREEEEEEEEEEEEEEEEEEEEEEEE');
 
     // Need to check ledger here and ledger app type by chainId
     try {
@@ -379,8 +361,6 @@ export class KeyRingService {
   }
 
   async requestSignEthereumTypedData(env: Env, chainId: string, data: SignEthereumTypedDataObject): Promise<ECDSASignature> {
-    console.log('in request sign ethereum typed data: ', chainId);
-
     try {
       const rawTxHex = await this.keyRing.signEthereumTypedData({
         typedMessage: data.typedMessage,
@@ -398,8 +378,6 @@ export class KeyRingService {
   }
 
   async requestPublicKey(env: Env, chainId: string): Promise<string> {
-    console.log('in request sign proxy re-encryption data: ', chainId);
-
     try {
       const rawTxHex = await this.keyRing.getPublicKey(chainId);
 
@@ -412,8 +390,6 @@ export class KeyRingService {
   }
 
   async requestSignDecryptData(env: Env, chainId: string, data: object): Promise<object> {
-    console.log('in request sign proxy decryption data: ', chainId);
-
     try {
       const rpc = await this.chainsService.getChainInfo(chainId);
       const rpcCustom = EVMOS_NETWORKS.includes(chainId) ? rpc.evmRpc : rpc.rest;
@@ -427,10 +403,7 @@ export class KeyRingService {
     }
   }
 
-  // thang6
   async requestSignReEncryptData(env: Env, chainId: string, data: object): Promise<object> {
-    console.log('in request sign proxy re-encryption data: ', chainId);
-
     try {
       const rpc = await this.chainsService.getChainInfo(chainId);
       const rpcCustom = EVMOS_NETWORKS.includes(chainId) ? rpc.evmRpc : rpc.rest;
@@ -446,8 +419,6 @@ export class KeyRingService {
   }
 
   async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string, chainId: string | number): Promise<void> {
-    console.log('services setKeyStoreLedgerAddress', bip44HDPath);
-
     await this.keyRing.setKeyStoreLedgerAddress(env, bip44HDPath, chainId);
 
     this.interactionService.dispatchEvent(WEBPAGE_PORT, 'keystore-changed', {});
@@ -468,8 +439,6 @@ export class KeyRingService {
     } catch (error) {
       console.log('🚀 ~ file: service.ts ~ line 396 ~ KeyRingService ~ error', error);
     }
-
-    console.log('🚀 ~ file: service.ts ~ line 389 ~ KeyRingService ~ estimatedGasPrice', estimatedGasPrice);
 
     const approveData = (await this.interactionService.waitApprove(env, '/sign-ethereum', 'request-sign-ethereum', {
       env,
