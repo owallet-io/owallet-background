@@ -369,7 +369,7 @@ export class KeyRing {
     // add prefix to make passcode more obfuscated
     crypto.getRandomValues(prefix);
     const encryptedBytes = aesCtr.encrypt(Buffer.from(this._iv + password));
-    if (this.kvStore.type() === KVStoreType.extension) {
+    if (this.kvStore.type() !== KVStoreType.mobile) {
       await this.kvStore.set('passcode', Buffer.from(encryptedBytes).toString('base64'));
     }
   }
