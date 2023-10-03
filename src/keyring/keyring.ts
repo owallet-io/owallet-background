@@ -10,12 +10,16 @@ import {
   getNetworkTypeByChainId,
   KVStore,
   KVStoreType,
-  splitPath
+  splitPath,
+  getChainInfoOrThrow,
+  isEthermintLike,
+  escapeHTML,
+  sortObjectByKey
 } from '@owallet/common';
-import { ChainIdHelper } from '@owallet/cosmos';
+import { ChainIdHelper, Bech32Address } from '@owallet/cosmos';
 import { Mnemonic, PrivKeySecp256k1, PubKeySecp256k1, RNG, Hash } from '@owallet/crypto';
 import { Env, OWalletError } from '@owallet/router';
-import { ChainInfo } from '@owallet/types';
+import { ChainInfo, OWalletSignOptions, StdSignDoc } from '@owallet/types';
 import AES from 'aes-js';
 import { Buffer } from 'buffer';
 import eccrypto from 'eccrypto-js';
@@ -41,7 +45,8 @@ import {
   TypedDataV1,
   TypedMessage
 } from './types';
-
+import { AminoSignResponse } from '@cosmjs/launchpad';
+import {trimAminoSignDoc} from "./amino-sign-doc"
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
 
@@ -327,7 +332,7 @@ export class KeyRing {
       multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
     };
   }
-
+  
   public async lock() {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
@@ -514,7 +519,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -542,7 +547,7 @@ export class KeyRing {
 
     const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
 
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -987,7 +992,7 @@ export class KeyRing {
       const privKey = this.loadPrivKey(60);
       const privKeyBuffer = Buffer.from(privKey.toBytes());
       const response = await Promise.all(
-        message[0].map(async data => {
+        message[0].map(async (data) => {
           const encryptedData = {
             ciphertext: Buffer.from(data.ciphertext, 'hex'),
             ephemPublicKey: Buffer.from(data.ephemPublicKey, 'hex'),
@@ -1214,7 +1219,7 @@ export class KeyRing {
         throw new Error('Arrays are unimplemented in encodeData; use V4 extension');
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map(item => this.encodeField(types, name, parsedType, item, version));
+      const typeValuePairs = value.map((item) => this.encodeField(types, name, parsedType, item, version));
       return [
         'bytes32',
         keccak(

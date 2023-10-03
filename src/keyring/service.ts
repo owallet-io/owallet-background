@@ -17,22 +17,22 @@ import {
 } from './types';
 import TronWeb from 'tronweb';
 
-import { KVStore, fetchAdapter, EVMOS_NETWORKS, MyBigInt } from '@owallet/common';
+import { KVStore, fetchAdapter, EVMOS_NETWORKS, MyBigInt, getChainInfoOrThrow, isEthermintLike, escapeHTML, sortObjectByKey } from '@owallet/common';
 import { ChainsService } from '../chains';
 import { LedgerService } from '../ledger';
-import { BIP44, ChainInfo, OWalletSignOptions } from '@owallet/types';
+import { BIP44, ChainInfo, OWalletSignOptions, StdSignDoc } from '@owallet/types';
 import { APP_PORT, Env, OWalletError, WEBPAGE_PORT } from '@owallet/router';
 import { InteractionService } from '../interaction';
 import { PermissionService } from '../permission';
 
-import { encodeSecp256k1Signature, serializeSignDoc, AminoSignResponse, StdSignDoc, StdSignature } from '@cosmjs/launchpad';
+import { encodeSecp256k1Signature, serializeSignDoc, AminoSignResponse, StdSignature } from '@cosmjs/launchpad';
 import { DirectSignResponse, makeSignBytes } from '@cosmjs/proto-signing';
 import { RNG } from '@owallet/crypto';
 import { cosmos } from '@owallet/cosmos';
 import { Buffer } from 'buffer/';
 import { request } from '../tx';
 import { Dec, DecUtils } from '@owallet/unit';
-
+import { trimAminoSignDoc } from './amino-sign-doc';
 @singleton()
 export class KeyRingService {
   private readonly keyRing: KeyRing;
@@ -233,7 +233,149 @@ export class KeyRingService {
   getKeyRingLedgerAddresses(): AddressesLedger {
     return this.keyRing.addresses;
   }
+  async requestSignEIP712CosmosTx_v0_selected(
+    env: Env,
+    origin: string,
+    chainId: string,
+    signer: string,
+    eip712: {
+      types: Record<string, { name: string; type: string }[] | undefined>;
+      domain: Record<string, any>;
+      primaryType: string;
+    },
+    signDoc: StdSignDoc,
+    signOptions: OWalletSignOptions
+  ): Promise<AminoSignResponse> {
+    return this.requestSignEIP712CosmosTx_v0(env, origin, chainId, signer, eip712, signDoc, signOptions);
+  }
+  async requestSignEIP712CosmosTx_v0(
+    env: Env,
+    origin: string,
+    chainId: string,
+    signer: string,
+    eip712: {
+      types: Record<string, { name: string; type: string }[] | undefined>;
+      domain: Record<string, any>;
+      primaryType: string;
+    },
+    signDoc: StdSignDoc,
+    signOptions: OWalletSignOptions
+  ): Promise<AminoSignResponse> {
+    const chainInfo = getChainInfoOrThrow(chainId);
+    const isEthermint = isEthermintLike(chainInfo);
 
+    if (!isEthermint) {
+      throw new Error('This feature is only usable on cosmos-sdk evm chain');
+    }
+
+    const keyInfo = await this.getKey(chainId);
+    if (!keyInfo) {
+      throw new Error('Null key info');
+    }
+
+    if (!keyInfo.isNanoLedger) {
+      throw new Error('This feature is only usable on ledger ethereum app');
+    }
+
+    // if (isEthermint && keyInfo.type === 'ledger') {
+    //   throwErrorIfEthermintWithLedgerButNotSupported(chainId);
+    // }
+
+    signDoc = {
+      ...signDoc,
+      memo: escapeHTML(signDoc.memo)
+    };
+
+    signDoc = trimAminoSignDoc(signDoc);
+    signDoc = sortObjectByKey(signDoc);
+
+    const key = await this.getKey(chainId);
+    const bech32Prefix = getChainInfoOrThrow(chainId).bech32Config.bech32PrefixAccAddr;
+    const bech32Address = new Bech32Address(key.address).toBech32(bech32Prefix);
+    if (signer !== bech32Address) {
+      throw new Error('Signer mismatched');
+    }
+
+    // return await this.interactionService.waitApprove(
+    //   env,
+    //   '/sign-cosmos',
+    //   'request-sign-cosmos',
+    //   {
+    //     origin,
+    //     chainId,
+    //     mode: 'amino',
+    //     signDoc,
+    //     signer,
+    //     pubKey: key.pubKey,
+    //     signOptions,
+    //     eip712,
+    //     keyType: keyInfo.type,
+    //     keyInsensitive: keyInfo.insensitive
+    //   },
+    //   async (res: { newSignDoc: StdSignDoc; signature?: Uint8Array }) => {
+    //     let newSignDoc = res.newSignDoc;
+
+    //     newSignDoc = {
+    //       ...newSignDoc,
+    //       memo: escapeHTML(newSignDoc.memo)
+    //     };
+
+    //     if (!res.signature || res.signature.length === 0) {
+    //       throw new Error('Frontend should provide signature');
+    //     }
+
+    //     const msgTypes = newSignDoc.msgs.filter((msg) => msg.type).map((msg) => msg.type);
+
+    //     // this.analyticsService.logEventIgnoreError('tx_signed', {
+    //     //   chainId,
+    //     //   isInternal: env.isInternalMsg,
+    //     //   origin,
+    //     //   ethSignType: 'eip-712',
+    //     //   msgTypes
+    //     // });
+
+    //     return {
+    //       signed: newSignDoc,
+    //       signature: {
+    //         pub_key: encodeSecp256k1Pubkey(key.pubKey),
+    //         // Return eth signature (r | s | v) 65 bytes.
+    //         signature: Buffer.from(res.signature).toString('base64')
+    //       }
+    //     };
+    //   }
+    // );
+    const newSignDoc = (await this.interactionService.waitApprove(env, '/sign', 'request-sign', {
+      msgOrigin: origin,
+      chainId,
+      mode: 'amino',
+      signDoc,
+      signer,
+      signOptions,
+      pubKey: key.pubKey,
+      eip712,
+      keyType: this.getKeyRingType()
+    })) as StdSignDoc;
+        // return {
+        //   signed: newSignDoc,
+        //   signature: {
+        //     pub_key: encodeSecp256k1Pubkey(key.pubKey),
+        //     // Return eth signature (r | s | v) 65 bytes.
+        //     signature: Buffer.from(res.signature).toString('base64')
+        //   }
+        // };
+    try {
+      const signature = null;
+      // const signature = await this.keyRing.sign(env, chainId, coinType, serializeSignDoc(newSignDoc));
+
+      return {
+        signed: newSignDoc,
+        signature: encodeSecp256k1Signature(key.pubKey, signature)
+      };
+    } finally {
+      this.interactionService.dispatchEvent(APP_PORT, 'request-sign-end', {});
+    }
+    
+  }
   async requestSignAmino(
     env: Env,
     msgOrigin: string,
