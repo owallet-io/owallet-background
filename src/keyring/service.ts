@@ -267,8 +267,10 @@ export class KeyRingService {
     if (!isEthermint) {
       throw new Error('This feature is only usable on cosmos-sdk evm chain');
     }
+    const coinType = await this.chainsService.getChainCoinType(chainId);
 
-    const keyInfo = await this.getKey(chainId);
+    const keyInfo = this.keyRing.getKey(chainId, coinType);
+    // const keyInfo = await this.getKey(chainId);
     if (!keyInfo) {
       throw new Error('Null key info');
     }
@@ -289,9 +291,9 @@ export class KeyRingService {
     signDoc = trimAminoSignDoc(signDoc);
     signDoc = sortObjectByKey(signDoc);
 
-    const key = await this.getKey(chainId);
+    
     const bech32Prefix = getChainInfoOrThrow(chainId).bech32Config.bech32PrefixAccAddr;
-    const bech32Address = new Bech32Address(key.address).toBech32(bech32Prefix);
+    const bech32Address = new Bech32Address(keyInfo.address).toBech32(bech32Prefix);
     if (signer !== bech32Address) {
       throw new Error('Signer mismatched');
     }
@@ -351,25 +353,18 @@ export class KeyRingService {
       signDoc,
       signer,
       signOptions,
-      pubKey: key.pubKey,
+      pubKey: keyInfo.pubKey,
       eip712,
       keyType: this.getKeyRingType()
     })) as StdSignDoc;
-        // return {
-        //   signed: newSignDoc,
-        //   signature: {
-        //     pub_key: encodeSecp256k1Pubkey(key.pubKey),
-        //     // Return eth signature (r | s | v) 65 bytes.
-        //     signature: Buffer.from(res.signature).toString('base64')
-        //   }
-        // };
+        
     try {
-      const signature = null;
-      // const signature = await this.keyRing.sign(env, chainId, coinType, serializeSignDoc(newSignDoc));
+      // const signature = null;
+      const signature = await this.keyRing.sign(env, chainId, coinType, serializeSignDoc(newSignDoc));
 
       return {
         signed: newSignDoc,
-        signature: encodeSecp256k1Signature(key.pubKey, signature)
+        signature: encodeSecp256k1Signature(keyInfo.pubKey, signature)
       };
     } finally {
       this.interactionService.dispatchEvent(APP_PORT, 'request-sign-end', {});

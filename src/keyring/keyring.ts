@@ -46,7 +46,7 @@ import {
   TypedMessage
 } from './types';
 import { AminoSignResponse } from '@cosmjs/launchpad';
-import {trimAminoSignDoc} from "./amino-sign-doc"
+import { trimAminoSignDoc } from './amino-sign-doc';
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
 
@@ -332,7 +332,7 @@ export class KeyRing {
       multiKeyStoreInfo: await this.getMultiKeyStoreInfo()
     };
   }
-  
+
   public async lock() {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
@@ -760,13 +760,13 @@ export class KeyRing {
       }
 
       const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
-      console.log('bip44HDPath: ', bip44HDPath);
+
       const path = [44, coinType, bip44HDPath.account, bip44HDPath.change, bip44HDPath.addressIndex];
-      console.log('path: ', path);
 
       const ledgerAppType: LedgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
-      console.log('ledgerAppType: ', ledgerAppType);
-
+      if (chainId.startsWith('injective')) {
+        return await this.ledgerKeeper.sign(env, path, pubKey, message, 'eth');
+      }
       // Need to check ledger here and ledger app type by chainId
       return await this.ledgerKeeper.sign(env, path, pubKey, message, ledgerAppType);
     } else {
