@@ -167,7 +167,10 @@ export class LedgerInternal {
       return signatureImport(signature);
     } else if (this.ledgerApp instanceof EthApp) {
       const rawTxHex = Buffer.from(message).toString('hex');
-
+      const detectMsg = JSON.parse(Buffer.from(message).toString());;
+      
+      // console.log("🚀 ~ file: ledger-internal.ts:172 ~ LedgerInternal ~ sign ~ detectMsg2:", detectMsg2)
+      console.log('🚀 ~ file: ledger-internal.ts:171 ~ LedgerInternal ~ sign ~ detectMsg:', detectMsg);
       const signature = await this.ledgerApp.signTransaction(stringifyPath(path), rawTxHex);
       return signature;
       // return convertEthSignature(signature);
