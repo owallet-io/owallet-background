@@ -26,9 +26,10 @@ import { InteractionService } from '../interaction';
 import { PermissionService } from '../permission';
 
 import { encodeSecp256k1Signature, serializeSignDoc, AminoSignResponse, StdSignature } from '@cosmjs/launchpad';
+
 import { DirectSignResponse, makeSignBytes } from '@cosmjs/proto-signing';
 import { RNG } from '@owallet/crypto';
-import { cosmos } from '@owallet/cosmos';
+import { cosmos, encodeSecp256k1Pubkey } from '@owallet/cosmos';
 import { Buffer } from 'buffer/';
 import { request } from '../tx';
 import { Dec, DecUtils } from '@owallet/unit';
@@ -291,62 +292,13 @@ export class KeyRingService {
     signDoc = trimAminoSignDoc(signDoc);
     signDoc = sortObjectByKey(signDoc);
 
-    
     const bech32Prefix = getChainInfoOrThrow(chainId).bech32Config.bech32PrefixAccAddr;
     const bech32Address = new Bech32Address(keyInfo.address).toBech32(bech32Prefix);
     if (signer !== bech32Address) {
       throw new Error('Signer mismatched');
     }
 
-    // return await this.interactionService.waitApprove(
-    //   env,
-    //   '/sign-cosmos',
-    //   'request-sign-cosmos',
-    //   {
-    //     origin,
-    //     chainId,
-    //     mode: 'amino',
-    //     signDoc,
-    //     signer,
-    //     pubKey: key.pubKey,
-    //     signOptions,
-    //     eip712,
-    //     keyType: keyInfo.type,
-    //     keyInsensitive: keyInfo.insensitive
-    //   },
-    //   async (res: { newSignDoc: StdSignDoc; signature?: Uint8Array }) => {
-    //     let newSignDoc = res.newSignDoc;
-
-    //     newSignDoc = {
-    //       ...newSignDoc,
-    //       memo: escapeHTML(newSignDoc.memo)
-    //     };
-
-    //     if (!res.signature || res.signature.length === 0) {
-    //       throw new Error('Frontend should provide signature');
-    //     }
-
-    //     const msgTypes = newSignDoc.msgs.filter((msg) => msg.type).map((msg) => msg.type);
-
-    //     // this.analyticsService.logEventIgnoreError('tx_signed', {
-    //     //   chainId,
-    //     //   isInternal: env.isInternalMsg,
-    //     //   origin,
-    //     //   ethSignType: 'eip-712',
-    //     //   msgTypes
-    //     // });
-
-    //     return {
-    //       signed: newSignDoc,
-    //       signature: {
-    //         pub_key: encodeSecp256k1Pubkey(key.pubKey),
-    //         // Return eth signature (r | s | v) 65 bytes.
-    //         signature: Buffer.from(res.signature).toString('base64')
-    //       }
-    //     };
-    //   }
-    // );
-    const newSignDoc = (await this.interactionService.waitApprove(env, '/sign', 'request-sign', {
+    let newSignDoc = (await this.interactionService.waitApprove(env, '/sign', 'request-sign', {
       msgOrigin: origin,
       chainId,
       mode: 'amino',
@@ -357,19 +309,35 @@ export class KeyRingService {
       eip712,
       keyType: this.getKeyRingType()
     })) as StdSignDoc;
-        
+    
+    newSignDoc = {
+      ...newSignDoc,
+      memo: escapeHTML(newSignDoc.memo)
+    };
     try {
       // const signature = null;
-      const signature = await this.keyRing.sign(env, chainId, coinType, serializeSignDoc(newSignDoc));
+      const res = await this.keyRing.sign(
+        env,
+        chainId,
+        coinType,
+        serializeSignDoc({
+          ...newSignDoc,
+          eip712
+        } as any)
+      );
+      console.log('🚀 ~ file: service.ts:316 ~ KeyRingService ~ res:', res);
 
       return {
         signed: newSignDoc,
-        signature: encodeSecp256k1Signature(keyInfo.pubKey, signature)
+        signature: {
+          pub_key: encodeSecp256k1Pubkey(keyInfo.pubKey),
+          // Return eth signature (r | s | v) 65 bytes.
+          signature: Buffer.from(res?.signature).toString('base64')
+        }
       };
     } finally {
       this.interactionService.dispatchEvent(APP_PORT, 'request-sign-end', {});
     }
-    
   }
   async requestSignAmino(
     env: Env,

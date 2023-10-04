@@ -744,9 +744,6 @@ export class KeyRing {
       const path = [44, coinType, bip44HDPath.account, bip44HDPath.change, bip44HDPath.addressIndex];
 
       const ledgerAppType: LedgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
-      if (chainId.startsWith('injective')) {
-        return await this.ledgerKeeper.sign(env, path, pubKey, message, 'eth');
-      }
       // Need to check ledger here and ledger app type by chainId
       return await this.ledgerKeeper.sign(env, path, pubKey, message, ledgerAppType);
     } else {

@@ -7,7 +7,7 @@ import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
 import { signatureImport, publicKeyConvert } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
-import { stringifyPath } from '../utils/helper';
+import { EIP712MessageValidator, stringifyPath, ethSignatureToBytes, domainHash, messageHash } from '../utils/helper';
 
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 
@@ -167,10 +167,31 @@ export class LedgerInternal {
       return signatureImport(signature);
     } else if (this.ledgerApp instanceof EthApp) {
       const rawTxHex = Buffer.from(message).toString('hex');
-      const detectMsg = JSON.parse(Buffer.from(message).toString());;
-      
-      // console.log("🚀 ~ file: ledger-internal.ts:172 ~ LedgerInternal ~ sign ~ detectMsg2:", detectMsg2)
-      console.log('🚀 ~ file: ledger-internal.ts:171 ~ LedgerInternal ~ sign ~ detectMsg:', detectMsg);
+      const parseMsg = JSON.parse(Buffer.from(message).toString());
+      console.log('🚀 ~ file: ledger-internal.ts:171 ~ LedgerInternal ~ sign ~ parseMsg:', parseMsg);
+      if (parseMsg?.chain_id && parseMsg?.chain_id?.startsWith('injective')) {
+        const eip712 = { ...parseMsg?.eip712 };
+        delete parseMsg.eip712;
+        console.log('🚀 ~ file: ledger-internal.ts:174 ~ LedgerInternal ~ sign ~ eip712:', eip712);
+        const data: any = await (async () => {
+          try {
+            const message = Buffer.from(
+              JSON.stringify({
+                types: eip712.types,
+                domain: eip712.domain,
+                primaryType: eip712.primaryType,
+                message: parseMsg
+              })
+            );
+            return await EIP712MessageValidator.validateAsync(JSON.parse(Buffer.from(message).toString()));
+          } catch (error) {
+            console.log('🚀 ~ file: ledger-internal.ts:177 ~ LedgerInternal ~ constdata:any=async ~ error:', error);
+          }
+        })();
+        console.log('🚀 ~ file: ledger-internal.ts:174 ~ LedgerInternal ~ sign ~ data:', data);
+        return ethSignatureToBytes(await this.ledgerApp.signEIP712HashedMessage(stringifyPath(path), domainHash(data), messageHash(data)));
+      }
+
       const signature = await this.ledgerApp.signTransaction(stringifyPath(path), rawTxHex);
       return signature;
       // return convertEthSignature(signature);
