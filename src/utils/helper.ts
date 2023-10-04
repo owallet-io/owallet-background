@@ -54,6 +54,9 @@ export function formatNeworkTypeToLedgerAppName(
 ): LedgerAppType {
   switch (network) {
     case 'cosmos':
+      if ((chainId as string).startsWith("injective")) {
+        return 'eth';
+      }
       return 'cosmos';
     case 'evm':
       if (chainId && chainId === TRON_ID) {

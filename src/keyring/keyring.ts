@@ -546,7 +546,7 @@ export class KeyRing {
     // Update ledger address here with this function below
 
     const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
-
+    this.ledgerPublicKey = publicKey;
     const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
@@ -646,7 +646,17 @@ export class KeyRing {
     await this.save();
     return this.getMultiKeyStoreInfo();
   }
-
+  private getPubKey(coinType): PubKeySecp256k1 {
+    if (this.keyStore.type === 'ledger') {
+      if (!this.ledgerPublicKey) {
+        throw new Error('Ledger public key not set');
+      }
+      return new PubKeySecp256k1(this.ledgerPublicKey);
+    } else {
+      const privKey = this.loadPrivKey(coinType);
+      return privKey.getPubKey();
+    }
+  }
   private loadKey(coinType: number, chainId?: string | number): Key {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
@@ -655,51 +665,21 @@ export class KeyRing {
     if (!this.keyStore) {
       throw new Error('Key Store is empty');
     }
-
-    if (this.keyStore.type === 'ledger') {
-      if (!this.ledgerPublicKey) {
-        throw new Error('Ledger public key not set');
+    const chainInfo = getChainInfoOrThrow(chainId as string);
+    const isEthermint = isEthermintLike(chainInfo);
+    const pubKey = this.getPubKey(coinType);
+    const address = (() => {
+      if (isEthermint) {
+        return pubKey.getEthAddress();
       }
-      // goes here
-      // This need to be check by network type or cointype, cause now we support ledger with evm too, but this pubKey.getAddress() is hardcoded by cosmos address
-      const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
-
-      return {
-        algo: 'secp256k1',
-        pubKey: pubKey.toBytes(),
-        address: pubKey.getAddress(),
-        isNanoLedger: true
-      };
-    } else {
-      const privKey = this.loadPrivKey(coinType);
-      const pubKey = privKey.getPubKey();
-
-      const networkType = getNetworkTypeByChainId(chainId);
-
-      if (coinType === 60 || networkType === 'evm') {
-        // For Ethereum Key-Gen Only:
-        const ethereumAddress = privateToAddress(Buffer.from(privKey.toBytes()));
-
-        // get the ledgerPublicKey here and get address from pubKey.getAddress()
-        // const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
-        // From that address, generate evmosHexAddress
-
-        return {
-          algo: 'ethsecp256k1',
-          pubKey: pubKey.toBytes(),
-          address: ethereumAddress,
-          isNanoLedger: false
-        };
-      }
-
-      // Default
-      return {
-        algo: 'secp256k1',
-        pubKey: pubKey.toBytes(),
-        address: pubKey.getAddress(),
-        isNanoLedger: false
-      };
-    }
+      return pubKey.getCosmosAddress();
+    })();
+    return {
+      algo: isEthermint ? 'ethsecp256k1' : 'secp256k1',
+      pubKey: pubKey.toBytes(),
+      address: address,
+      isNanoLedger: this.keyStore.type === 'ledger'
+    };
   }
 
   private loadPrivKey(coinType: number): PrivKeySecp256k1 {

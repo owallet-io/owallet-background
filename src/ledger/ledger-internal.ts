@@ -30,10 +30,7 @@ export type TransportMode = 'webusb' | 'webhid' | 'ble';
 export type LedgerAppType = 'cosmos' | 'eth' | 'trx';
 
 export class LedgerInternal {
-  constructor(
-    private readonly ledgerApp: CosmosApp | EthApp | TrxApp,
-    private readonly type: LedgerAppType
-  ) {}
+  constructor(private readonly ledgerApp: CosmosApp | EthApp | TrxApp, private readonly type: LedgerAppType) {}
 
   static transportIniters: Record<TransportMode, TransportIniter> = {
     webusb: TransportWebUSB.create.bind(TransportWebUSB),
@@ -42,11 +39,7 @@ export class LedgerInternal {
     ble: () => Promise.resolve(null)
   };
 
-  static async init(
-    mode: TransportMode,
-    initArgs: any[] = [],
-    ledgerAppType: LedgerAppType
-  ): Promise<LedgerInternal> {
+  static async init(mode: TransportMode, initArgs: any[] = [], ledgerAppType: LedgerAppType): Promise<LedgerInternal> {
     const transportIniter = LedgerInternal.transportIniters[mode];
     // console.log('transportIniter', transportIniter);
 
@@ -107,8 +100,7 @@ export class LedgerInternal {
       throw new Error('Cosmos App not initialized');
     }
 
-    const { version, device_locked, major, test_mode } =
-      await app.getAppConfiguration();
+    const { version, device_locked, major, test_mode } = await app.getAppConfiguration();
 
     return {
       deviceLocked: device_locked,
@@ -136,29 +128,23 @@ export class LedgerInternal {
 
     if (this.ledgerApp instanceof CosmosApp) {
       // make compartible with ledger-cosmos-js
-      const { publicKey, address } = await this.ledgerApp.getAddress(
-        stringifyPath(path),
-        'cosmos'
-      );
+      const { publicKey, address } = await this.ledgerApp.getAddress(stringifyPath(path), 'cosmos');
       return { publicKey: Buffer.from(publicKey, 'hex'), address };
     } else if (this.ledgerApp instanceof EthApp) {
-      const { publicKey, address } = await this.ledgerApp.getAddress(
-        stringifyPath(path)
-      );
+      const { publicKey, address } = await this.ledgerApp.getAddress(stringifyPath(path));
 
       console.log('get here eth ===', publicKey, address);
 
       const pubKey = Buffer.from(publicKey, 'hex');
       // Compress the public key
       return {
-        publicKey: publicKeyConvert(pubKey, true),
-        address
+        // publicKey: publicKeyConvert(pubKey, true),
+        address,
+        publicKey: pubKey
       };
     } else {
       console.log('get here trx === ', path, stringifyPath(path));
-      const { publicKey, address } = await this.ledgerApp.getAddress(
-        stringifyPath(path)
-      );
+      const { publicKey, address } = await this.ledgerApp.getAddress(stringifyPath(path));
       console.log('get here trx  2 === ', address);
 
       // Compress the public key
@@ -175,20 +161,14 @@ export class LedgerInternal {
     }
 
     if (this.ledgerApp instanceof CosmosApp) {
-      const { signature } = await this.ledgerApp.sign(
-        stringifyPath(path),
-        message
-      );
+      const { signature } = await this.ledgerApp.sign(stringifyPath(path), message);
 
       // Parse a DER ECDSA signature
       return signatureImport(signature);
     } else if (this.ledgerApp instanceof EthApp) {
       const rawTxHex = Buffer.from(message).toString('hex');
 
-      const signature = await this.ledgerApp.signTransaction(
-        stringifyPath(path),
-        rawTxHex
-      );
+      const signature = await this.ledgerApp.signTransaction(stringifyPath(path), rawTxHex);
       return signature;
       // return convertEthSignature(signature);
     } else {
