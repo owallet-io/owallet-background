@@ -24,12 +24,12 @@ import { BIP44, ChainInfo, OWalletSignOptions, StdSignDoc } from '@owallet/types
 import { APP_PORT, Env, OWalletError, WEBPAGE_PORT } from '@owallet/router';
 import { InteractionService } from '../interaction';
 import { PermissionService } from '../permission';
-
+import { SignDoc } from "@owallet/proto-types/cosmos/tx/v1beta1/tx";
 import { encodeSecp256k1Signature, serializeSignDoc, AminoSignResponse, StdSignature } from '@cosmjs/launchpad';
 
 import { DirectSignResponse, makeSignBytes } from '@cosmjs/proto-signing';
 import { RNG } from '@owallet/crypto';
-import { cosmos, encodeSecp256k1Pubkey } from '@owallet/cosmos';
+import {  encodeSecp256k1Pubkey } from '@owallet/cosmos';
 import { Buffer } from 'buffer/';
 import { request } from '../tx';
 import { Dec, DecUtils } from '@owallet/unit';
@@ -309,7 +309,7 @@ export class KeyRingService {
       eip712,
       keyType: this.getKeyRingType()
     })) as StdSignDoc;
-    
+
     newSignDoc = {
       ...newSignDoc,
       memo: escapeHTML(newSignDoc.memo)
@@ -409,7 +409,7 @@ export class KeyRingService {
     msgOrigin: string,
     chainId: string,
     signer: string,
-    signDoc: cosmos.tx.v1beta1.SignDoc,
+    signDoc: SignDoc,
     signOptions: OWalletSignOptions
   ): Promise<DirectSignResponse> {
     const coinType = await this.chainsService.getChainCoinType(chainId);
@@ -425,12 +425,12 @@ export class KeyRingService {
       msgOrigin,
       chainId,
       mode: 'direct',
-      signDocBytes: cosmos.tx.v1beta1.SignDoc.encode(signDoc).finish(),
+      signDocBytes: SignDoc.encode(signDoc).finish(),
       signer,
       signOptions
     })) as Uint8Array;
 
-    const newSignDoc = cosmos.tx.v1beta1.SignDoc.decode(newSignDocBytes);
+    const newSignDoc = SignDoc.decode(newSignDocBytes);
 
     try {
       const signature = await this.keyRing.sign(env, chainId, coinType, makeSignBytes(newSignDoc));

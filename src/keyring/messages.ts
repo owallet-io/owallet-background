@@ -4,7 +4,7 @@ import { ROUTE } from './constants';
 import { KeyRing, KeyRingStatus, MultiKeyStoreInfoWithSelected } from './keyring';
 import { BIP44HDPath, ExportKeyRingData, SignEthereumTypedDataObject } from './types';
 
-import { Bech32Address, checkAndValidateADR36AminoSignDoc, cosmos } from '@owallet/cosmos';
+import { Bech32Address, checkAndValidateADR36AminoSignDoc } from '@owallet/cosmos';
 import { BIP44, OWalletSignOptions, Key } from '@owallet/types';
 
 import { AminoSignResponse, StdSignature } from '@cosmjs/launchpad';
@@ -13,7 +13,7 @@ import Long from 'long';
 import { Int } from "@owallet/unit";
 import bigInteger from "big-integer";
 const bip39 = require('bip39');
-
+import { SignDoc } from "@owallet/proto-types/cosmos/tx/v1beta1/tx";
 export class RestoreKeyRingMsg extends Message<{
   status: KeyRingStatus;
   multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
@@ -616,7 +616,7 @@ export class RequestSignDirectMsg extends Message<{
     // Validate bech32 address.
     Bech32Address.validate(this.signer);
 
-    const signDoc = cosmos.tx.v1beta1.SignDoc.create({
+    const signDoc = SignDoc.create({
       bodyBytes: this.signDoc.bodyBytes,
       authInfoBytes: this.signDoc.authInfoBytes,
       chainId: this.signDoc.chainId,

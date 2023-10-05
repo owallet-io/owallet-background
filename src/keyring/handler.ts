@@ -37,10 +37,10 @@ import {
   RequestSignProxyDecryptionDataMsg
 } from './messages';
 import { KeyRingService } from './service';
-import { Bech32Address, cosmos } from '@owallet/cosmos';
+import { Bech32Address } from '@owallet/cosmos';
 import { Address } from '@owallet/crypto';
 import Long from 'long';
-
+import { SignDoc } from "@owallet/proto-types/cosmos/tx/v1beta1/tx";
 export const getHandler: (service: KeyRingService) => Handler = (service: KeyRingService) => {
   return (env: Env, msg: Message<unknown>) => {
     switch (msg.constructor) {
@@ -233,7 +233,7 @@ const handleRequestSignDirectMsg: (service: KeyRingService) => InternalHandler<R
   return async (env, msg) => {
     await service.permissionService.checkOrGrantBasicAccessPermission(env, msg.chainId, msg.origin);
 
-    const signDoc = cosmos.tx.v1beta1.SignDoc.create({
+    const signDoc = SignDoc.create({
       bodyBytes: msg.signDoc.bodyBytes,
       authInfoBytes: msg.signDoc.authInfoBytes,
       chainId: msg.signDoc.chainId,
