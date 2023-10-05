@@ -8,7 +8,7 @@ import { signatureImport, publicKeyConvert } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
 import { EIP712MessageValidator, stringifyPath, ethSignatureToBytes, domainHash, messageHash } from '../utils/helper';
-
+import { bufferToHex, addHexPrefix } from 'ethereumjs-util'
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 
 export enum LedgerInitErrorOn {
@@ -167,29 +167,54 @@ export class LedgerInternal {
       return signatureImport(signature);
     } else if (this.ledgerApp instanceof EthApp) {
       const rawTxHex = Buffer.from(message).toString('hex');
-      const parseMsg = JSON.parse(Buffer.from(message).toString());
-      console.log('🚀 ~ file: ledger-internal.ts:171 ~ LedgerInternal ~ sign ~ parseMsg:', parseMsg);
-      if (parseMsg?.chain_id && parseMsg?.chain_id?.startsWith('injective')) {
-        const eip712 = { ...parseMsg?.eip712 };
-        delete parseMsg.eip712;
+      const signDoc = JSON.parse(Buffer.from(message).toString());
+      console.log('🚀 ~ file: ledger-internal.ts:171 ~ LedgerInternal ~ sign ~ signDoc:', signDoc);
+      if (signDoc?.chain_id && signDoc?.chain_id?.startsWith('injective')) {
+        const eip712 = { ...signDoc?.eip712 };
+        delete signDoc.eip712;
         console.log('🚀 ~ file: ledger-internal.ts:174 ~ LedgerInternal ~ sign ~ eip712:', eip712);
-        const data: any = await (async () => {
-          try {
-            const message = Buffer.from(
-              JSON.stringify({
-                types: eip712.types,
-                domain: eip712.domain,
-                primaryType: eip712.primaryType,
-                message: parseMsg
-              })
-            );
-            return await EIP712MessageValidator.validateAsync(JSON.parse(Buffer.from(message).toString()));
-          } catch (error) {
-            console.log('🚀 ~ file: ledger-internal.ts:177 ~ LedgerInternal ~ constdata:any=async ~ error:', error);
+        let data: any;
+        try {
+          const message = Buffer.from(
+            JSON.stringify({
+              types: eip712.types,
+              domain: eip712.domain,
+              primaryType: eip712.primaryType,
+              message: signDoc
+            })
+          );
+          data = await EIP712MessageValidator.validateAsync(JSON.parse(Buffer.from(message).toString()));
+        } catch (e) {
+          console.log(e);
+          throw new Error(e.message || e.toString());
+        }
+
+        try {
+          // Unfortunately, signEIP712Message not works on ledger yet.
+          return ethSignatureToBytes(await this.ledgerApp.signEIP712HashedMessage(stringifyPath(path), domainHash(data), messageHash(data)));
+        } catch (e) {
+          if (e?.message.includes('(0x6985)')) {
+            throw new Error('User rejected signing');
           }
-        })();
-        console.log('🚀 ~ file: ledger-internal.ts:174 ~ LedgerInternal ~ sign ~ data:', data);
-        return ethSignatureToBytes(await this.ledgerApp.signEIP712HashedMessage(stringifyPath(path), domainHash(data), messageHash(data)));
+          throw new Error(e.message || e.toString());
+        }
+        // const data: any = await (async () => {
+        //   try {
+        //     const message = Buffer.from(
+        //       JSON.stringify({
+        //         types: eip712.types,
+        //         domain: eip712.domain,
+        //         primaryType: eip712.primaryType,
+        //         message: parseMsg
+        //       })
+        //     );
+        //     return await EIP712MessageValidator.validateAsync(JSON.parse(Buffer.from(message).toString()));
+        //   } catch (error) {
+        //     console.log('🚀 ~ file: ledger-internal.ts:177 ~ LedgerInternal ~ constdata:any=async ~ error:', error);
+        //   }
+        // })();
+        // console.log('🚀 ~ file: ledger-internal.ts:174 ~ LedgerInternal ~ sign ~ data:', data);
+        // return ethSignatureToBytes(await this.ledgerApp.signEIP712HashedMessage(stringifyPath(path), domainHash(data), messageHash(data)));
       }
 
       const signature = await this.ledgerApp.signTransaction(stringifyPath(path), rawTxHex);
