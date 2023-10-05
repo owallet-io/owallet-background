@@ -24,12 +24,12 @@ import { BIP44, ChainInfo, OWalletSignOptions, StdSignDoc } from '@owallet/types
 import { APP_PORT, Env, OWalletError, WEBPAGE_PORT } from '@owallet/router';
 import { InteractionService } from '../interaction';
 import { PermissionService } from '../permission';
-import { SignDoc } from "@owallet/proto-types/cosmos/tx/v1beta1/tx";
+import { SignDoc } from '@owallet/proto-types/cosmos/tx/v1beta1/tx';
 import { encodeSecp256k1Signature, serializeSignDoc, AminoSignResponse, StdSignature } from '@cosmjs/launchpad';
 
 import { DirectSignResponse, makeSignBytes } from '@cosmjs/proto-signing';
 import { RNG } from '@owallet/crypto';
-import {  encodeSecp256k1Pubkey } from '@owallet/cosmos';
+import { encodeSecp256k1Pubkey } from '@owallet/cosmos';
 import { Buffer } from 'buffer/';
 import { request } from '../tx';
 import { Dec, DecUtils } from '@owallet/unit';
@@ -316,7 +316,7 @@ export class KeyRingService {
     };
     try {
       // const signature = null;
-      const res = await this.keyRing.sign(
+      const signature = await this.keyRing.sign(
         env,
         chainId,
         coinType,
@@ -325,14 +325,14 @@ export class KeyRingService {
           eip712
         } as any)
       );
-      console.log('🚀 ~ file: service.ts:316 ~ KeyRingService ~ res:', res);
+      console.log('🚀 ~ file: service.ts:316 ~ KeyRingService ~ signature:', signature);
 
       return {
         signed: newSignDoc,
         signature: {
           pub_key: encodeSecp256k1Pubkey(keyInfo.pubKey),
           // Return eth signature (r | s | v) 65 bytes.
-          signature: Buffer.from(res?.signature).toString('base64')
+          signature: Buffer.from(signature).toString('base64')
         }
       };
     } finally {
