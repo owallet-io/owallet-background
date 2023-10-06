@@ -658,6 +658,8 @@ export class KeyRing {
     }
   }
   private loadKey(coinType: number, chainId?: string | number): Key {
+    console.log('🚀 ~ file: keyring.ts:661 ~ loadKey ~ coinType:', coinType);
+    console.log('🚀 ~ file: keyring.ts:661 ~ loadKey ~ chainId:', chainId);
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -665,8 +667,14 @@ export class KeyRing {
     if (!this.keyStore) {
       throw new Error('Key Store is empty');
     }
-    const chainInfo = getChainInfoOrThrow(chainId as string);
-    const isEthermint = isEthermintLike(chainInfo);
+
+    const isEthermint = (() => {
+      if (chainId) {
+        const chainInfo = getChainInfoOrThrow(chainId as string);
+        return isEthermintLike(chainInfo);
+      }
+      return coinType === 60;
+    })();
     const pubKey = this.getPubKey(coinType);
     const address = (() => {
       if (isEthermint) {
