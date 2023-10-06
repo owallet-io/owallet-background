@@ -14,7 +14,8 @@ import {
   getChainInfoOrThrow,
   isEthermintLike,
   escapeHTML,
-  sortObjectByKey
+  sortObjectByKey,
+  formatCoinTypeToLedgerAppName
 } from '@owallet/common';
 import { ChainIdHelper, Bech32Address } from '@owallet/cosmos';
 import { Mnemonic, PrivKeySecp256k1, PubKeySecp256k1, RNG, Hash } from '@owallet/crypto';
@@ -43,7 +44,8 @@ import {
   MessageTypes,
   SignTypedDataVersion,
   TypedDataV1,
-  TypedMessage
+  TypedMessage,
+  PubkeyLedger
 } from './types';
 import { AminoSignResponse } from '@cosmjs/launchpad';
 import { trimAminoSignDoc } from './amino-sign-doc';
@@ -69,6 +71,7 @@ export type MultiKeyStoreInfo = MultiKeyStoreInfoElem[];
 export type MultiKeyStoreInfoWithSelectedElem = MultiKeyStoreInfoElem & {
   selected: boolean;
   addresses?: AddressesLedger;
+  pubkeys?: PubkeyLedger;
 };
 export type MultiKeyStoreInfoWithSelected = MultiKeyStoreInfoWithSelectedElem[];
 
@@ -92,7 +95,6 @@ export class KeyRing {
   private _privateKey?: Uint8Array;
   private _mnemonic?: string;
   private _ledgerPublicKey?: Uint8Array;
-
   private keyStore: KeyStore | null;
 
   private multiKeyStore: KeyStore[];
@@ -546,7 +548,8 @@ export class KeyRing {
     // Update ledger address here with this function below
 
     const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
-    this.ledgerPublicKey = publicKey;
+    // this.ledgerPublicKey = publicKey;
+
     const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
@@ -560,8 +563,19 @@ export class KeyRing {
       const returnedAddresses = Object.assign(keyStoreAddresses, {
         [ledgerAppType]: address
       });
+
       keyStoreInMulti.addresses = returnedAddresses;
       this.keyStore.addresses = returnedAddresses;
+      if (!!publicKey) {
+        const returnedPubkey = Object.assign(
+          { ...keyStoreInMulti.pubkeys },
+          {
+            [ledgerAppType]: publicKey
+          }
+        );
+        keyStoreInMulti.pubkeys = returnedPubkey;
+        this.keyStore.pubkeys = returnedPubkey;
+      }
     }
 
     await this.save();
@@ -648,8 +662,14 @@ export class KeyRing {
   }
   private getPubKey(coinType): PubKeySecp256k1 {
     if (this.keyStore.type === 'ledger') {
+      const appName = formatCoinTypeToLedgerAppName(coinType);
       if (!this.ledgerPublicKey) {
         throw new Error('Ledger public key not set');
+      }
+      console.log('🚀 ~ file: keyring.ts:669 ~ getPubKey ~ this.keyStore?.pubkeys:', this.keyStore?.pubkeys);
+      if (this.keyStore?.pubkeys && this.keyStore.pubkeys[appName]) {
+        return new PubKeySecp256k1(this.keyStore.pubkeys[appName]);
+        // this.ledgerPublicKey = this.keyStore.pubkeys[appName];
       }
       return new PubKeySecp256k1(this.ledgerPublicKey);
     } else {
@@ -1422,6 +1442,7 @@ export class KeyRing {
         version: keyStore.version,
         type: keyStore.type,
         addresses: keyStore.addresses,
+        pubkeys: keyStore.pubkeys,
         meta: keyStore.meta,
         coinTypeForChain: keyStore.coinTypeForChain,
         bip44HDPath: keyStore.bip44HDPath,

@@ -4,7 +4,8 @@ import {
   CoinTypeForChain,
   ScryptParams,
   CommonCrypto,
-  AddressesLedger
+  AddressesLedger,
+  PubkeyLedger
 } from './types';
 import { Hash, RNG } from '@owallet/crypto';
 import pbkdf2 from 'pbkdf2';
@@ -39,6 +40,7 @@ export interface KeyStore {
     mac: string;
   };
   addresses?: AddressesLedger;
+  pubkeys?: PubkeyLedger;
 }
 
 export class Crypto {
