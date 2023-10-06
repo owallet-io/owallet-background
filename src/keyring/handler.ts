@@ -40,7 +40,7 @@ import { KeyRingService } from './service';
 import { Bech32Address } from '@owallet/cosmos';
 import { Address } from '@owallet/crypto';
 import Long from 'long';
-import { SignDoc } from "@owallet/proto-types/cosmos/tx/v1beta1/tx";
+import { SignDoc } from '@owallet/proto-types/cosmos/tx/v1beta1/tx';
 export const getHandler: (service: KeyRingService) => Handler = (service: KeyRingService) => {
   return (env: Env, msg: Message<unknown>) => {
     switch (msg.constructor) {
@@ -201,12 +201,20 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
     await service.permissionService.checkOrGrantBasicAccessPermission(env, msg.chainId, msg.origin);
 
     const key = await service.getKey(msg.chainId);
+    const isInj = msg.chainId?.startsWith('injective');
+    const pubkeyLedger = service.getKeyRingLedgerPubKey();
+    console.log('🚀 ~ file: handler.ts:205 ~ return ~ addressLedger:', pubkeyLedger['eth']);
     // hereeee
     return {
       name: service.getKeyStoreMeta('name'),
       algo: 'secp256k1',
       pubKey: key.pubKey,
-      address: key.address,
+      address: (() => {
+        if (isInj) {
+          return pubkeyLedger['eth'] ? key.address : null;
+        }
+        return key.address;
+      })(),
       bech32Address: new Bech32Address(key.address).toBech32((await service.chainsService.getChainInfo(msg.chainId)).bech32Config.bech32PrefixAccAddr),
       isNanoLedger: key.isNanoLedger
     };

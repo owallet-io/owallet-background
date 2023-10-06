@@ -148,6 +148,13 @@ export class KeyRing {
       return KeyRing.getLedgerAddressOfKeyStore(this.keyStore);
     }
   }
+  public get pubkeys(): PubkeyLedger {
+    if (!this.keyStore) {
+      return {} as PubkeyLedger;
+    } else {
+      return this.keyStore.pubkeys;
+    }
+  }
   public isLocked(): boolean {
     return this.privateKey == null && this.mnemonic == null && this.ledgerPublicKey == null;
   }

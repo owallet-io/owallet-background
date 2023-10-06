@@ -11,6 +11,7 @@ import {
   ECDSASignature,
   ExportKeyRingData,
   MessageTypes,
+  PubkeyLedger,
   SignEthereumTypedDataObject,
   SignTypedDataVersion,
   TypedMessage
@@ -233,6 +234,9 @@ export class KeyRingService {
 
   getKeyRingLedgerAddresses(): AddressesLedger {
     return this.keyRing.addresses;
+  }
+  getKeyRingLedgerPubKey(): PubkeyLedger {
+    return this.keyRing.pubkeys;
   }
   async requestSignEIP712CosmosTx_v0_selected(
     env: Env,
