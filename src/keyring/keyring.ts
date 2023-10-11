@@ -561,7 +561,7 @@ export class KeyRing {
       // console.log("🚀 ~ file: keyring.ts:558 ~ setKeyStoreLedgerAddress ~ address:", address)
       // console.log("🚀 ~ file: keyring.ts:558 ~ setKeyStoreLedgerAddress ~ publicKey:", publicKey)
       // // this.ledgerPublicKey = publicKey;
-      const pubKey = Buffer.from(publicKey).toString('hex');
+      const pubKey = publicKey ? Buffer.from(publicKey).toString('hex') : null;
       const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
         return (
           KeyRing.getKeyStoreId(keyStore) ===
@@ -578,7 +578,7 @@ export class KeyRing {
 
         keyStoreInMulti.addresses = returnedAddresses;
         this.keyStore.addresses = returnedAddresses;
-        if (!!pubKey) {
+        if (!!publicKey) {
           const returnedPubkey = Object.assign(
             { ...keyStoreInMulti.pubkeys },
             {
