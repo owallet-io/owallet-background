@@ -203,6 +203,7 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
     const key = await service.getKey(msg.chainId);
     const isInj = msg.chainId?.startsWith('injective');
     const pubkeyLedger = service.getKeyRingLedgerPubKey();
+    console.log("🚀 ~ file: handler.ts:206 ~ return ~ pubkeyLedger:", pubkeyLedger)
     // console.log('🚀 ~ file: handler.ts:205 ~ return ~ addressLedger:', pubkeyLedger['eth']);
     // hereee
     const bech32Convert = new Bech32Address(key.address).toBech32((await service.chainsService.getChainInfo(msg.chainId)).bech32Config.bech32PrefixAccAddr)

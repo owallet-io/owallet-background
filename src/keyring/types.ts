@@ -16,9 +16,9 @@ export type AddressesLedger = {
 };
 
 export type PubkeyLedger = {
-  cosmos?: Uint8Array;
-  eth?: Uint8Array;
-  trx?: Uint8Array;
+  cosmos?: string;
+  eth?: string;
+  trx?: string;
 };
 export interface CommonCrypto {
   scrypt: (text: string, params: ScryptParams) => Promise<Uint8Array>;

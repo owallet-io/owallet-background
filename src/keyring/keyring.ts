@@ -546,47 +546,55 @@ export class KeyRing {
   }
 
   public async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string, chainId: string | number) {
-    if (!this.keyStore) {
-      throw new Error('Empty key store');
-    }
-    const networkType = getNetworkTypeByChainId(chainId);
+    try {
+      if (!this.keyStore) {
+        throw new Error('Empty key store');
+      }
+      const networkType = getNetworkTypeByChainId(chainId);
 
-    const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
-    // Update ledger address here with this function below
+      const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
+      // console.log("🚀 ~ file: keyring.ts:555 ~ setKeyStoreLedgerAddress ~ ledgerAppType:", ledgerAppType)
+      // Update ledger address here with this function below
 
-    const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
-    // this.ledgerPublicKey = publicKey;
-
-    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
-      return (
-        KeyRing.getKeyStoreId(keyStore) ===
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        KeyRing.getKeyStoreId(this.keyStore!)
-      );
-    });
-
-    if (keyStoreInMulti) {
-      const keyStoreAddresses = { ...keyStoreInMulti.addresses };
-      const returnedAddresses = Object.assign(keyStoreAddresses, {
-        [ledgerAppType]: address
+      const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
+      console.log('🚀 ~ file: keyring.ts:560 ~ setKeyStoreLedgerAddress ~ publicKey:', Buffer.from(publicKey).toString('hex'));
+      // console.log("🚀 ~ file: keyring.ts:558 ~ setKeyStoreLedgerAddress ~ address:", address)
+      // console.log("🚀 ~ file: keyring.ts:558 ~ setKeyStoreLedgerAddress ~ publicKey:", publicKey)
+      // // this.ledgerPublicKey = publicKey;
+      const pubKey = Buffer.from(publicKey).toString('hex');
+      const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+        return (
+          KeyRing.getKeyStoreId(keyStore) ===
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          KeyRing.getKeyStoreId(this.keyStore!)
+        );
       });
 
-      keyStoreInMulti.addresses = returnedAddresses;
-      this.keyStore.addresses = returnedAddresses;
-      if (!!publicKey) {
-        const returnedPubkey = Object.assign(
-          { ...keyStoreInMulti.pubkeys },
-          {
-            [ledgerAppType]: publicKey
-          }
-        );
-        keyStoreInMulti.pubkeys = returnedPubkey;
-        this.keyStore.pubkeys = returnedPubkey;
-      }
-    }
+      if (keyStoreInMulti) {
+        const keyStoreAddresses = { ...keyStoreInMulti.addresses };
+        const returnedAddresses = Object.assign(keyStoreAddresses, {
+          [ledgerAppType]: address
+        });
 
-    await this.save();
-    return { status: this.status };
+        keyStoreInMulti.addresses = returnedAddresses;
+        this.keyStore.addresses = returnedAddresses;
+        if (!!pubKey) {
+          const returnedPubkey = Object.assign(
+            { ...keyStoreInMulti.pubkeys },
+            {
+              [ledgerAppType]: pubKey
+            }
+          );
+          keyStoreInMulti.pubkeys = returnedPubkey;
+          this.keyStore.pubkeys = returnedPubkey;
+        }
+      }
+
+      await this.save();
+      return { status: this.status };
+    } catch (error) {
+      console.log('🚀 ~ file: keyring.ts:595 ~ setKeyStoreLedgerAddress ~ error:', error);
+    }
   }
 
   public async deleteKeyRing(
@@ -673,9 +681,9 @@ export class KeyRing {
       if (!this.ledgerPublicKey) {
         throw new Error('Ledger public key not set');
       }
-      console.log('🚀 ~ file: keyring.ts:669 ~ getPubKey ~ this.keyStore?.pubkeys:', this.keyStore?.pubkeys);
       if (this.keyStore?.pubkeys && this.keyStore.pubkeys[appName]) {
-        return new PubKeySecp256k1(this.keyStore.pubkeys[appName]);
+        const pubKeyConverted = Uint8Array.from(Buffer.from(this.keyStore.pubkeys[appName], 'hex'));
+        return new PubKeySecp256k1(pubKeyConverted);
         // this.ledgerPublicKey = this.keyStore.pubkeys[appName];
       }
       return new PubKeySecp256k1(this.ledgerPublicKey);

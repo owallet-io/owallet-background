@@ -8,7 +8,7 @@ import { signatureImport, publicKeyConvert } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
 import { EIP712MessageValidator, stringifyPath, ethSignatureToBytes, domainHash, messageHash } from '../utils/helper';
-import { bufferToHex, addHexPrefix } from 'ethereumjs-util'
+import { bufferToHex, addHexPrefix } from 'ethereumjs-util';
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 
 export enum LedgerInitErrorOn {
@@ -185,7 +185,8 @@ export class LedgerInternal {
           );
           data = await EIP712MessageValidator.validateAsync(JSON.parse(Buffer.from(message).toString()));
         } catch (e) {
-          console.log(e);
+          console.log('🚀 ~ file: ledger-internal.ts:188 ~ LedgerInternal ~ sign ~ e:', e);
+
           throw new Error(e.message || e.toString());
         }
 
