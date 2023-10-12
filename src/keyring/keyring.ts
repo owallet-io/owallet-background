@@ -823,7 +823,65 @@ export class KeyRing {
     }
     return parseInt(chainId);
   }
+  async processSignLedgerEvm(env: Env, chainId: string, rpc: string, message: object): Promise<string> {
+    const address = this.addresses?.eth;
+    const nonce = await request(rpc, 'eth_getTransactionCount', [address, 'latest']);
+    let finalMessage: any = {
+      gasLimit: (message as any)?.gasLimit,
+      gasPrice: (message as any)?.gasPrice,
+      value: (message as any)?.value,
+      to: (message as any)?.to,
+      nonce,
+      chainId: Number(chainId)
+    };
+    const serializedTx = serialize(finalMessage).replace('0x', '');
+    const signature = await this.sign(env, chainId, 60, Buffer.from(serializedTx, 'hex'));
+    const signedTx = serialize(finalMessage, {
+      r: `0x${signature.r}`,
+      s: `0x${signature.s}`,
+      v: parseInt(signature.v, 16)
+    });
+    const response = await request(rpc, 'eth_sendRawTransaction', [signedTx]);
+    return response;
+  }
+  async processSignEvm(chainId: string, coinType: number, rpc: string, message: object): Promise<string> {
+    const privKey = this.loadPrivKey(coinType);
+    const chainIdNumber = this.validateChainId(chainId);
+    console.log('chainIdNumber: ', chainIdNumber);
 
+    // For Ethereum Key-Gen Only:
+    const ethereumAddress = privateToAddress(Buffer.from(privKey.toBytes()));
+
+    const customCommon = Common.custom({
+      name: chainId,
+      networkId: chainIdNumber,
+      chainId: chainIdNumber
+    });
+
+    const nonce = await request(rpc, 'eth_getTransactionCount', ['0x' + Buffer.from(ethereumAddress).toString('hex'), 'latest']);
+
+    let finalMessage: any = {
+      ...message,
+      gas: (message as any)?.gasLimit,
+      gasPrice: (message as any)?.gasPrice,
+      nonce,
+      chainId
+    };
+
+    delete finalMessage?.from;
+    delete finalMessage?.type;
+    console.log('🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage', finalMessage);
+
+    const opts: TransactionOptions = { common: customCommon } as any;
+    const tx = new Transaction(finalMessage, opts);
+    // here
+    tx.sign(Buffer.from(privKey.toBytes()));
+
+    const serializedTx = tx.serialize();
+    const rawTxHex = '0x' + serializedTx.toString('hex');
+    const response = await request(rpc, 'eth_sendRawTransaction', [rawTxHex]);
+    return response;
+  }
   public async signAndBroadcastEthereum(env: Env, chainId: string, coinType: number, rpc: string, message: object): Promise<string> {
     console.log('🚀 ~ file: keyring.ts ~ line 733 ~ KeyRing ~ message', message);
     if (this.status !== KeyRingStatus.UNLOCKED) {
@@ -841,81 +899,9 @@ export class KeyRing {
     }
 
     if (this.keyStore.type === 'ledger') {
-      const address = this.addresses?.eth;
-
-      const nonce = await request(rpc, 'eth_getTransactionCount', [address, 'latest']);
-
-      let finalMessage: any = {
-        ...message,
-        from: address,
-        // gas: (message as any)?.gasLimit,
-        gasLimit: (message as any)?.gasLimit,
-        gasPrice: (message as any)?.gasPrice,
-        nonce,
-        chainId: Number(chainId)
-      };
-      delete finalMessage?.from;
-      delete finalMessage?.type;
-      delete finalMessage?.gas;
-      delete finalMessage?.memo;
-      delete finalMessage?.fees;
-      delete finalMessage?.maxPriorityFeePerGas;
-      delete finalMessage?.maxFeePerGas;
-      // console.log(
-      //   '🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage',
-      //   finalMessage
-      // );
-      const serializedTx = serialize(finalMessage).replace('0x', '');
-      console.log('serializedTx: ', serializedTx);
-      const signature = await this.sign(env, chainId, 60, Buffer.from(serializedTx, 'hex'));
-      const signedTx = serialize(finalMessage, {
-        r: `0x${signature.r}`,
-        s: `0x${signature.s}`,
-        v: parseInt(signature.v, 16)
-      });
-
-      // console.log('signedT === 1', signedTx);
-      const response = await request(rpc, 'eth_sendRawTransaction', [signedTx]);
-      // console.log('response eth ===', response);
-
-      return response;
+      return this.processSignLedgerEvm(env, chainId, rpc, message);
     } else {
-      const privKey = this.loadPrivKey(coinType);
-      const chainIdNumber = this.validateChainId(chainId);
-      console.log('chainIdNumber: ', chainIdNumber);
-
-      // For Ethereum Key-Gen Only:
-      const ethereumAddress = privateToAddress(Buffer.from(privKey.toBytes()));
-
-      const customCommon = Common.custom({
-        name: chainId,
-        networkId: chainIdNumber,
-        chainId: chainIdNumber
-      });
-
-      const nonce = await request(rpc, 'eth_getTransactionCount', ['0x' + Buffer.from(ethereumAddress).toString('hex'), 'latest']);
-
-      let finalMessage: any = {
-        ...message,
-        gas: (message as any)?.gasLimit,
-        gasPrice: (message as any)?.gasPrice,
-        nonce,
-        chainId
-      };
-
-      delete finalMessage?.from;
-      delete finalMessage?.type;
-      console.log('🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage', finalMessage);
-
-      const opts: TransactionOptions = { common: customCommon } as any;
-      const tx = new Transaction(finalMessage, opts);
-      // here
-      tx.sign(Buffer.from(privKey.toBytes()));
-
-      const serializedTx = tx.serialize();
-      const rawTxHex = '0x' + serializedTx.toString('hex');
-      const response = await request(rpc, 'eth_sendRawTransaction', [rawTxHex]);
-      return response;
+      return this.processSignEvm(chainId, coinType, rpc, message);
     }
   }
 
