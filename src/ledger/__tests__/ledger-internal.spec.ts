@@ -195,7 +195,7 @@ describe('LedgerInternal', () => {
       ],
       [
         {
-          publicKey: 'A/IbKy/sdYZwwpBuaFr6a97Eo2VaK81fEsq/Dr+8yD1E',
+          publicKey: 'BPIbKy/sdYZwwpBuaFr6a97Eo2VaK81fEsq/Dr+8yD1E66IdG6hOUgzdFj1RCh4n+PgDwK2UHHtQqRvV4RVW7a8=',
           address: '0x1ABC7154748D1CE5144478CDEB574AE244B939B5'
         },
         mockPathNumber,
