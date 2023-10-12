@@ -167,9 +167,17 @@ export class LedgerInternal {
       return signatureImport(signature);
     } else if (this.ledgerApp instanceof EthApp) {
       const rawTxHex = Buffer.from(message).toString('hex');
-      const signDoc = JSON.parse(Buffer.from(message).toString());
+
+      const signDoc = (() => {
+        try {
+          return JSON.parse(Buffer.from(message).toString());
+        } catch (error) {
+          console.log('🚀 ~ file: ledger-internal.ts:175 ~ LedgerInternal ~ signDoc ~ error:', error);
+          return null;
+        }
+      })();
       console.log('🚀 ~ file: ledger-internal.ts:171 ~ LedgerInternal ~ sign ~ signDoc:', signDoc);
-      if (signDoc?.chain_id && signDoc?.chain_id?.startsWith('injective')) {
+      if (signDoc && signDoc?.chain_id && signDoc?.chain_id?.startsWith('injective')) {
         const eip712 = { ...signDoc?.eip712 };
         delete signDoc.eip712;
         console.log('🚀 ~ file: ledger-internal.ts:174 ~ LedgerInternal ~ sign ~ eip712:', eip712);
