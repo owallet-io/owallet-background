@@ -1317,7 +1317,7 @@ describe('keyring', () => {
     });
   });
   
-  describe('signEthereum', () => {
+  describe('signEvm', () => {
     it('sign Ethereum', async () => {
       const message = Buffer.from('c429601ee7a6167356f15baa70fd8fe17b0325dab7047a658a31039e5384bffd', 'hex');
       const privKey = new PrivKeySecp256k1(Buffer.from('ae0e3814fad957fb1fdca450a9795f5e64b46061a8618cc4029fcbbfdf215221', 'hex'));
@@ -1326,6 +1326,17 @@ describe('keyring', () => {
         '1483463727ddf1f5330cb2e480bf24c9d27140a909e789effae36bb0684bd1d33c79bb0aa5d4e9dcf48ae8946395e2d5bcddd8c70853d73193f48820f37a6cda'
       );
     });
+    it('sign Tron',()=>{
+      const mockPrivBytes = new Uint8Array([
+        102, 211, 219, 188, 242, 151, 77, 32, 6, 123, 231, 231, 198, 171, 27, 148, 18, 123, 5, 164, 128, 2, 123, 110, 35, 223, 224, 102, 141, 222, 136, 126
+      ]);
+      const mockPrivKey: any = {
+        toBytes: jest.fn().mockReturnValue(mockPrivBytes)
+      };
+      const mockMsg = '8f87082466466dbbb310a62c5cb4c66df42b5eb142aaeb9b8ab90add6b617dcb';
+      const rs = keyRing.signTron(mockPrivKey,mockMsg as any);
+      expect(rs.toString('hex')).toBe('3e2481506aa8c56c5567868501288fa55fd7f3c9891a735ca196076491879612c06dea26c21f2b33a69d7b21aaaadc37c9a1c9b225fdb62a22a733a69b79a78f01');
+    })
   });
   describe('signEvm', () => {
     const mockMsg = {

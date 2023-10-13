@@ -752,6 +752,7 @@ export class KeyRing {
     }
   }
   signTron(privKey: PrivKeySecp256k1, message: Uint8Array) {
+    console.log("🚀 ~ file: keyring.ts:755 ~ signTron ~ message:", message)
     const transactionSign = TronWeb.utils.crypto.signTransaction(privKey.toBytes(), {
       txID: message
     });
@@ -795,7 +796,7 @@ export class KeyRing {
       if (KeyringHelper.isEthermintByChainId(chainId)) {
         // Only check coinType === 195 for Tron network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
-          this.signTron(privKey, message);
+          return this.signTron(privKey, message);
         }
 
         return this.signEthereum(privKey, message);
