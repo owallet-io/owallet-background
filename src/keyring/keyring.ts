@@ -1,4 +1,3 @@
-
 import * as BytesUtils from '@ethersproject/bytes';
 import { keccak256 } from '@ethersproject/keccak256';
 import { serialize } from '@ethersproject/transactions';
@@ -26,7 +25,7 @@ import { Buffer } from 'buffer';
 import eccrypto from 'eccrypto-js';
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
 
-import { ecsign, keccak,  privateToPublic, publicToAddress, toBuffer } from 'ethereumjs-util';
+import { ecsign, keccak, privateToPublic, publicToAddress, toBuffer } from 'ethereumjs-util';
 import { isHexString } from 'ethjs-util';
 import TronWeb from 'tronweb';
 import { LedgerAppType, LedgerService } from '../ledger';
@@ -812,7 +811,6 @@ export class KeyRing {
     }
   }
 
-  
   async processSignLedgerEvm(env: Env, chainId: string, rpc: string, message: object): Promise<string> {
     const address = this.addresses?.eth;
     const nonce = await request(rpc, 'eth_getTransactionCount', [address, 'latest']);
@@ -834,15 +832,12 @@ export class KeyRing {
     const response = await request(rpc, 'eth_sendRawTransaction', [signedTx]);
     return response;
   }
-  
-  
+
   async processSignEvm(chainId: string, coinType: number, rpc: string, message: object): Promise<string> {
     const privKey = this.loadPrivKey(coinType);
     const rawTransactionCount = KeyringHelper.getRawTransactionCountEvm(privKey);
-    console.log('🚀 ~ file: keyring.ts:885 ~ processSignEvm ~ rawTransactionCount:', rawTransactionCount);
     const nonce = await request(rpc, 'eth_getTransactionCount', rawTransactionCount);
     const rawTxHex = KeyringHelper.getRawTxEvm(privKey, chainId, nonce, message);
-    console.log('🚀 ~ file: keyring.ts:888 ~ processSignEvm ~ rawTxHex:', rawTxHex);
     const response = await request(rpc, 'eth_sendRawTransaction', [rawTxHex]);
     return response;
   }

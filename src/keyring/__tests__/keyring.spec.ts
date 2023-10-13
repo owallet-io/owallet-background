@@ -59,6 +59,7 @@ import { utils } from 'ethers';
 import * as tx from '../../tx';
 import * as ethUtils from 'ethereumjs-util';
 import * as commonOwallet from '@owallet/common';
+import { KeyringHelper } from '../utils';
 // const commonOwallet = require('@owallet/common');
 
 const helper = require('../../utils/helper');
@@ -1612,12 +1613,12 @@ describe('keyring', () => {
       return item;
     });
     it.each(arrayMapped)('Test validateChainId for $chainName', (item) => {
-      const rs = keyRing.validateChainId(item.chainId);
+      const rs = KeyringHelper.validateChainId(item.chainId);
       expect(rs).toBe((item as any).expected);
     });
 
     it('getRawTransactionCountEvm', () => {
-      const rs = keyRing.getRawTransactionCountEvm(mockPrivKey);
+      const rs = KeyringHelper.getRawTransactionCountEvm(mockPrivKey);
       expect(rs).toEqual(['0xad90317473bbc13ba0c9e81d21131fce289078fe', 'latest']);
     });
 
@@ -1642,7 +1643,7 @@ describe('keyring', () => {
     });
 
     it.each(arrayRawTxEvm)('getRawTxEvm for chain: $chainName', (item) => {
-      const rs = keyRing.getRawTxEvm(mockPrivKey, item.chainId, '0x30', mockMsg);
+      const rs = KeyringHelper.getRawTxEvm(mockPrivKey, item.chainId, '0x30', mockMsg);
       expect(rs).toBe((item as any).expectedRaw);
     });
   });
