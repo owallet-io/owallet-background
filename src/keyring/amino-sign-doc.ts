@@ -31,6 +31,7 @@ const TrimAminoSignDocScheme = Joi.object({
  * @param signDoc
  */
 export function trimAminoSignDoc(signDoc: StdSignDoc): StdSignDoc {
+  console.log("🚀 ~ file: amino-sign-doc.ts:34 ~ trimAminoSignDoc ~ signDoc:", signDoc)
   const res = TrimAminoSignDocScheme.validate(signDoc, {
     stripUnknown: true,
   });
