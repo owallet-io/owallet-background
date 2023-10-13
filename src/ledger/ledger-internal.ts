@@ -4,11 +4,10 @@ import EthApp from '@ledgerhq/hw-app-eth';
 import TrxApp from '@ledgerhq/hw-app-trx';
 import TransportWebHID from '@ledgerhq/hw-transport-webhid';
 import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
-import { signatureImport, publicKeyConvert } from 'secp256k1';
+import { signatureImport } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
 import { EIP712MessageValidator, stringifyPath, ethSignatureToBytes, domainHash, messageHash } from '../utils/helper';
-import { bufferToHex, addHexPrefix } from 'ethereumjs-util';
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 
 export enum LedgerInitErrorOn {

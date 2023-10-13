@@ -4,21 +4,21 @@ import Common from '@ethereumjs/common';
 import { privateToAddress } from 'ethereumjs-util';
 import { getChainInfoOrThrow, isEthermintLike } from '@owallet/common';
 
-export const convertEthSignature = (signature: { s: string; r: string; recoveryParam?: number }) => {
-  return Buffer.concat([
-    Buffer.from(signature.r.replace('0x', ''), 'hex'),
-    Buffer.from(signature.s.replace('0x', ''), 'hex'),
-    // The metamask doesn't seem to consider the chain id in this case... (maybe bug on metamask?)
-    signature.recoveryParam ? Buffer.from('1c', 'hex') : Buffer.from('1b', 'hex')
-  ]);
-};
-
 export class KeyringHelper {
+  static convertEthSignature(signature: { s: string; r: string; recoveryParam?: number }) {
+    return Buffer.concat([
+      Buffer.from(signature.r.replace('0x', ''), 'hex'),
+      Buffer.from(signature.s.replace('0x', ''), 'hex'),
+      // The metamask doesn't seem to consider the chain id in this case... (maybe bug on metamask?)
+      signature.recoveryParam ? Buffer.from('1c', 'hex') : Buffer.from('1b', 'hex')
+    ]);
+  }
   static getRawTransactionCountEvm(privKey: PrivKeySecp256k1) {
     // For Ethereum Key-Gen Only:
     const ethereumAddress = privateToAddress(Buffer.from(privKey.toBytes()));
     return ['0x' + Buffer.from(ethereumAddress).toString('hex'), 'latest'];
   }
+
   static validateChainId(chainId: string): number {
     // chain id example: kawaii_6886-1. If chain id input is already a number in string => parse it immediately
     if (isNaN(parseInt(chainId))) {
@@ -32,7 +32,6 @@ export class KeyringHelper {
     return parseInt(chainId);
   }
   static getRawTxEvm(privKey: PrivKeySecp256k1, chainId: string, nonce: string, message: object) {
-    console.log(privKey.toBytes());
     const chainIdNumber = this.validateChainId(chainId);
     const customCommon = Common.custom({
       name: chainId,
@@ -60,7 +59,7 @@ export class KeyringHelper {
     const rawTxHex = '0x' + serializedTx.toString('hex');
     return rawTxHex;
   }
-  static isEthermintByChainId(chainId:string){
+  static isEthermintByChainId(chainId: string) {
     const chainInfo = getChainInfoOrThrow(chainId);
     const isEthermint = isEthermintLike(chainInfo);
     return isEthermint;

@@ -10,23 +10,17 @@ import {
   KVStore,
   KVStoreType,
   splitPath,
-  getChainInfoOrThrow,
-  isEthermintLike,
-  escapeHTML,
-  sortObjectByKey,
   formatCoinTypeToLedgerAppName
 } from '@owallet/common';
-import { ChainIdHelper, Bech32Address } from '@owallet/cosmos';
+import { ChainIdHelper } from '@owallet/cosmos';
 import { Mnemonic, PrivKeySecp256k1, PubKeySecp256k1, RNG, Hash } from '@owallet/crypto';
 import { Env, OWalletError } from '@owallet/router';
-import { ChainInfo, OWalletSignOptions, StdSignDoc } from '@owallet/types';
+import { ChainInfo } from '@owallet/types';
 import AES from 'aes-js';
 import { Buffer } from 'buffer';
 import eccrypto from 'eccrypto-js';
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
-
 import { ecsign, keccak, privateToPublic, publicToAddress, toBuffer } from 'ethereumjs-util';
-import { isHexString } from 'ethjs-util';
 import TronWeb from 'tronweb';
 import { LedgerAppType, LedgerService } from '../ledger';
 import { request } from '../tx';
@@ -46,8 +40,6 @@ import {
   TypedMessage,
   PubkeyLedger
 } from './types';
-import { AminoSignResponse } from '@cosmjs/launchpad';
-import { trimAminoSignDoc } from './amino-sign-doc';
 import { KeyringHelper } from './utils';
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
