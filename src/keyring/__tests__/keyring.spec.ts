@@ -1320,7 +1320,6 @@ describe('keyring', () => {
     //   jest.mock('@owallet/common');
     //   jest.resetModules();
     // });
-
     // const mockContentMessage = 'This_is_example_for_message';
     // type caseTestSignMethod =
     //   | 'Key_ring_is_not_unlock'
@@ -1462,7 +1461,6 @@ describe('keyring', () => {
     //     ])
     //   ]
     // ];
-
     // it.each(testCase)(
     //   'test sign method for case %s',
     //   async function (
@@ -1509,7 +1507,6 @@ describe('keyring', () => {
     //           const spyGetKeyStoreBIP44Path = jest.spyOn(KeyRing as any, 'getKeyStoreBIP44Path').mockReturnValue(mockBip44HDPath);
     //           const spyFormatNeworkTypeToLedgerAppName = jest.spyOn(helper, 'formatNeworkTypeToLedgerAppName');
     //           const spyLedgerKeeperSign = jest.spyOn(keyRing['ledgerKeeper'], 'sign').mockResolvedValue(eleLedgerPublicKey.expect);
-
     //           const rs = await keyRing['sign'](env, chainId, defaultCoinType, message);
     //           expect(spyStatus).toHaveBeenCalled();
     //           expect(spyGetNetworkTypeByChainId).toHaveBeenCalled();
@@ -1521,7 +1518,6 @@ describe('keyring', () => {
     //           expect(spyGetKeyStoreBIP44Path).toHaveBeenCalled();
     //           expect(spyGetKeyStoreBIP44Path).toHaveBeenCalledTimes(1);
     //           expect(spyGetKeyStoreBIP44Path).toHaveBeenCalledWith(options.mockKeyStore);
-
     //           expect(spyLedgerKeeperSign).toHaveBeenCalled();
     //           expect(spyLedgerKeeperSign).toHaveBeenCalledTimes(1);
     //           expect(spyLedgerKeeperSign).toHaveBeenCalledWith(
@@ -1537,7 +1533,6 @@ describe('keyring', () => {
     //             message,
     //             helper.formatNeworkTypeToLedgerAppName(commonOwallet.getNetworkTypeByChainId(chainId))
     //           );
-
     //           expect(rs).toEqual(mockKeyCosmos.publicKeyHex);
     //         }
     //       }
@@ -1548,9 +1543,7 @@ describe('keyring', () => {
     //         spySignEthereum = jest.spyOn(keyRing as any, 'signEthereum');
     //       }
     //       keyRing['_mnemonic'] = mockKeyCosmos.mnemonic;
-
     //       const spyLoadPrivKey = jest.spyOn(keyRing as any, 'loadPrivKey');
-
     //       const rs = await keyRing['sign'](env, chainId, defaultCoinType, message);
     //       expect(spyStatus).toHaveBeenCalled();
     //       expect(spyGetNetworkTypeByChainId).toHaveBeenCalled();
@@ -1585,6 +1578,51 @@ describe('keyring', () => {
       expect(Buffer.from(rs).toString('hex')).toEqual(
         '1483463727ddf1f5330cb2e480bf24c9d27140a909e789effae36bb0684bd1d33c79bb0aa5d4e9dcf48ae8946395e2d5bcddd8c70853d73193f48820f37a6cda'
       );
+    });
+  });
+  describe('signEvm', () => {
+    const mockMsg = {
+      to: '0xf2846a1E4dAFaeA38C1660a618277d67605bd2B5',
+      value: '0x9184e72a000',
+      gas: '0x30d40',
+      gasPrice: '0x2540be400',
+      gasLimit: '0x30d40',
+      memo: '',
+      fees: '0x0'
+    };
+    const arrayEvm = commonOwallet.EmbedChainInfos.filter((item, index) => item.networkType === 'evm');
+    const arrayMapped = arrayEvm.map((item) => {
+      if (item.chainId === '0x1ae6') {
+        (item as any).expected = 6886;
+      } else if (item.chainId === '0x61') {
+        (item as any).expected = 97;
+      } else if (item.chainId === '0x01') {
+        (item as any).expected = 1;
+      } else if (item.chainId === '0x38') {
+        (item as any).expected = 56;
+      } else if (item.chainId === '0x2b6653dc') {
+        (item as any).expected = 728126428;
+      }
+      return item;
+    });
+
+    it.each(arrayMapped)('Test validateChainId for $chainName', (item) => {
+      const rs = keyRing.validateChainId(item.chainId);
+      expect(rs).toBe((item as any).expected);
+    });
+    it('processSignEvm', async () => {
+      const mockPrivBytes = new Uint8Array([
+        102, 211, 219, 188, 242, 151, 77, 32, 6, 123, 231, 231, 198, 171, 27, 148, 18, 123, 5, 164, 128, 2, 123, 110, 35, 223, 224, 102, 141, 222, 136, 126
+      ]);
+      jest.spyOn(keyRing as any, 'loadPrivKey').mockReturnValue({
+        toBytes: jest.fn().mockReturnValue(mockPrivBytes)
+      });
+      const spyRequest = jest.spyOn(tx, 'request');
+      spyRequest
+        .mockReturnValueOnce(Promise.resolve('0x30')) // Mock response for the first call
+        .mockReturnValueOnce(Promise.resolve('ok'));
+      const rs = await keyRing.processSignEvm('0x01', 60, 'https://rpc.ankr.com/eth', mockMsg);
+      console.log("🚀 ~ file: keyring.spec.ts:1625 ~ it ~ rs:", rs)
     });
   });
   // describe('signAndBroadcastEthereum', () => {

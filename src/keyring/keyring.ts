@@ -844,22 +844,21 @@ export class KeyRing {
     const response = await request(rpc, 'eth_sendRawTransaction', [signedTx]);
     return response;
   }
-  async processSignEvm(chainId: string, coinType: number, rpc: string, message: object): Promise<string> {
-    const privKey = this.loadPrivKey(coinType);
-    const chainIdNumber = this.validateChainId(chainId);
-    console.log('chainIdNumber: ', chainIdNumber);
-
+  getRawTransactionCountEvm(privKey: PrivKeySecp256k1) {
     // For Ethereum Key-Gen Only:
     const ethereumAddress = privateToAddress(Buffer.from(privKey.toBytes()));
-
+    console.log('🚀 ~ file: keyring.ts:856 ~ processSignEvm ~ ethereumAddress:', ethereumAddress);
+    return ['0x' + Buffer.from(ethereumAddress).toString('hex'), 'latest'];
+  }
+  getRawTxEvm(privKey: PrivKeySecp256k1, chainId: string, nonce: string, message: object) {
+    console.log(privKey.toBytes());
+    const chainIdNumber = this.validateChainId(chainId);
     const customCommon = Common.custom({
       name: chainId,
       networkId: chainIdNumber,
       chainId: chainIdNumber
     });
-
-    const nonce = await request(rpc, 'eth_getTransactionCount', ['0x' + Buffer.from(ethereumAddress).toString('hex'), 'latest']);
-
+    console.log('chainIdNumber: ', chainIdNumber);
     let finalMessage: any = {
       ...message,
       gas: (message as any)?.gasLimit,
@@ -879,6 +878,13 @@ export class KeyRing {
 
     const serializedTx = tx.serialize();
     const rawTxHex = '0x' + serializedTx.toString('hex');
+    return rawTxHex;
+  }
+  async processSignEvm(chainId: string, coinType: number, rpc: string, message: object): Promise<string> {
+    const privKey = this.loadPrivKey(coinType);
+    const rawTransactionCount = this.getRawTransactionCountEvm(privKey);
+    const nonce = await request(rpc, 'eth_getTransactionCount', rawTransactionCount);
+    const rawTxHex = this.getRawTxEvm(privKey, chainId, nonce, message);
     const response = await request(rpc, 'eth_sendRawTransaction', [rawTxHex]);
     return response;
   }
