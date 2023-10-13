@@ -35,6 +35,7 @@ import { Buffer } from 'buffer/';
 import { request } from '../tx';
 import { Dec, DecUtils } from '@owallet/unit';
 import { trimAminoSignDoc } from './amino-sign-doc';
+import { KeyringHelper } from './utils';
 @singleton()
 export class KeyRingService {
   private readonly keyRing: KeyRing;
@@ -266,8 +267,7 @@ export class KeyRingService {
     signDoc: StdSignDoc,
     signOptions: OWalletSignOptions
   ): Promise<AminoSignResponse> {
-    const chainInfo = getChainInfoOrThrow(chainId);
-    const isEthermint = isEthermintLike(chainInfo);
+    const isEthermint = KeyringHelper.isEthermintByChainId(chainId);
 
     if (!isEthermint) {
       throw new Error('This feature is only usable on cosmos-sdk evm chain');
