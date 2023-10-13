@@ -751,7 +751,13 @@ export class KeyRing {
       throw new Error('Unexpected type of keyring');
     }
   }
+  signTron(privKey: PrivKeySecp256k1, message: Uint8Array) {
+    const transactionSign = TronWeb.utils.crypto.signTransaction(privKey.toBytes(), {
+      txID: message
+    });
 
+    return Buffer.from(transactionSign?.signature?.[0], 'hex');
+  }
   public async sign(env: Env, chainId: string, defaultCoinType: number, message: Uint8Array): Promise<Uint8Array | any> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new OWalletError('keyring', 143, 'Key ring is not unlocked');
@@ -786,14 +792,10 @@ export class KeyRing {
 
       // Check cointype = 60 in the case that network is evmos(still cosmos but need to sign with ethereum)
 
-      if (networkType === 'evm' || coinType === 60) {
+      if (KeyringHelper.isEthermintByChainId(chainId)) {
         // Only check coinType === 195 for Tron network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
-          const transactionSign = TronWeb.utils.crypto.signTransaction(privKey.toBytes(), {
-            txID: message
-          });
-
-          return Buffer.from(transactionSign?.signature?.[0], 'hex');
+          this.signTron(privKey, message);
         }
 
         return this.signEthereum(privKey, message);
