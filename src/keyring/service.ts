@@ -254,6 +254,37 @@ export class KeyRingService {
   ): Promise<AminoSignResponse> {
     return this.requestSignEIP712CosmosTx_v0(env, origin, chainId, signer, eip712, signDoc, signOptions);
   }
+  processSignDocEIP712(signDoc: StdSignDoc, chainId: string, signer: string, keyInfo: Key) {
+    console.log("🚀 ~ file: service.ts:258 ~ KeyRingService ~ processSignDocEIP712 ~ keyInfo:", keyInfo)
+    console.log("🚀 ~ file: service.ts:258 ~ KeyRingService ~ processSignDocEIP712 ~ signer:", signer)
+    console.log("🚀 ~ file: service.ts:258 ~ KeyRingService ~ processSignDocEIP712 ~ chainId:", chainId)
+    console.log("🚀 ~ file: service.ts:258 ~ KeyRingService ~ processSignDocEIP712 ~ signDoc:", signDoc)
+    const isEthermint = KeyringHelper.isEthermintByChainId(chainId);
+    if (!isEthermint) {
+      throw new Error('This feature is only usable on cosmos-sdk evm chain');
+    }
+
+    if (!keyInfo.isNanoLedger) {
+      throw new Error('This feature is only usable on ledger ethereum app');
+    }
+
+    const bech32Prefix = getChainInfoOrThrow(chainId).bech32Config.bech32PrefixAccAddr;
+    const bech32Address = new Bech32Address(keyInfo.address).toBech32(bech32Prefix);
+    console.log("🚀 ~ file: service.ts:273 ~ KeyRingService ~ processSignDocEIP712 ~ bech32Address:", bech32Address)
+    if (signer !== bech32Address) {
+      throw new Error('Signer mismatched');
+    }
+    signDoc = {
+      ...signDoc,
+      memo: escapeHTML(signDoc.memo)
+    };
+
+    signDoc = trimAminoSignDoc(signDoc);
+    console.log("🚀 ~ file: service.ts:283 ~ KeyRingService ~ processSignDocEIP712 ~ signDoc:", signDoc)
+    const sortSignDoc = sortObjectByKey(signDoc)
+    console.log("🚀 ~ file: service.ts:285 ~ KeyRingService ~ processSignDocEIP712 ~ sortSignDoc:", sortSignDoc)
+    return sortSignDoc;
+  }
   async requestSignEIP712CosmosTx_v0(
     env: Env,
     origin: string,
@@ -267,40 +298,12 @@ export class KeyRingService {
     signDoc: StdSignDoc,
     signOptions: OWalletSignOptions
   ): Promise<AminoSignResponse> {
-    const isEthermint = KeyringHelper.isEthermintByChainId(chainId);
-
-    if (!isEthermint) {
-      throw new Error('This feature is only usable on cosmos-sdk evm chain');
-    }
     const coinType = await this.chainsService.getChainCoinType(chainId);
-
     const keyInfo = this.keyRing.getKey(chainId, coinType);
-    // const keyInfo = await this.getKey(chainId);
     if (!keyInfo) {
       throw new Error('Null key info');
     }
-
-    if (!keyInfo.isNanoLedger) {
-      throw new Error('This feature is only usable on ledger ethereum app');
-    }
-
-    // if (isEthermint && keyInfo.type === 'ledger') {
-    //   throwErrorIfEthermintWithLedgerButNotSupported(chainId);
-    // }
-
-    signDoc = {
-      ...signDoc,
-      memo: escapeHTML(signDoc.memo)
-    };
-
-    signDoc = trimAminoSignDoc(signDoc);
-    signDoc = sortObjectByKey(signDoc);
-
-    const bech32Prefix = getChainInfoOrThrow(chainId).bech32Config.bech32PrefixAccAddr;
-    const bech32Address = new Bech32Address(keyInfo.address).toBech32(bech32Prefix);
-    if (signer !== bech32Address) {
-      throw new Error('Signer mismatched');
-    }
+    signDoc = this.processSignDocEIP712(signDoc, chainId, signer, keyInfo);
 
     let newSignDoc = (await this.interactionService.waitApprove(env, '/sign', 'request-sign', {
       msgOrigin: origin,
@@ -329,7 +332,6 @@ export class KeyRingService {
           eip712
         } as any)
       );
-      console.log('🚀 ~ file: service.ts:316 ~ KeyRingService ~ signature:', signature);
 
       return {
         signed: newSignDoc,
