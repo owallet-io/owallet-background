@@ -1,4 +1,4 @@
-import Common from '@ethereumjs/common';
+
 import * as BytesUtils from '@ethersproject/bytes';
 import { keccak256 } from '@ethersproject/keccak256';
 import { serialize } from '@ethersproject/transactions';
@@ -25,8 +25,8 @@ import AES from 'aes-js';
 import { Buffer } from 'buffer';
 import eccrypto from 'eccrypto-js';
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
-import { Transaction, TransactionOptions } from 'ethereumjs-tx';
-import { ecsign, keccak, privateToAddress, privateToPublic, publicToAddress, toBuffer } from 'ethereumjs-util';
+
+import { ecsign, keccak,  privateToPublic, publicToAddress, toBuffer } from 'ethereumjs-util';
 import { isHexString } from 'ethjs-util';
 import TronWeb from 'tronweb';
 import { LedgerAppType, LedgerService } from '../ledger';
@@ -49,6 +49,7 @@ import {
 } from './types';
 import { AminoSignResponse } from '@cosmjs/launchpad';
 import { trimAminoSignDoc } from './amino-sign-doc';
+import { KeyringHelper } from './utils';
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
 
@@ -811,18 +812,7 @@ export class KeyRing {
     }
   }
 
-  validateChainId(chainId: string): number {
-    // chain id example: kawaii_6886-1. If chain id input is already a number in string => parse it immediately
-    if (isNaN(parseInt(chainId))) {
-      const firstSplit = chainId.split('_')[1];
-      if (firstSplit) {
-        const chainId = parseInt(firstSplit.split('-')[0]);
-        return chainId;
-      }
-      throw new Error('Invalid chain id. Please try again');
-    }
-    return parseInt(chainId);
-  }
+  
   async processSignLedgerEvm(env: Env, chainId: string, rpc: string, message: object): Promise<string> {
     const address = this.addresses?.eth;
     const nonce = await request(rpc, 'eth_getTransactionCount', [address, 'latest']);
@@ -844,47 +834,15 @@ export class KeyRing {
     const response = await request(rpc, 'eth_sendRawTransaction', [signedTx]);
     return response;
   }
-  getRawTransactionCountEvm(privKey: PrivKeySecp256k1) {
-    // For Ethereum Key-Gen Only:
-    const ethereumAddress = privateToAddress(Buffer.from(privKey.toBytes()));
-    console.log('🚀 ~ file: keyring.ts:856 ~ processSignEvm ~ ethereumAddress:', ethereumAddress);
-    return ['0x' + Buffer.from(ethereumAddress).toString('hex'), 'latest'];
-  }
-  getRawTxEvm(privKey: PrivKeySecp256k1, chainId: string, nonce: string, message: object) {
-    console.log(privKey.toBytes());
-    const chainIdNumber = this.validateChainId(chainId);
-    const customCommon = Common.custom({
-      name: chainId,
-      networkId: chainIdNumber,
-      chainId: chainIdNumber
-    });
-    console.log('chainIdNumber: ', chainIdNumber);
-    let finalMessage: any = {
-      ...message,
-      gas: (message as any)?.gasLimit,
-      gasPrice: (message as any)?.gasPrice,
-      nonce,
-      chainId
-    };
-
-    delete finalMessage?.from;
-    delete finalMessage?.type;
-    console.log('🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage', finalMessage);
-
-    const opts: TransactionOptions = { common: customCommon } as any;
-    const tx = new Transaction(finalMessage, opts);
-    // here
-    tx.sign(Buffer.from(privKey.toBytes()));
-
-    const serializedTx = tx.serialize();
-    const rawTxHex = '0x' + serializedTx.toString('hex');
-    return rawTxHex;
-  }
+  
+  
   async processSignEvm(chainId: string, coinType: number, rpc: string, message: object): Promise<string> {
     const privKey = this.loadPrivKey(coinType);
-    const rawTransactionCount = this.getRawTransactionCountEvm(privKey);
+    const rawTransactionCount = KeyringHelper.getRawTransactionCountEvm(privKey);
+    console.log('🚀 ~ file: keyring.ts:885 ~ processSignEvm ~ rawTransactionCount:', rawTransactionCount);
     const nonce = await request(rpc, 'eth_getTransactionCount', rawTransactionCount);
-    const rawTxHex = this.getRawTxEvm(privKey, chainId, nonce, message);
+    const rawTxHex = KeyringHelper.getRawTxEvm(privKey, chainId, nonce, message);
+    console.log('🚀 ~ file: keyring.ts:888 ~ processSignEvm ~ rawTxHex:', rawTxHex);
     const response = await request(rpc, 'eth_sendRawTransaction', [rawTxHex]);
     return response;
   }

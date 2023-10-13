@@ -1590,8 +1590,14 @@ describe('keyring', () => {
       memo: '',
       fees: '0x0'
     };
+    const mockPrivBytes = new Uint8Array([
+      102, 211, 219, 188, 242, 151, 77, 32, 6, 123, 231, 231, 198, 171, 27, 148, 18, 123, 5, 164, 128, 2, 123, 110, 35, 223, 224, 102, 141, 222, 136, 126
+    ]);
+    const mockPrivKey: any = {
+      toBytes: jest.fn().mockReturnValue(mockPrivBytes)
+    };
     const arrayEvm = commonOwallet.EmbedChainInfos.filter((item, index) => item.networkType === 'evm');
-    const arrayMapped = arrayEvm.map((item) => {
+    const arrayMapped = [...arrayEvm].map((item) => {
       if (item.chainId === '0x1ae6') {
         (item as any).expected = 6886;
       } else if (item.chainId === '0x61') {
@@ -1605,24 +1611,39 @@ describe('keyring', () => {
       }
       return item;
     });
-
     it.each(arrayMapped)('Test validateChainId for $chainName', (item) => {
       const rs = keyRing.validateChainId(item.chainId);
       expect(rs).toBe((item as any).expected);
     });
-    it('processSignEvm', async () => {
-      const mockPrivBytes = new Uint8Array([
-        102, 211, 219, 188, 242, 151, 77, 32, 6, 123, 231, 231, 198, 171, 27, 148, 18, 123, 5, 164, 128, 2, 123, 110, 35, 223, 224, 102, 141, 222, 136, 126
-      ]);
-      jest.spyOn(keyRing as any, 'loadPrivKey').mockReturnValue({
-        toBytes: jest.fn().mockReturnValue(mockPrivBytes)
-      });
-      const spyRequest = jest.spyOn(tx, 'request');
-      spyRequest
-        .mockReturnValueOnce(Promise.resolve('0x30')) // Mock response for the first call
-        .mockReturnValueOnce(Promise.resolve('ok'));
-      const rs = await keyRing.processSignEvm('0x01', 60, 'https://rpc.ankr.com/eth', mockMsg);
-      console.log("🚀 ~ file: keyring.spec.ts:1625 ~ it ~ rs:", rs)
+
+    it('getRawTransactionCountEvm', () => {
+      const rs = keyRing.getRawTransactionCountEvm(mockPrivKey);
+      expect(rs).toEqual(['0xad90317473bbc13ba0c9e81d21131fce289078fe', 'latest']);
+    });
+
+    const arrayRawTxEvm = [...arrayEvm].map((ite) => {
+      if (ite.chainId === '0x1ae6') {
+        (ite as any).expectedRaw =
+          '0xf86d308502540be40083030d4094f2846a1e4dafaea38c1660a618277d67605bd2b58609184e72a000808235f0a07a624db8c17df50610ffd72716ff41bc5837b66102f75328f89128586b065c21a076846c63bc26103d80a1f1c191403a27bf2f6694041c258eb426b90d9f0cfb9d';
+      } else if (ite.chainId === '0x61') {
+        (ite as any).expectedRaw =
+          '0xf86c308502540be40083030d4094f2846a1e4dafaea38c1660a618277d67605bd2b58609184e72a0008081e6a0acf8b7493d7bdcca9caf06bab0de2cbf26bdb0cc60bad24fe6679eb18600e06fa04f91e45a6e8b96a55bcb66f0beb41b0d64c3ea9078d36f84bde4359c0c75672c';
+      } else if (ite.chainId === '0x01') {
+        (ite as any).expectedRaw =
+          '0xf86b308502540be40083030d4094f2846a1e4dafaea38c1660a618277d67605bd2b58609184e72a0008025a0a0a6d557107b3d383bccf8e5a2ccd6ebb6288e3b43c1ca07fbc683f0bb6f5305a013950cbc28c7306c9ff0b60bbc0d256d111c85444f769b3f42e90dd271d3fef5';
+      } else if (ite.chainId === '0x38') {
+        (ite as any).expectedRaw =
+          '0xf86c308502540be40083030d4094f2846a1e4dafaea38c1660a618277d67605bd2b58609184e72a000808194a0ade0f7e049273d8bd4ccbf0ad555f8051082fa0f064394285f9390c2dffe8f0ea01980793829a02fc090a7d3a4d4f3859fdaac3d025aecaf4e2224516191f2a44a';
+      } else if (ite.chainId === '0x2b6653dc') {
+        (ite as any).expectedRaw =
+          '0xf86f308502540be40083030d4094f2846a1e4dafaea38c1660a618277d67605bd2b58609184e72a000808456cca7dba0435cda0530d3ffbf5e1b4dc22c6c316ed6a584868d4c7817fee0a542949af8daa0408b4758f2f6cc32de1adbf81388333e2ffe4d6b97c53271f17341ec0ec791bd';
+      }
+      return ite;
+    });
+
+    it.each(arrayRawTxEvm)('getRawTxEvm for chain: $chainName', (item) => {
+      const rs = keyRing.getRawTxEvm(mockPrivKey, item.chainId, '0x30', mockMsg);
+      expect(rs).toBe((item as any).expectedRaw);
     });
   });
   // describe('signAndBroadcastEthereum', () => {
