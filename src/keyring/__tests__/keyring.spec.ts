@@ -1316,7 +1316,7 @@ describe('keyring', () => {
       expect(rs).toBe('orai');
     });
   });
-  
+
   describe('signEvm', () => {
     it('sign Ethereum', async () => {
       const message = Buffer.from('c429601ee7a6167356f15baa70fd8fe17b0325dab7047a658a31039e5384bffd', 'hex');
@@ -1326,7 +1326,7 @@ describe('keyring', () => {
         '1483463727ddf1f5330cb2e480bf24c9d27140a909e789effae36bb0684bd1d33c79bb0aa5d4e9dcf48ae8946395e2d5bcddd8c70853d73193f48820f37a6cda'
       );
     });
-    it('sign Tron',()=>{
+    it('sign Tron', () => {
       const mockPrivBytes = new Uint8Array([
         102, 211, 219, 188, 242, 151, 77, 32, 6, 123, 231, 231, 198, 171, 27, 148, 18, 123, 5, 164, 128, 2, 123, 110, 35, 223, 224, 102, 141, 222, 136, 126
       ]);
@@ -1334,9 +1334,11 @@ describe('keyring', () => {
         toBytes: jest.fn().mockReturnValue(mockPrivBytes)
       };
       const mockMsg = '8f87082466466dbbb310a62c5cb4c66df42b5eb142aaeb9b8ab90add6b617dcb';
-      const rs = keyRing.signTron(mockPrivKey,mockMsg as any);
-      expect(rs.toString('hex')).toBe('3e2481506aa8c56c5567868501288fa55fd7f3c9891a735ca196076491879612c06dea26c21f2b33a69d7b21aaaadc37c9a1c9b225fdb62a22a733a69b79a78f01');
-    })
+      const rs = keyRing.signTron(mockPrivKey, mockMsg as any);
+      expect(rs.toString('hex')).toBe(
+        '3e2481506aa8c56c5567868501288fa55fd7f3c9891a735ca196076491879612c06dea26c21f2b33a69d7b21aaaadc37c9a1c9b225fdb62a22a733a69b79a78f01'
+      );
+    });
   });
   describe('signEvm', () => {
     const mockMsg = {
@@ -1404,184 +1406,4 @@ describe('keyring', () => {
       expect(rs).toBe((item as any).expectedRaw);
     });
   });
-  // describe('signAndBroadcastEthereum', () => {
-  //   const message = Buffer.from('c429601ee7a6167356f15baa70fd8fe17b0325dab7047a658a31039e5384bffd', 'hex');
-  //   const messageObject = {
-  //     gasPrice: utils.hexlify(utils.parseUnits('20', 'gwei')),
-  //     gasLimit: utils.hexlify(50000),
-  //     chainId: mockChainIdEth,
-  //     from: '0x123456789abcdef',
-  //     type: 0,
-  //     gas: 21000,
-  //     memo: 'This is a sample transaction',
-  //     fees: utils.parseEther('0.42'),
-  //     maxPriorityFeePerGas: utils.parseUnits('2', 'gwei'),
-  //     maxFeePerGas: utils.parseUnits('2', 'gwei')
-  //   };
-  //   const rpc = 'https://rpc.ankr.com/eth';
-  //   const caseTest = [
-  //     [
-  //       'Key_ring_is_not_unlock',
-  //       mockEnv,
-  //       mockChainIdEth,
-  //       mockCoinTypeEth,
-  //       rpc,
-  //       message,
-  //       {
-  //         mockStatus: [KeyRingStatus.EMPTY, KeyRingStatus.LOCKED, KeyRingStatus.NOTLOADED],
-  //         mockKeyStore: null
-  //       },
-  //       new Error('Key ring is not unlocked')
-  //     ],
-  //     [
-  //       'Key_store_is_empty',
-  //       mockEnv,
-  //       mockChainIdEth,
-  //       mockCoinTypeEth,
-  //       rpc,
-  //       message,
-  //       {
-  //         mockStatus: KeyRingStatus.UNLOCKED,
-  //         mockKeyStore: null
-  //       },
-  //       new Error('Key Store is empty')
-  //     ],
-  //     [
-  //       'Invalid_coin_type_60',
-  //       mockEnv,
-  //       mockChainId,
-  //       mockCoinType,
-  //       rpc,
-  //       message,
-  //       {
-  //         mockStatus: KeyRingStatus.UNLOCKED,
-  //         mockKeyStore: mockKeyStore.mnemonic.pbkdf2
-  //       },
-  //       new Error('Invalid coin type passed in to Ethereum signing (expected 60)')
-  //     ],
-  //     [
-  //       'this.keyStore.type_is_ledger_eth',
-  //       mockEnv,
-  //       mockChainIdEth,
-  //       mockCoinTypeEth,
-  //       rpc,
-  //       messageObject,
-  //       {
-  //         mockStatus: KeyRingStatus.UNLOCKED,
-  //         mockKeyStore: mockKeyStore.ledger.pbkdf2
-  //       },
-  //       '0x2d8e3f849da33c03e7d3efc8a51f70d5812487a60958f431c8127f2ef65f02d5'
-  //     ],
-  //     [
-  //       'this.keyStore.type_is_ethereum',
-  //       mockEnv,
-  //       mockChainIdEth,
-  //       mockCoinTypeEth,
-  //       rpc,
-  //       messageObject,
-  //       {
-  //         mockStatus: KeyRingStatus.UNLOCKED,
-  //         mockKeyStore: mockKeyStore.mnemonic.pbkdf2
-  //       },
-  //       '0x2d8e3f849da33c03e7d3efc8a51f70d5812487a60958f431c8127f2ef65f02d5'
-  //     ]
-  //   ];
-  //   it.each(caseTest)(
-  //     'test case signAndBroadcastEthereum for case %s',
-  //     async (
-  //       caseTest: string,
-  //       env: Env,
-  //       chainId: string,
-  //       coinType: number,
-  //       rpc: string,
-  //       message: Uint8Array,
-  //       options: {
-  //         mockStatus: any;
-  //         mockKeyStore?: any;
-  //       },
-  //       expectRs: any
-  //     ) => {
-  //       if (caseTest === 'Key_ring_is_not_unlock') {
-  //         for (let i = 0; i < options.mockStatus.length; i++) {
-  //           const itemStatus = options.mockStatus[i];
-  //           const spyStatus = jest.spyOn(keyRing, 'status', 'get').mockReturnValue(itemStatus);
-  //           await expect(keyRing['signAndBroadcastEthereum'](env, chainId, coinType, rpc, message)).rejects.toThrow(expectRs);
-  //           expect(spyStatus).toHaveBeenCalled();
-  //         }
-  //         return;
-  //       }
-  //       const spyStatus = jest.spyOn(keyRing, 'status', 'get').mockReturnValue(options.mockStatus);
-  //       if (caseTest === 'Key_store_is_empty') {
-  //         await expect(keyRing['signAndBroadcastEthereum'](env, chainId, coinType, rpc, message)).rejects.toThrow(expectRs);
-  //         expect(spyStatus).toHaveBeenCalled();
-  //         return;
-  //       }
-  //       keyRing['keyStore'] = options.mockKeyStore;
-  //       const spyGetNetworkTypeByChainId = jest.spyOn(commonOwallet, 'getNetworkTypeByChainId');
-  //       if (caseTest === 'Invalid_coin_type_60') {
-  //         await expect(keyRing['signAndBroadcastEthereum'](env, chainId, coinType, rpc, message)).rejects.toThrow(expectRs);
-  //         expect(spyStatus).toHaveBeenCalled();
-  //         expect(spyGetNetworkTypeByChainId).toHaveBeenCalled();
-  //         expect(spyGetNetworkTypeByChainId).toHaveBeenCalledTimes(1);
-  //         expect(spyGetNetworkTypeByChainId).toHaveBeenCalledWith(chainId);
-  //         return;
-  //       }
-  //       if (options.mockKeyStore.type === 'ledger') {
-  //         const mockAddressEth = '0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe';
-  //         jest.spyOn(keyRing, 'addresses', 'get').mockReturnValue({
-  //           eth: mockAddressEth
-  //         });
-  //         const spyRequest = jest.spyOn(tx, 'request');
-  //         const spySign = jest.spyOn(keyRing, 'sign').mockResolvedValue({
-  //           r: Buffer.from('8736fe19a3b1e5e0ab0d5b4083b82df9', 'hex').toString('hex'),
-  //           s: Buffer.from('9f25be1a5622c47e0b755162bce19b4b', 'hex').toString('hex'),
-  //           v: 27
-  //         });
-
-  //         spyRequest
-  //           .mockReturnValueOnce(Promise.resolve(1)) // Mock response for the first call
-  //           .mockReturnValueOnce(Promise.resolve(expectRs));
-  //         const rs = await keyRing['signAndBroadcastEthereum'](env, chainId, coinType, rpc, message);
-  //         expect(spyRequest).toHaveBeenCalledTimes(2);
-  //         expect(spyRequest).toHaveBeenNthCalledWith(1, rpc, 'eth_getTransactionCount', ['0x11f4d0A3c12e86B4b5F39B213F7E19D048276DAe', 'latest']);
-  //         expect(spySign).toHaveBeenCalledTimes(1);
-  //         expect(spySign).toHaveBeenCalledWith(env, chainId, 60, Buffer.from('cd018504a817c80082c350808080', 'hex'));
-  //         expect(spyRequest).toHaveBeenNthCalledWith(2, rpc, 'eth_sendRawTransaction', [
-  //           '0xf0018504a817c80082c35080808027908736fe19a3b1e5e0ab0d5b4083b82df9909f25be1a5622c47e0b755162bce19b4b'
-  //         ]);
-  //         expect(rs).toEqual(expectRs);
-  //       } else {
-  //         keyRing['_mnemonic'] = mockKeyCosmos.mnemonic;
-
-  //         const spyLoadPrivKey = jest.spyOn(keyRing as any, 'loadPrivKey');
-  //         const spyValidateChain = jest.spyOn(keyRing, 'validateChainId');
-  //         const spyPrivateToAddress = jest.spyOn(ethUtils, 'privateToAddress');
-  //         const spyCommonCustom = jest.spyOn(Common, 'custom');
-  //         const spyTxRequest = jest.spyOn(tx, 'request').mockResolvedValueOnce(1).mockResolvedValueOnce(expectRs);
-  //         const rs = await keyRing['signAndBroadcastEthereum'](env, chainId, coinType, rpc, message);
-
-  //         expect(spyLoadPrivKey).toHaveBeenCalledTimes(1);
-  //         expect(spyLoadPrivKey).toHaveBeenCalledWith(coinType);
-  //         expect(spyValidateChain).toHaveBeenCalledTimes(1);
-  //         expect(spyValidateChain).toHaveBeenCalledWith(chainId);
-  //         expect(spyPrivateToAddress).toHaveBeenCalledTimes(1);
-  //         expect(spyPrivateToAddress).toHaveBeenCalledWith(Buffer.from(keyRing['loadPrivKey'](coinType).toBytes()));
-  //         expect(spyCommonCustom).toHaveBeenCalledTimes(1);
-  //         expect(spyCommonCustom).toHaveBeenCalledWith({
-  //           name: chainId,
-  //           networkId: 6886,
-  //           chainId: 6886
-  //         });
-
-  //         expect(spyTxRequest).toHaveBeenCalledTimes(2);
-  //         expect(spyTxRequest).toHaveBeenNthCalledWith(1, rpc, 'eth_getTransactionCount', ['0xa7942620580e6b7940518d90b0f7aaea2f6a9f73', 'latest']);
-
-  //         expect(spyTxRequest).toHaveBeenNthCalledWith(2, rpc, 'eth_sendRawTransaction', [
-  //           '0xf852018504a817c80082c3508080808235efa09d5af48e32dc72685b4753d42f4622722fde7c7af41e687f5c763ae0d6fb0ae1a0379ca1622a1cc7d9c368cbaf6785f218453cf4bd046c4a7c1c21fae624f6ba8a'
-  //         ]);
-  //         expect(rs).toEqual(expectRs);
-  //       }
-  //     }
-  //   );
-  // });
 });
