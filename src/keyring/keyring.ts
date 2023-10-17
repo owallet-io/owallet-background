@@ -543,15 +543,9 @@ export class KeyRing {
         throw new Error('Empty key store');
       }
       const networkType = getNetworkTypeByChainId(chainId);
-
       const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
-      // console.log("🚀 ~ file: keyring.ts:555 ~ setKeyStoreLedgerAddress ~ ledgerAppType:", ledgerAppType)
       // Update ledger address here with this function below
-
       const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
-      console.log('🚀 ~ file: keyring.ts:560 ~ setKeyStoreLedgerAddress ~ publicKey:', Buffer.from(publicKey).toString('hex'));
-      // console.log("🚀 ~ file: keyring.ts:558 ~ setKeyStoreLedgerAddress ~ address:", address)
-      // console.log("🚀 ~ file: keyring.ts:558 ~ setKeyStoreLedgerAddress ~ publicKey:", publicKey)
       // // this.ledgerPublicKey = publicKey;
       const pubKey = publicKey ? Buffer.from(publicKey).toString('hex') : null;
       const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
@@ -685,8 +679,6 @@ export class KeyRing {
     }
   }
   private loadKey(coinType: number, chainId?: string | number): Key {
-    console.log('🚀 ~ file: keyring.ts:661 ~ loadKey ~ coinType:', coinType);
-    console.log('🚀 ~ file: keyring.ts:661 ~ loadKey ~ chainId:', chainId);
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -752,7 +744,6 @@ export class KeyRing {
     }
   }
   signTron(privKey: PrivKeySecp256k1, message: Uint8Array) {
-    console.log("🚀 ~ file: keyring.ts:755 ~ signTron ~ message:", message)
     const transactionSign = TronWeb.utils.crypto.signTransaction(privKey.toBytes(), {
       txID: message
     });
@@ -775,15 +766,11 @@ export class KeyRing {
     // using ledger app
     if (this.keyStore.type === 'ledger') {
       const pubKey = this.ledgerPublicKey;
-
       if (!pubKey) {
         throw new OWalletError('keyring', 151, 'Ledger public key is not initialized');
       }
-
       const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
-
       const path = [44, coinType, bip44HDPath.account, bip44HDPath.change, bip44HDPath.addressIndex];
-
       const ledgerAppType: LedgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
       // Need to check ledger here and ledger app type by chainId
       return await this.ledgerKeeper.sign(env, path, pubKey, message, ledgerAppType);
@@ -836,7 +823,6 @@ export class KeyRing {
     return response;
   }
   public async signAndBroadcastEthereum(env: Env, chainId: string, coinType: number, rpc: string, message: object): Promise<string> {
-    console.log('🚀 ~ file: keyring.ts ~ line 733 ~ KeyRing ~ message', message);
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -1024,9 +1010,7 @@ export class KeyRing {
         version === SignTypedDataVersion.V1
           ? this._typedSignatureHash(typedMessage as TypedDataV1)
           : this.eip712Hash(typedMessage as TypedMessage<T>, version as SignTypedDataVersion.V3 | SignTypedDataVersion.V4);
-      console.log('🚀 ~ file: keyring.ts ~ line 868 ~ KeyRing ~ messageHash', messageHash);
       const sig = ecsign(messageHash, Buffer.from(privateKey));
-      console.log('🚀 ~ file: keyring.ts ~ line 876 ~ KeyRing ~ sig', sig);
       return sig;
     } catch (error) {
       console.log('Error on sign typed data: ', error);
