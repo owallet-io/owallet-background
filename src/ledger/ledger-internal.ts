@@ -153,8 +153,6 @@ export class LedgerInternal {
   }
 
   async sign(path: number[], message: any): Promise<Uint8Array | any> {
-    console.log('sign ledger === ', message, path);
-
     if (!this.ledgerApp) {
       throw new Error(`${this.LedgerAppTypeDesc} not initialized`);
     }
@@ -178,7 +176,6 @@ export class LedgerInternal {
       if (signDoc && signDoc?.chain_id && signDoc?.chain_id?.startsWith('injective')) {
         const eip712 = { ...signDoc?.eip712 };
         delete signDoc.eip712;
-        console.log('🚀 ~ file: ledger-internal.ts:174 ~ LedgerInternal ~ sign ~ eip712:', eip712);
         let data: any;
         try {
           const message = Buffer.from(
@@ -205,23 +202,6 @@ export class LedgerInternal {
           }
           throw new Error(e.message || e.toString());
         }
-        // const data: any = await (async () => {
-        //   try {
-        //     const message = Buffer.from(
-        //       JSON.stringify({
-        //         types: eip712.types,
-        //         domain: eip712.domain,
-        //         primaryType: eip712.primaryType,
-        //         message: parseMsg
-        //       })
-        //     );
-        //     return await EIP712MessageValidator.validateAsync(JSON.parse(Buffer.from(message).toString()));
-        //   } catch (error) {
-        //     console.log('🚀 ~ file: ledger-internal.ts:177 ~ LedgerInternal ~ constdata:any=async ~ error:', error);
-        //   }
-        // })();
-        // console.log('🚀 ~ file: ledger-internal.ts:174 ~ LedgerInternal ~ sign ~ data:', data);
-        // return ethSignatureToBytes(await this.ledgerApp.signEIP712HashedMessage(stringifyPath(path), domainHash(data), messageHash(data)));
       }
 
       const signature = await this.ledgerApp.signTransaction(stringifyPath(path), rawTxHex);

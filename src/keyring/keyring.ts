@@ -41,6 +41,8 @@ import {
   PubkeyLedger
 } from './types';
 import { KeyringHelper } from './utils';
+import { getChainInfoOrThrow } from '@owallet/common';
+import { isEthermintLike } from '@owallet/common';
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
 
@@ -689,7 +691,8 @@ export class KeyRing {
 
     const isEthermint = (() => {
       if (chainId) {
-        return KeyringHelper.isEthermintByChainId(chainId as string);
+        const chainInfo = getChainInfoOrThrow(chainId as string);
+        return isEthermintLike(chainInfo);
       }
       return coinType === 60;
     })();
