@@ -13,7 +13,7 @@ export class KeyringHelper {
       signature.recoveryParam ? Buffer.from('1c', 'hex') : Buffer.from('1b', 'hex')
     ]);
   }
-  static getRawTransactionCountEvm(privKey: PrivKeySecp256k1) {
+  static getHexAddressEvm(privKey: PrivKeySecp256k1) {
     // For Ethereum Key-Gen Only:
     const ethereumAddress = privateToAddress(Buffer.from(privKey.toBytes()));
     return ['0x' + Buffer.from(ethereumAddress).toString('hex'), 'latest'];

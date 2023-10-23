@@ -1376,8 +1376,8 @@ describe('keyring', () => {
       expect(rs).toBe((item as any).expected);
     });
 
-    it('getRawTransactionCountEvm', () => {
-      const rs = KeyringHelper.getRawTransactionCountEvm(mockPrivKey);
+    it('getHexAddressEvm', () => {
+      const rs = KeyringHelper.getHexAddressEvm(mockPrivKey);
       expect(rs).toEqual(['0xad90317473bbc13ba0c9e81d21131fce289078fe', 'latest']);
     });
 

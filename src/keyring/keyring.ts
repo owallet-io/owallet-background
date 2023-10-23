@@ -819,8 +819,8 @@ export class KeyRing {
 
   async processSignEvm(chainId: string, coinType: number, rpc: string, message: object): Promise<string> {
     const privKey = this.loadPrivKey(coinType);
-    const rawTransactionCount = KeyringHelper.getRawTransactionCountEvm(privKey);
-    const nonce = await request(rpc, 'eth_getTransactionCount', rawTransactionCount);
+    const hexAddress = KeyringHelper.getHexAddressEvm(privKey);
+    const nonce = await request(rpc, 'eth_getTransactionCount', hexAddress);
     const rawTxHex = KeyringHelper.getRawTxEvm(privKey, chainId, nonce, message);
     const response = await request(rpc, 'eth_sendRawTransaction', [rawTxHex]);
     return response;
