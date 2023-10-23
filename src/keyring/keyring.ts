@@ -10,7 +10,7 @@ import {
   KVStore,
   KVStoreType,
   splitPath,
-  formatCoinTypeToLedgerAppName
+  LedgerAppType
 } from '@owallet/common';
 import { ChainIdHelper } from '@owallet/cosmos';
 import { Mnemonic, PrivKeySecp256k1, PubKeySecp256k1, RNG, Hash } from '@owallet/crypto';
@@ -22,7 +22,7 @@ import eccrypto from 'eccrypto-js';
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
 import { ecsign, keccak, privateToPublic, publicToAddress, toBuffer } from 'ethereumjs-util';
 import TronWeb from 'tronweb';
-import { LedgerAppType, LedgerService } from '../ledger';
+import { LedgerService } from '../ledger';
 import { request } from '../tx';
 import { TYPED_MESSAGE_SCHEMA } from './constants';
 import { Crypto, KeyStore } from './crypto';
@@ -229,7 +229,9 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    return this.keyStore.coinTypeForChain ? this.keyStore.coinTypeForChain[ChainIdHelper.parse(chainId).identifier] ?? defaultCoinType : defaultCoinType;
+    return this.keyStore.coinTypeForChain
+      ? this.keyStore.coinTypeForChain[ChainIdHelper.parse(chainId).identifier] ?? defaultCoinType
+      : defaultCoinType;
   }
 
   public getKeyFromCoinType(coinType: number): Key {
@@ -252,7 +254,15 @@ export class KeyRing {
     // }
 
     this.mnemonic = mnemonic;
-    this.keyStore = await KeyRing.CreateMnemonicKeyStore(this.rng, this.crypto, kdf, mnemonic, password, await this.assignKeyStoreIdMeta(meta), bip44HDPath);
+    this.keyStore = await KeyRing.CreateMnemonicKeyStore(
+      this.rng,
+      this.crypto,
+      kdf,
+      mnemonic,
+      password,
+      await this.assignKeyStoreIdMeta(meta),
+      bip44HDPath
+    );
     this.password = password;
     this.multiKeyStore.push(this.keyStore);
 
@@ -278,7 +288,14 @@ export class KeyRing {
     // }
 
     this.privateKey = privateKey;
-    this.keyStore = await KeyRing.CreatePrivateKeyStore(this.rng, this.crypto, kdf, privateKey, password, await this.assignKeyStoreIdMeta(meta));
+    this.keyStore = await KeyRing.CreatePrivateKeyStore(
+      this.rng,
+      this.crypto,
+      kdf,
+      privateKey,
+      password,
+      await this.assignKeyStoreIdMeta(meta)
+    );
     this.password = password;
     this.multiKeyStore.push(this.keyStore);
 
@@ -357,9 +374,15 @@ export class KeyRing {
       this.mnemonic = Buffer.from(await Crypto.decrypt(this.crypto, this.keyStore, password)).toString();
     } else if (this.type === 'privateKey') {
       // If password is invalid, error will be thrown.
-      this.privateKey = Buffer.from(Buffer.from(await Crypto.decrypt(this.crypto, this.keyStore, password)).toString(), 'hex');
+      this.privateKey = Buffer.from(
+        Buffer.from(await Crypto.decrypt(this.crypto, this.keyStore, password)).toString(),
+        'hex'
+      );
     } else if (this.type === 'ledger') {
-      this.ledgerPublicKey = Buffer.from(Buffer.from(await Crypto.decrypt(this.crypto, this.keyStore, password)).toString(), 'hex');
+      this.ledgerPublicKey = Buffer.from(
+        Buffer.from(await Crypto.decrypt(this.crypto, this.keyStore, password)).toString(),
+        'hex'
+      );
     } else {
       throw new Error('Unexpected type of keyring');
     }
@@ -505,7 +528,10 @@ export class KeyRing {
       throw new Error('Empty key store');
     }
 
-    return this.keyStore.coinTypeForChain && this.keyStore.coinTypeForChain[ChainIdHelper.parse(chainId).identifier] !== undefined;
+    return (
+      this.keyStore.coinTypeForChain &&
+      this.keyStore.coinTypeForChain[ChainIdHelper.parse(chainId).identifier] !== undefined
+    );
   }
 
   public async setKeyStoreCoinType(chainId: string, coinType: number) {
@@ -513,7 +539,10 @@ export class KeyRing {
       throw new Error('Empty key store');
     }
 
-    if (this.keyStore.coinTypeForChain && this.keyStore.coinTypeForChain[ChainIdHelper.parse(chainId).identifier] !== undefined) {
+    if (
+      this.keyStore.coinTypeForChain &&
+      this.keyStore.coinTypeForChain[ChainIdHelper.parse(chainId).identifier] !== undefined
+    ) {
       throw new Error('Coin type already set');
     }
 
@@ -547,7 +576,8 @@ export class KeyRing {
       const networkType = getNetworkTypeByChainId(chainId);
       const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
       // Update ledger address here with this function below
-      const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
+      const { publicKey, address } =
+        (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
       // // this.ledgerPublicKey = publicKey;
       const pubKey = publicKey ? Buffer.from(publicKey).toString('hex') : null;
       const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
@@ -665,7 +695,7 @@ export class KeyRing {
   }
   private getPubKey(coinType): PubKeySecp256k1 {
     if (this.keyStore.type === 'ledger') {
-      const appName = formatCoinTypeToLedgerAppName(coinType);
+      const appName = getNetworkTypeByBip44HDPath({ coinType: coinType } as BIP44HDPath);
       if (!this.ledgerPublicKey) {
         throw new Error('Ledger public key not set');
       }
@@ -738,7 +768,9 @@ export class KeyRing {
       // If key store type is private key, path will be ignored.
 
       if (!this.privateKey) {
-        throw new Error('Key store type is private key and it is unlocked. But, private key is not loaded unexpectedly');
+        throw new Error(
+          'Key store type is private key and it is unlocked. But, private key is not loaded unexpectedly'
+        );
       }
 
       return new PrivKeySecp256k1(this.privateKey);
@@ -753,7 +785,12 @@ export class KeyRing {
 
     return Buffer.from(transactionSign?.signature?.[0], 'hex');
   }
-  public async sign(env: Env, chainId: string, defaultCoinType: number, message: Uint8Array): Promise<Uint8Array | any> {
+  public async sign(
+    env: Env,
+    chainId: string,
+    defaultCoinType: number,
+    message: Uint8Array
+  ): Promise<Uint8Array | any> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new OWalletError('keyring', 143, 'Key ring is not unlocked');
     }
@@ -825,7 +862,13 @@ export class KeyRing {
     const response = await request(rpc, 'eth_sendRawTransaction', [rawTxHex]);
     return response;
   }
-  public async signAndBroadcastEthereum(env: Env, chainId: string, coinType: number, rpc: string, message: object): Promise<string> {
+  public async signAndBroadcastEthereum(
+    env: Env,
+    chainId: string,
+    coinType: number,
+    rpc: string,
+    message: object
+  ): Promise<string> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -948,7 +991,10 @@ export class KeyRing {
             mac: Buffer.from(data.mac, 'hex')
           };
           const decryptedData = await eccrypto.decrypt(privKeyBuffer, encryptedData);
-          const reEncryptedData = await eccrypto.encrypt(Buffer.from(data.publicKey, 'hex'), Buffer.from(decryptedData.toString(), 'utf-8'));
+          const reEncryptedData = await eccrypto.encrypt(
+            Buffer.from(data.publicKey, 'hex'),
+            Buffer.from(decryptedData.toString(), 'utf-8')
+          );
           const address = Buffer.from(publicToAddress(Buffer.from(data.publicKey, 'hex'), true)).toString('hex');
           return {
             ...reEncryptedData,
@@ -1012,7 +1058,10 @@ export class KeyRing {
       const messageHash =
         version === SignTypedDataVersion.V1
           ? this._typedSignatureHash(typedMessage as TypedDataV1)
-          : this.eip712Hash(typedMessage as TypedMessage<T>, version as SignTypedDataVersion.V3 | SignTypedDataVersion.V4);
+          : this.eip712Hash(
+              typedMessage as TypedMessage<T>,
+              version as SignTypedDataVersion.V3 | SignTypedDataVersion.V4
+            );
       const sig = ecsign(messageHash, Buffer.from(privateKey));
       return sig;
     } catch (error) {
@@ -1053,10 +1102,16 @@ export class KeyRing {
       return `${e.type} ${e.name}`;
     });
 
-    return soliditySHA3(['bytes32', 'bytes32'], [soliditySHA3(new Array(typedData.length).fill('string'), schema), soliditySHA3(types, data)]);
+    return soliditySHA3(
+      ['bytes32', 'bytes32'],
+      [soliditySHA3(new Array(typedData.length).fill('string'), schema), soliditySHA3(types, data)]
+    );
   }
 
-  private eip712Hash<T extends MessageTypes>(typedData: TypedMessage<T>, version: SignTypedDataVersion.V3 | SignTypedDataVersion.V4): Buffer {
+  private eip712Hash<T extends MessageTypes>(
+    typedData: TypedMessage<T>,
+    version: SignTypedDataVersion.V3 | SignTypedDataVersion.V4
+  ): Buffer {
     this.validateVersion(version, [SignTypedDataVersion.V3, SignTypedDataVersion.V4]);
 
     const sanitizedData = this.sanitizeData(typedData);
@@ -1202,7 +1257,11 @@ export class KeyRing {
     return result;
   }
 
-  private findTypeDependencies(primaryType: string, types: Record<string, MessageTypeProperty[]>, results: Set<string> = new Set()): Set<string> {
+  private findTypeDependencies(
+    primaryType: string,
+    types: Record<string, MessageTypeProperty[]>,
+    results: Set<string> = new Set()
+  ): Set<string> {
     [primaryType] = primaryType.match(/^\w*/u);
     if (results.has(primaryType) || types[primaryType] === undefined) {
       return results;
@@ -1220,7 +1279,9 @@ export class KeyRing {
     if (!Object.keys(SignTypedDataVersion).includes(version)) {
       throw new Error(`Invalid version: '${version}'`);
     } else if (allowedVersions && !allowedVersions.includes(version)) {
-      throw new Error(`SignTypedDataVersion not allowed: '${version}'. Allowed versions are: ${allowedVersions.join(', ')}`);
+      throw new Error(
+        `SignTypedDataVersion not allowed: '${version}'. Allowed versions are: ${allowedVersions.join(', ')}`
+      );
     }
   }
 
@@ -1295,7 +1356,14 @@ export class KeyRing {
       throw new OWalletError('keyring', 141, 'Key ring is locked or not initialized');
     }
 
-    const keyStore = await KeyRing.CreatePrivateKeyStore(this.rng, this.crypto, kdf, privateKey, this.password, await this.assignKeyStoreIdMeta(meta));
+    const keyStore = await KeyRing.CreatePrivateKeyStore(
+      this.rng,
+      this.crypto,
+      kdf,
+      privateKey,
+      this.password,
+      await this.assignKeyStoreIdMeta(meta)
+    );
     this.multiKeyStore.push(keyStore);
 
     await this.save();
@@ -1477,7 +1545,15 @@ export class KeyRing {
     password: string,
     meta: Record<string, string>
   ): Promise<KeyStore> {
-    return await Crypto.encrypt(rng, crypto, kdf, 'privateKey', Buffer.from(privateKey).toString('hex'), password, meta);
+    return await Crypto.encrypt(
+      rng,
+      crypto,
+      kdf,
+      'privateKey',
+      Buffer.from(privateKey).toString('hex'),
+      password,
+      meta
+    );
   }
 
   private static async CreateLedgerKeyStore(
@@ -1490,7 +1566,17 @@ export class KeyRing {
     bip44HDPath: BIP44HDPath,
     addresses?: AddressesLedger
   ): Promise<KeyStore> {
-    return await Crypto.encrypt(rng, crypto, kdf, 'ledger', Buffer.from(publicKey).toString('hex'), password, meta, bip44HDPath, addresses);
+    return await Crypto.encrypt(
+      rng,
+      crypto,
+      kdf,
+      'ledger',
+      Buffer.from(publicKey).toString('hex'),
+      password,
+      meta,
+      bip44HDPath,
+      addresses
+    );
   }
 
   private async assignKeyStoreIdMeta(meta: { [key: string]: string }): Promise<{
