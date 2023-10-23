@@ -1,21 +1,5 @@
-import { TRON_ID } from '@owallet/common';
-import { BIP44HDPath } from 'src/keyring';
-import { LedgerAppType } from 'src/ledger';
 import { _TypedDataEncoder as TypedDataEncoder } from '@ethersproject/hash';
 import Joi from 'joi';
-export function splitPath(path: string): BIP44HDPath {
-  const bip44HDPathOrder = ['coinType', 'account', 'change', 'addressIndex'];
-  const result = {} as BIP44HDPath;
-  const components = path.split('/');
-  if (path.startsWith('44')) {
-    components.shift();
-  }
-  components.forEach((element, index) => {
-    result[bip44HDPathOrder[index]] = element.replace("'", '');
-  });
-
-  return result;
-}
 export const EIP712DomainTypeValidator = Joi.array()
   .items(
     Joi.object<{
@@ -153,4 +137,3 @@ export function stringifyPath(paths: number[]): string {
   });
   return stringPaths;
 }
-
