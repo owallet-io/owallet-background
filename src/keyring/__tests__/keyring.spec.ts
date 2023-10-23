@@ -70,10 +70,22 @@ const mockKvStore = {
   type: jest.fn().mockReturnValue('mobile')
 };
 const mockEmbedChain: any = null;
-export let keyRing = new KeyRing(mockEmbedChain, mockKvStore, new LedgerService(null, null, { defaultMode: null }), mockRng, mockCrypto);
+export let keyRing = new KeyRing(
+  mockEmbedChain,
+  mockKvStore,
+  new LedgerService(null, null, { defaultMode: null }),
+  mockRng,
+  mockCrypto
+);
 describe('keyring', () => {
   beforeEach(() => {
-    keyRing = new KeyRing(mockEmbedChain, mockKvStore, new LedgerService(null, null, { defaultMode: null }), mockRng, mockCrypto);
+    keyRing = new KeyRing(
+      mockEmbedChain,
+      mockKvStore,
+      new LedgerService(null, null, { defaultMode: null }),
+      mockRng,
+      mockCrypto
+    );
   });
   afterEach(() => {
     jest.clearAllMocks();
@@ -508,7 +520,15 @@ describe('keyring', () => {
     it('should call Crypto.encrypt with the correct arguments', async () => {
       // Gọi hàm CreateMnemonicKeyStore
       jest.spyOn(Crypto, 'encrypt');
-      await KeyRing['CreateMnemonicKeyStore'](mockRng, mockCrypto, mockKdfMobile, mockKeyCosmos.mnemonic, mockPassword, mockMetaHasId, mockBip44HDPath);
+      await KeyRing['CreateMnemonicKeyStore'](
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        mockKeyCosmos.mnemonic,
+        mockPassword,
+        mockMetaHasId,
+        mockBip44HDPath
+      );
       // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
       expect(Crypto.encrypt).toHaveBeenCalled();
       expect(Crypto.encrypt).toHaveBeenCalledTimes(1);
@@ -561,7 +581,14 @@ describe('keyring', () => {
     });
     it('should call Crypto.encrypt with the correct arguments', async () => {
       // Gọi hàm CreateMnemonicKeyStore
-      await KeyRing['CreatePrivateKeyStore'](mockRng, mockCrypto, mockKdfMobile, mockKeyCosmos.privateKeyHex, mockPassword, mockMetaHasId);
+      await KeyRing['CreatePrivateKeyStore'](
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        mockKeyCosmos.privateKeyHex,
+        mockPassword,
+        mockMetaHasId
+      );
 
       // Kiểm tra xem Crypto.encrypt đã được gọi với đúng các tham số
       expect(Crypto.encrypt).toHaveBeenCalledWith(
@@ -580,14 +607,22 @@ describe('keyring', () => {
       // Gán giá trị cho các thuộc tính
 
       // Mock các phương thức liên quan
-      const spyCreateMnemonicKeyStore = jest.spyOn(KeyRing as any, 'CreateMnemonicKeyStore').mockResolvedValue(mockMultiKeyStore[1]);
+      const spyCreateMnemonicKeyStore = jest
+        .spyOn(KeyRing as any, 'CreateMnemonicKeyStore')
+        .mockResolvedValue(mockMultiKeyStore[1]);
 
       jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.UNLOCKED);
       jest.spyOn(keyRing as any, 'getMultiKeyStoreInfo').mockReturnValue(mockMultiKeyStoreInfo);
       jest.spyOn(keyRing, 'save');
       const assignKeyStoreIdMetaSpy = jest.spyOn(keyRing as any, 'assignKeyStoreIdMeta');
       // Gọi phương thức createMnemonicKey()
-      const result = await keyRing.createMnemonicKey(mockKdfMobile, mockKeyCosmos.mnemonic, mockPassword, mockMeta, mockBip44HDPath);
+      const result = await keyRing.createMnemonicKey(
+        mockKdfMobile,
+        mockKeyCosmos.mnemonic,
+        mockPassword,
+        mockMeta,
+        mockBip44HDPath
+      );
 
       // Kiểm tra kết quả
       expect(result.status).toBe(KeyRingStatus.UNLOCKED);
@@ -611,13 +646,15 @@ describe('keyring', () => {
   });
   describe('addMnemonicKey', () => {
     it('throw Key ring is locked or not initialized', async () => {
-      await expect(() => keyRing.addMnemonicKey(mockKdfMobile, mockKeyCosmos.mnemonic, mockMeta, mockBip44HDPath)).rejects.toThrow(
-        new OWalletError('keyring', 141, 'Key ring is locked or not initialized')
-      );
+      await expect(() =>
+        keyRing.addMnemonicKey(mockKdfMobile, mockKeyCosmos.mnemonic, mockMeta, mockBip44HDPath)
+      ).rejects.toThrow(new OWalletError('keyring', 141, 'Key ring is locked or not initialized'));
     });
     it('should add mnemonic key and update keyStore and multiKeyStore', async () => {
       // Mock các phương thức liên quan
-      const spyCreateMnemonicKeyStore = jest.spyOn(KeyRing as any, 'CreateMnemonicKeyStore').mockResolvedValue(mockMultiKeyStore[1]);
+      const spyCreateMnemonicKeyStore = jest
+        .spyOn(KeyRing as any, 'CreateMnemonicKeyStore')
+        .mockResolvedValue(mockMultiKeyStore[1]);
       keyRing['password'] = mockPassword;
       jest.spyOn(keyRing as any, 'getMultiKeyStoreInfo').mockReturnValue(mockMultiKeyStoreInfo);
       jest.spyOn(keyRing, 'save');
@@ -645,7 +682,9 @@ describe('keyring', () => {
   describe('createPrivateKey', () => {
     it('should create private key and update keyStore and multiKeyStore', async () => {
       // Mock các phương thức liên quan
-      const spyCreatePrivateKeyStore = jest.spyOn(KeyRing as any, 'CreatePrivateKeyStore').mockResolvedValue(mockMultiKeyStore[2]);
+      const spyCreatePrivateKeyStore = jest
+        .spyOn(KeyRing as any, 'CreatePrivateKeyStore')
+        .mockResolvedValue(mockMultiKeyStore[2]);
 
       jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.UNLOCKED);
       jest.spyOn(keyRing as any, 'getMultiKeyStoreInfo').mockReturnValue(mockMultiKeyStoreInfo);
@@ -660,7 +699,14 @@ describe('keyring', () => {
       expect(keyRing['privateKey']).toBe(mockKeyCosmos.privateKeyHex);
       expect(keyRing['keyStore']).toBe(mockMultiKeyStore[2]);
       expect(keyRing['password']).toBe(mockPassword);
-      expect(spyCreatePrivateKeyStore).toHaveBeenCalledWith(mockRng, mockCrypto, mockKdfMobile, mockKeyCosmos.privateKeyHex, mockPassword, mockMetaHasId);
+      expect(spyCreatePrivateKeyStore).toHaveBeenCalledWith(
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        mockKeyCosmos.privateKeyHex,
+        mockPassword,
+        mockMetaHasId
+      );
       expect(assignKeyStoreIdMetaSpy).toHaveBeenCalled();
       expect(keyRing.save).toHaveBeenCalled();
     });
@@ -674,7 +720,9 @@ describe('keyring', () => {
     it('should add private key and update keyStore and multiKeyStore', async () => {
       keyRing['password'] = mockPassword;
       // Mock các phương thức liên quan
-      const spyCreatePrivateKeyStore = jest.spyOn(KeyRing as any, 'CreatePrivateKeyStore').mockResolvedValue(mockMultiKeyStore[2]);
+      const spyCreatePrivateKeyStore = jest
+        .spyOn(KeyRing as any, 'CreatePrivateKeyStore')
+        .mockResolvedValue(mockMultiKeyStore[2]);
 
       jest.spyOn(keyRing as any, 'getMultiKeyStoreInfo').mockReturnValue(mockMultiKeyStoreInfo);
       jest.spyOn(keyRing, 'save');
@@ -686,7 +734,14 @@ describe('keyring', () => {
 
       expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
       expect(keyRing['password']).toBe(mockPassword);
-      expect(spyCreatePrivateKeyStore).toHaveBeenCalledWith(mockRng, mockCrypto, mockKdfMobile, mockKeyCosmos.privateKeyHex, mockPassword, mockMetaHasId);
+      expect(spyCreatePrivateKeyStore).toHaveBeenCalledWith(
+        mockRng,
+        mockCrypto,
+        mockKdfMobile,
+        mockKeyCosmos.privateKeyHex,
+        mockPassword,
+        mockMetaHasId
+      );
       expect(assignKeyStoreIdMetaSpy).toHaveBeenCalled();
       expect(keyRing.save).toHaveBeenCalled();
     });
@@ -698,7 +753,9 @@ describe('keyring', () => {
         publicKey: mockKeyCosmos.publicKeyHex,
         address: mockKeyCosmos.address
       });
-      const spyCreateLedgerKeyStore = jest.spyOn(KeyRing as any, 'CreateLedgerKeyStore').mockResolvedValue(mockMultiKeyStore[0]);
+      const spyCreateLedgerKeyStore = jest
+        .spyOn(KeyRing as any, 'CreateLedgerKeyStore')
+        .mockResolvedValue(mockMultiKeyStore[0]);
 
       jest.spyOn(keyRing as any, 'getMultiKeyStoreInfo').mockReturnValue(mockMultiKeyStoreInfo);
       jest.spyOn(keyRing as any, 'assignKeyStoreIdMeta').mockResolvedValue(mockMetaHasId);
@@ -708,7 +765,7 @@ describe('keyring', () => {
         isInternalMsg: false,
         requestInteraction: jest.fn()
       };
-      const spyGetNetworkTypeByBip44HDPath = jest.spyOn(helper, 'getNetworkTypeByBip44HDPath');
+
       // Gọi phương thức createMnemonicKey()
       const result = await keyRing.createLedgerKey(mockEnv, mockKdfMobile, mockPassword, mockMeta, mockBip44HDPath);
 
@@ -737,13 +794,14 @@ describe('keyring', () => {
         publicKey: mockKeyCosmos.publicKeyHex,
         address: mockKeyCosmos.address
       });
-      const spyCreateLedgerKeyStore = jest.spyOn(KeyRing as any, 'CreateLedgerKeyStore').mockResolvedValue(mockMultiKeyStore[0]);
+      const spyCreateLedgerKeyStore = jest
+        .spyOn(KeyRing as any, 'CreateLedgerKeyStore')
+        .mockResolvedValue(mockMultiKeyStore[0]);
 
       jest.spyOn(keyRing as any, 'getMultiKeyStoreInfo').mockReturnValue(mockMultiKeyStoreInfo);
       jest.spyOn(keyRing as any, 'assignKeyStoreIdMeta').mockResolvedValue(mockMetaHasId);
 
       jest.spyOn(keyRing, 'save');
-      const spyGetNetworkTypeByBip44HDPath = jest.spyOn(helper, 'getNetworkTypeByBip44HDPath');
       // Gọi phương thức createMnemonicKey()
       const result = await keyRing.addLedgerKey(mockEnv, mockKdfMobile, mockMeta, mockBip44HDPath);
 
@@ -998,8 +1056,12 @@ describe('keyring', () => {
       });
 
       keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
-      const spyKeyStoreBip44 = jest.spyOn(KeyRing as any, 'getKeyStoreBIP44Path').mockReturnValue(mockKeyStore.mnemonic.pbkdf2);
-      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow('Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly');
+      const spyKeyStoreBip44 = jest
+        .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
+        .mockReturnValue(mockKeyStore.mnemonic.pbkdf2);
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow(
+        'Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly'
+      );
       expect(spyKeyStoreBip44).toHaveBeenCalled();
       jest.clearAllMocks();
     });
@@ -1014,8 +1076,12 @@ describe('keyring', () => {
       });
       keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
       keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
-      const spyKeyStoreBip44 = jest.spyOn(KeyRing as any, 'getKeyStoreBIP44Path').mockReturnValue(mockKeyStore.mnemonic.pbkdf2.bip44HDPath);
-      const spyGenerateWalletFromMnemonic = jest.spyOn(Mnemonic as any, 'generateWalletFromMnemonic').mockReturnValue(mockKeyCosmos.privateKeyHex);
+      const spyKeyStoreBip44 = jest
+        .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
+        .mockReturnValue(mockKeyStore.mnemonic.pbkdf2.bip44HDPath);
+      const spyGenerateWalletFromMnemonic = jest
+        .spyOn(Mnemonic as any, 'generateWalletFromMnemonic')
+        .mockReturnValue(mockKeyCosmos.privateKeyHex);
       const rs = keyRing['loadPrivKey'](mockCoinType);
       expect(rs).toEqual(new PrivKeySecp256k1(mockKeyCosmos.privateKeyHex));
       expect(spyGenerateWalletFromMnemonic).toHaveBeenCalledTimes(1);
@@ -1035,7 +1101,9 @@ describe('keyring', () => {
       keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
       keyRing['cached'].set(mockPathBip44, mockKeyCosmos.privateKeyHex);
       const spyGenerateWalletFromMnemonic = jest.spyOn(Mnemonic as any, 'generateWalletFromMnemonic');
-      const spyKeyStoreBip44 = jest.spyOn(KeyRing as any, 'getKeyStoreBIP44Path').mockReturnValue(mockKeyStore.mnemonic.pbkdf2.bip44HDPath);
+      const spyKeyStoreBip44 = jest
+        .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
+        .mockReturnValue(mockKeyStore.mnemonic.pbkdf2.bip44HDPath);
       const rs = keyRing['loadPrivKey'](mockCoinType);
       expect(rs).toEqual(new PrivKeySecp256k1(mockKeyCosmos.privateKeyHex));
       expect(spyGenerateWalletFromMnemonic).not.toHaveBeenCalled();
@@ -1053,7 +1121,9 @@ describe('keyring', () => {
       });
 
       keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
-      const spyKeyStoreBip44 = jest.spyOn(KeyRing as any, 'getKeyStoreBIP44Path').mockReturnValue(mockKeyStore.mnemonic.pbkdf2);
+      const spyKeyStoreBip44 = jest
+        .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
+        .mockReturnValue(mockKeyStore.mnemonic.pbkdf2);
       expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow(
         'Key store type is private key and it is unlocked. But, private key is not loaded unexpectedly'
       );
@@ -1071,7 +1141,9 @@ describe('keyring', () => {
       });
       keyRing['_privateKey'] = mockKeyCosmos.privateKeyHex;
       keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
-      const spyKeyStoreBip44 = jest.spyOn(KeyRing as any, 'getKeyStoreBIP44Path').mockReturnValue(mockKeyStore.mnemonic.pbkdf2.bip44HDPath);
+      const spyKeyStoreBip44 = jest
+        .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
+        .mockReturnValue(mockKeyStore.mnemonic.pbkdf2.bip44HDPath);
       const rs = keyRing['loadPrivKey'](mockCoinType);
       expect(rs).toEqual(new PrivKeySecp256k1(mockKeyCosmos.privateKeyHex));
       expect(spyKeyStoreBip44).toHaveBeenCalledTimes(1);
@@ -1088,7 +1160,9 @@ describe('keyring', () => {
       });
 
       keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
-      const spyKeyStoreBip44 = jest.spyOn(KeyRing as any, 'getKeyStoreBIP44Path').mockReturnValue(mockKeyStore.mnemonic.pbkdf2);
+      const spyKeyStoreBip44 = jest
+        .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
+        .mockReturnValue(mockKeyStore.mnemonic.pbkdf2);
       expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow('Unexpected type of keyring');
       expect(spyKeyStoreBip44).toHaveBeenCalled();
       jest.clearAllMocks();
@@ -1129,7 +1203,9 @@ describe('keyring', () => {
         keyRing['keyStore'] = mockKeyStore.ledger.pbkdf2;
         keyRing['ledgerPublicKey'] = mockKeyCosmos.publicKeyHex;
         const rs = keyRing['loadKey'](mockCoinType);
-        expect(Buffer.from(rs.pubKey).toString('hex')).toBe('0307e5b99e7849b4c2f6af0ee7e7f094b8859f1109962ad6e94fa3672fc8003a30');
+        expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
+          '0307e5b99e7849b4c2f6af0ee7e7f094b8859f1109962ad6e94fa3672fc8003a30'
+        );
         expect(Buffer.from(rs.address).toString('hex')).toBe('2a77016e89454aa2b15ae84757e32b75549af840');
         expect(rs.algo).toBe('secp256k1');
         expect(rs.isNanoLedger).toBe(true);
@@ -1148,7 +1224,9 @@ describe('keyring', () => {
         expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinType);
         expect(rs.algo).toBe('secp256k1');
         expect(rs.isNanoLedger).toBe(false);
-        expect(Buffer.from(rs.pubKey).toString('hex')).toBe('034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c');
+        expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
+          '034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c'
+        );
         expect(Buffer.from(rs.address).toString('hex')).toBe('cf159c10596b2cc8270da31375d5d741a3c4a949');
       });
       it('test for case network type is evm', () => {
@@ -1169,7 +1247,9 @@ describe('keyring', () => {
         expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinTypeEth);
         expect(rs.algo).toBe('ethsecp256k1');
         expect(rs.isNanoLedger).toBe(false);
-        expect(Buffer.from(rs.pubKey).toString('hex')).toBe('034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c');
+        expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
+          '034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c'
+        );
         expect(Buffer.from(rs.address).toString('hex')).toBe('a7942620580e6b7940518d90b0f7aaea2f6a9f73');
       });
     });
@@ -1264,7 +1344,9 @@ describe('keyring', () => {
       keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
       const rs = keyRing.getKeyFromCoinType(mockCoinType);
       expect(Buffer.from(rs.address).toString('hex')).toBe('cf159c10596b2cc8270da31375d5d741a3c4a949');
-      expect(Buffer.from(rs.pubKey).toString('hex')).toBe('034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c');
+      expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
+        '034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c'
+      );
       expect(rs.algo).toBe('secp256k1');
       expect(rs.isNanoLedger).toBe(false);
     });
@@ -1294,7 +1376,9 @@ describe('keyring', () => {
       keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
       const rs = keyRing.getKey(mockChainId, mockCoinType);
       expect(Buffer.from(rs.address).toString('hex')).toBe('cf159c10596b2cc8270da31375d5d741a3c4a949');
-      expect(Buffer.from(rs.pubKey).toString('hex')).toBe('034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c');
+      expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
+        '034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c'
+      );
       expect(rs.algo).toBe('secp256k1');
       expect(rs.isNanoLedger).toBe(false);
     });
@@ -1320,7 +1404,9 @@ describe('keyring', () => {
   describe('signEvm', () => {
     it('sign Ethereum', async () => {
       const message = Buffer.from('c429601ee7a6167356f15baa70fd8fe17b0325dab7047a658a31039e5384bffd', 'hex');
-      const privKey = new PrivKeySecp256k1(Buffer.from('ae0e3814fad957fb1fdca450a9795f5e64b46061a8618cc4029fcbbfdf215221', 'hex'));
+      const privKey = new PrivKeySecp256k1(
+        Buffer.from('ae0e3814fad957fb1fdca450a9795f5e64b46061a8618cc4029fcbbfdf215221', 'hex')
+      );
       const rs = await keyRing['signEthereum'](privKey, message);
       expect(Buffer.from(rs).toString('hex')).toEqual(
         '1483463727ddf1f5330cb2e480bf24c9d27140a909e789effae36bb0684bd1d33c79bb0aa5d4e9dcf48ae8946395e2d5bcddd8c70853d73193f48820f37a6cda'
@@ -1328,7 +1414,8 @@ describe('keyring', () => {
     });
     it('sign Tron', () => {
       const mockPrivBytes = new Uint8Array([
-        102, 211, 219, 188, 242, 151, 77, 32, 6, 123, 231, 231, 198, 171, 27, 148, 18, 123, 5, 164, 128, 2, 123, 110, 35, 223, 224, 102, 141, 222, 136, 126
+        102, 211, 219, 188, 242, 151, 77, 32, 6, 123, 231, 231, 198, 171, 27, 148, 18, 123, 5, 164, 128, 2, 123, 110,
+        35, 223, 224, 102, 141, 222, 136, 126
       ]);
       const mockPrivKey: any = {
         toBytes: jest.fn().mockReturnValue(mockPrivBytes)
@@ -1351,7 +1438,8 @@ describe('keyring', () => {
       fees: '0x0'
     };
     const mockPrivBytes = new Uint8Array([
-      102, 211, 219, 188, 242, 151, 77, 32, 6, 123, 231, 231, 198, 171, 27, 148, 18, 123, 5, 164, 128, 2, 123, 110, 35, 223, 224, 102, 141, 222, 136, 126
+      102, 211, 219, 188, 242, 151, 77, 32, 6, 123, 231, 231, 198, 171, 27, 148, 18, 123, 5, 164, 128, 2, 123, 110, 35,
+      223, 224, 102, 141, 222, 136, 126
     ]);
     const mockPrivKey: any = {
       toBytes: jest.fn().mockReturnValue(mockPrivBytes)
