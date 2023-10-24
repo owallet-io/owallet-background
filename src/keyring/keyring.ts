@@ -1,4 +1,3 @@
-import Common from '@ethereumjs/common';
 import * as BytesUtils from '@ethersproject/bytes';
 import { keccak256 } from '@ethersproject/keccak256';
 import { serialize } from '@ethersproject/transactions';
@@ -10,7 +9,8 @@ import {
   getNetworkTypeByChainId,
   KVStore,
   KVStoreType,
-  splitPath
+  splitPath,
+  formatCoinTypeToLedgerAppName
 } from '@owallet/common';
 import { ChainIdHelper } from '@owallet/cosmos';
 import { Mnemonic, PrivKeySecp256k1, PubKeySecp256k1, RNG, Hash } from '@owallet/crypto';
@@ -20,9 +20,7 @@ import AES from 'aes-js';
 import { Buffer } from 'buffer';
 import eccrypto from 'eccrypto-js';
 import { rawEncode, soliditySHA3 } from 'ethereumjs-abi';
-import { Transaction, TransactionOptions } from 'ethereumjs-tx';
-import { ecsign, keccak, privateToAddress, privateToPublic, publicToAddress, toBuffer } from 'ethereumjs-util';
-import { isHexString } from 'ethjs-util';
+import { ecsign, keccak, privateToPublic, publicToAddress, toBuffer } from 'ethereumjs-util';
 import TronWeb from 'tronweb';
 import { LedgerAppType, LedgerService } from '../ledger';
 import { request } from '../tx';
@@ -39,9 +37,12 @@ import {
   MessageTypes,
   SignTypedDataVersion,
   TypedDataV1,
-  TypedMessage
+  TypedMessage,
+  PubkeyLedger
 } from './types';
-
+import { KeyringHelper } from './utils';
+import { getChainInfoOrThrow } from '@owallet/common';
+import { isEthermintLike } from '@owallet/common';
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
 
@@ -64,6 +65,7 @@ export type MultiKeyStoreInfo = MultiKeyStoreInfoElem[];
 export type MultiKeyStoreInfoWithSelectedElem = MultiKeyStoreInfoElem & {
   selected: boolean;
   addresses?: AddressesLedger;
+  pubkeys?: PubkeyLedger;
 };
 export type MultiKeyStoreInfoWithSelected = MultiKeyStoreInfoWithSelectedElem[];
 
@@ -87,7 +89,6 @@ export class KeyRing {
   private _privateKey?: Uint8Array;
   private _mnemonic?: string;
   private _ledgerPublicKey?: Uint8Array;
-
   private keyStore: KeyStore | null;
 
   private multiKeyStore: KeyStore[];
@@ -139,6 +140,13 @@ export class KeyRing {
       return {} as AddressesLedger;
     } else {
       return KeyRing.getLedgerAddressOfKeyStore(this.keyStore);
+    }
+  }
+  public get pubkeys(): PubkeyLedger {
+    if (!this.keyStore) {
+      return {} as PubkeyLedger;
+    } else {
+      return this.keyStore.pubkeys;
     }
   }
   public isLocked(): boolean {
@@ -514,7 +522,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -532,35 +540,49 @@ export class KeyRing {
   }
 
   public async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string, chainId: string | number) {
-    if (!this.keyStore) {
-      throw new Error('Empty key store');
-    }
-    const networkType = getNetworkTypeByChainId(chainId);
-
-    const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
-    // Update ledger address here with this function below
-
-    const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
-
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
-      return (
-        KeyRing.getKeyStoreId(keyStore) ===
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        KeyRing.getKeyStoreId(this.keyStore!)
-      );
-    });
-
-    if (keyStoreInMulti) {
-      const keyStoreAddresses = { ...keyStoreInMulti.addresses };
-      const returnedAddresses = Object.assign(keyStoreAddresses, {
-        [ledgerAppType]: address
+    try {
+      if (!this.keyStore) {
+        throw new Error('Empty key store');
+      }
+      const networkType = getNetworkTypeByChainId(chainId);
+      const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
+      // Update ledger address here with this function below
+      const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
+      // // this.ledgerPublicKey = publicKey;
+      const pubKey = publicKey ? Buffer.from(publicKey).toString('hex') : null;
+      const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+        return (
+          KeyRing.getKeyStoreId(keyStore) ===
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          KeyRing.getKeyStoreId(this.keyStore!)
+        );
       });
-      keyStoreInMulti.addresses = returnedAddresses;
-      this.keyStore.addresses = returnedAddresses;
-    }
 
-    await this.save();
-    return { status: this.status };
+      if (keyStoreInMulti) {
+        const keyStoreAddresses = { ...keyStoreInMulti.addresses };
+        const returnedAddresses = Object.assign(keyStoreAddresses, {
+          [ledgerAppType]: address
+        });
+
+        keyStoreInMulti.addresses = returnedAddresses;
+        this.keyStore.addresses = returnedAddresses;
+        if (!!publicKey) {
+          const returnedPubkey = Object.assign(
+            { ...keyStoreInMulti.pubkeys },
+            {
+              [ledgerAppType]: pubKey
+            }
+          );
+          keyStoreInMulti.pubkeys = returnedPubkey;
+          this.keyStore.pubkeys = returnedPubkey;
+        }
+      }
+
+      await this.save();
+      return { status: this.status };
+    } catch (error) {
+      console.log('🚀 ~ file: keyring.ts:595 ~ setKeyStoreLedgerAddress ~ error:', error);
+    }
   }
 
   public async deleteKeyRing(
@@ -641,7 +663,23 @@ export class KeyRing {
     await this.save();
     return this.getMultiKeyStoreInfo();
   }
-
+  private getPubKey(coinType): PubKeySecp256k1 {
+    if (this.keyStore.type === 'ledger') {
+      const appName = formatCoinTypeToLedgerAppName(coinType);
+      if (!this.ledgerPublicKey) {
+        throw new Error('Ledger public key not set');
+      }
+      if (this.keyStore?.pubkeys && this.keyStore.pubkeys[appName]) {
+        const pubKeyConverted = Uint8Array.from(Buffer.from(this.keyStore.pubkeys[appName], 'hex'));
+        return new PubKeySecp256k1(pubKeyConverted);
+        // this.ledgerPublicKey = this.keyStore.pubkeys[appName];
+      }
+      return new PubKeySecp256k1(this.ledgerPublicKey);
+    } else {
+      const privKey = this.loadPrivKey(coinType);
+      return privKey.getPubKey();
+    }
+  }
   private loadKey(coinType: number, chainId?: string | number): Key {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
@@ -651,50 +689,26 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    if (this.keyStore.type === 'ledger') {
-      if (!this.ledgerPublicKey) {
-        throw new Error('Ledger public key not set');
+    const isEthermint = (() => {
+      if (chainId) {
+        const chainInfo = getChainInfoOrThrow(chainId as string);
+        return isEthermintLike(chainInfo);
       }
-      // goes here
-      // This need to be check by network type or cointype, cause now we support ledger with evm too, but this pubKey.getAddress() is hardcoded by cosmos address
-      const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
-
-      return {
-        algo: 'secp256k1',
-        pubKey: pubKey.toBytes(),
-        address: pubKey.getAddress(),
-        isNanoLedger: true
-      };
-    } else {
-      const privKey = this.loadPrivKey(coinType);
-      const pubKey = privKey.getPubKey();
-
-      const networkType = getNetworkTypeByChainId(chainId);
-
-      if (coinType === 60 || networkType === 'evm') {
-        // For Ethereum Key-Gen Only:
-        const ethereumAddress = privateToAddress(Buffer.from(privKey.toBytes()));
-
-        // get the ledgerPublicKey here and get address from pubKey.getAddress()
-        // const pubKey = new PubKeySecp256k1(this.ledgerPublicKey);
-        // From that address, generate evmosHexAddress
-
-        return {
-          algo: 'ethsecp256k1',
-          pubKey: pubKey.toBytes(),
-          address: ethereumAddress,
-          isNanoLedger: false
-        };
+      return coinType === 60;
+    })();
+    const pubKey = this.getPubKey(coinType);
+    const address = (() => {
+      if (isEthermint) {
+        return pubKey.getEthAddress();
       }
-
-      // Default
-      return {
-        algo: 'secp256k1',
-        pubKey: pubKey.toBytes(),
-        address: pubKey.getAddress(),
-        isNanoLedger: false
-      };
-    }
+      return pubKey.getCosmosAddress();
+    })();
+    return {
+      algo: isEthermint ? 'ethsecp256k1' : 'secp256k1',
+      pubKey: pubKey.toBytes(),
+      address: address,
+      isNanoLedger: this.keyStore.type === 'ledger'
+    };
   }
 
   private loadPrivKey(coinType: number): PrivKeySecp256k1 {
@@ -732,7 +746,13 @@ export class KeyRing {
       throw new Error('Unexpected type of keyring');
     }
   }
+  signTron(privKey: PrivKeySecp256k1, message: Uint8Array) {
+    const transactionSign = TronWeb.utils.crypto.signTransaction(privKey.toBytes(), {
+      txID: message
+    });
 
+    return Buffer.from(transactionSign?.signature?.[0], 'hex');
+  }
   public async sign(env: Env, chainId: string, defaultCoinType: number, message: Uint8Array): Promise<Uint8Array | any> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new OWalletError('keyring', 143, 'Key ring is not unlocked');
@@ -749,35 +769,24 @@ export class KeyRing {
     // using ledger app
     if (this.keyStore.type === 'ledger') {
       const pubKey = this.ledgerPublicKey;
-
       if (!pubKey) {
         throw new OWalletError('keyring', 151, 'Ledger public key is not initialized');
       }
-
       const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
-      console.log('bip44HDPath: ', bip44HDPath);
       const path = [44, coinType, bip44HDPath.account, bip44HDPath.change, bip44HDPath.addressIndex];
-      console.log('path: ', path);
-
       const ledgerAppType: LedgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
-      console.log('ledgerAppType: ', ledgerAppType);
-
       // Need to check ledger here and ledger app type by chainId
       return await this.ledgerKeeper.sign(env, path, pubKey, message, ledgerAppType);
     } else {
       // Sign with Evmos/Ethereum
       const privKey = this.loadPrivKey(coinType);
-      console.log('privKey: ', privKey);
+
       // Check cointype = 60 in the case that network is evmos(still cosmos but need to sign with ethereum)
-      console.log('🚀 ~ file: keyring.ts:840 ~ coinType:', coinType);
-      if (networkType === 'evm' || coinType === 60) {
+
+      if (KeyringHelper.isEthermintByChainId(chainId)) {
         // Only check coinType === 195 for Tron network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
-          const transactionSign = TronWeb.utils.crypto.signTransaction(privKey.toBytes(), {
-            txID: message
-          });
-
-          return Buffer.from(transactionSign?.signature?.[0], 'hex');
+          return this.signTron(privKey, message);
         }
 
         return this.signEthereum(privKey, message);
@@ -786,21 +795,37 @@ export class KeyRing {
     }
   }
 
-  validateChainId(chainId: string): number {
-    // chain id example: kawaii_6886-1. If chain id input is already a number in string => parse it immediately
-    if (isNaN(parseInt(chainId))) {
-      const firstSplit = chainId.split('_')[1];
-      if (firstSplit) {
-        const chainId = parseInt(firstSplit.split('-')[0]);
-        return chainId;
-      }
-      throw new Error('Invalid chain id. Please try again');
-    }
-    return parseInt(chainId);
+  async processSignLedgerEvm(env: Env, chainId: string, rpc: string, message: object): Promise<string> {
+    const address = this.addresses?.eth;
+    const nonce = await request(rpc, 'eth_getTransactionCount', [address, 'latest']);
+    let finalMessage: any = {
+      gasLimit: (message as any)?.gasLimit,
+      gasPrice: (message as any)?.gasPrice,
+      value: (message as any)?.value,
+      to: (message as any)?.to,
+      nonce,
+      chainId: Number(chainId)
+    };
+    const serializedTx = serialize(finalMessage).replace('0x', '');
+    const signature = await this.sign(env, chainId, 60, Buffer.from(serializedTx, 'hex'));
+    const signedTx = serialize(finalMessage, {
+      r: `0x${signature.r}`,
+      s: `0x${signature.s}`,
+      v: parseInt(signature.v, 16)
+    });
+    const response = await request(rpc, 'eth_sendRawTransaction', [signedTx]);
+    return response;
   }
 
+  async processSignEvm(chainId: string, coinType: number, rpc: string, message: object): Promise<string> {
+    const privKey = this.loadPrivKey(coinType);
+    const hexAddress = KeyringHelper.getHexAddressEvm(privKey);
+    const nonce = await request(rpc, 'eth_getTransactionCount', hexAddress);
+    const rawTxHex = KeyringHelper.getRawTxEvm(privKey, chainId, nonce, message);
+    const response = await request(rpc, 'eth_sendRawTransaction', [rawTxHex]);
+    return response;
+  }
   public async signAndBroadcastEthereum(env: Env, chainId: string, coinType: number, rpc: string, message: object): Promise<string> {
-    console.log('🚀 ~ file: keyring.ts ~ line 733 ~ KeyRing ~ message', message);
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -816,81 +841,9 @@ export class KeyRing {
     }
 
     if (this.keyStore.type === 'ledger') {
-      const address = this.addresses?.eth;
-
-      const nonce = await request(rpc, 'eth_getTransactionCount', [address, 'latest']);
-
-      let finalMessage: any = {
-        ...message,
-        from: address,
-        // gas: (message as any)?.gasLimit,
-        gasLimit: (message as any)?.gasLimit,
-        gasPrice: (message as any)?.gasPrice,
-        nonce,
-        chainId: Number(chainId)
-      };
-      delete finalMessage?.from;
-      delete finalMessage?.type;
-      delete finalMessage?.gas;
-      delete finalMessage?.memo;
-      delete finalMessage?.fees;
-      delete finalMessage?.maxPriorityFeePerGas;
-      delete finalMessage?.maxFeePerGas;
-      // console.log(
-      //   '🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage',
-      //   finalMessage
-      // );
-      const serializedTx = serialize(finalMessage).replace('0x', '');
-      console.log('serializedTx: ', serializedTx);
-      const signature = await this.sign(env, chainId, 60, Buffer.from(serializedTx, 'hex'));
-      const signedTx = serialize(finalMessage, {
-        r: `0x${signature.r}`,
-        s: `0x${signature.s}`,
-        v: parseInt(signature.v, 16)
-      });
-
-      // console.log('signedT === 1', signedTx);
-      const response = await request(rpc, 'eth_sendRawTransaction', [signedTx]);
-      // console.log('response eth ===', response);
-
-      return response;
+      return this.processSignLedgerEvm(env, chainId, rpc, message);
     } else {
-      const privKey = this.loadPrivKey(coinType);
-      const chainIdNumber = this.validateChainId(chainId);
-      console.log('chainIdNumber: ', chainIdNumber);
-
-      // For Ethereum Key-Gen Only:
-      const ethereumAddress = privateToAddress(Buffer.from(privKey.toBytes()));
-
-      const customCommon = Common.custom({
-        name: chainId,
-        networkId: chainIdNumber,
-        chainId: chainIdNumber
-      });
-
-      const nonce = await request(rpc, 'eth_getTransactionCount', ['0x' + Buffer.from(ethereumAddress).toString('hex'), 'latest']);
-
-      let finalMessage: any = {
-        ...message,
-        gas: (message as any)?.gasLimit,
-        gasPrice: (message as any)?.gasPrice,
-        nonce,
-        chainId
-      };
-
-      delete finalMessage?.from;
-      delete finalMessage?.type;
-      console.log('🚀 ~ file: keyring.ts ~ line 790 ~ KeyRing ~ finalMessage', finalMessage);
-
-      const opts: TransactionOptions = { common: customCommon } as any;
-      const tx = new Transaction(finalMessage, opts);
-      // here
-      tx.sign(Buffer.from(privKey.toBytes()));
-
-      const serializedTx = tx.serialize();
-      const rawTxHex = '0x' + serializedTx.toString('hex');
-      const response = await request(rpc, 'eth_sendRawTransaction', [rawTxHex]);
-      return response;
+      return this.processSignEvm(chainId, coinType, rpc, message);
     }
   }
 
@@ -987,7 +940,7 @@ export class KeyRing {
       const privKey = this.loadPrivKey(60);
       const privKeyBuffer = Buffer.from(privKey.toBytes());
       const response = await Promise.all(
-        message[0].map(async data => {
+        message[0].map(async (data) => {
           const encryptedData = {
             ciphertext: Buffer.from(data.ciphertext, 'hex'),
             ephemPublicKey: Buffer.from(data.ephemPublicKey, 'hex'),
@@ -1060,9 +1013,7 @@ export class KeyRing {
         version === SignTypedDataVersion.V1
           ? this._typedSignatureHash(typedMessage as TypedDataV1)
           : this.eip712Hash(typedMessage as TypedMessage<T>, version as SignTypedDataVersion.V3 | SignTypedDataVersion.V4);
-      console.log('🚀 ~ file: keyring.ts ~ line 868 ~ KeyRing ~ messageHash', messageHash);
       const sig = ecsign(messageHash, Buffer.from(privateKey));
-      console.log('🚀 ~ file: keyring.ts ~ line 876 ~ KeyRing ~ sig', sig);
       return sig;
     } catch (error) {
       console.log('Error on sign typed data: ', error);
@@ -1214,7 +1165,7 @@ export class KeyRing {
         throw new Error('Arrays are unimplemented in encodeData; use V4 extension');
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map(item => this.encodeField(types, name, parsedType, item, version));
+      const typeValuePairs = value.map((item) => this.encodeField(types, name, parsedType, item, version));
       return [
         'bytes32',
         keccak(
@@ -1432,6 +1383,7 @@ export class KeyRing {
         version: keyStore.version,
         type: keyStore.type,
         addresses: keyStore.addresses,
+        pubkeys: keyStore.pubkeys,
         meta: keyStore.meta,
         coinTypeForChain: keyStore.coinTypeForChain,
         bip44HDPath: keyStore.bip44HDPath,

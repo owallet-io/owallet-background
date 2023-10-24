@@ -232,7 +232,7 @@ describe('service', () => {
         {
           type: 'mnemonic'
         },
-        ['0xeb90d36cdb04b7a06b63e5736ac76cad7f3a112d']
+        ['0x2a77016e89454aa2b15ae84757e32b75549af840']
       ],
       [
         'wallet_switchEthereumChain',

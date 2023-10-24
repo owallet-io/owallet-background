@@ -1,6 +1,6 @@
 import { Address } from '@owallet/crypto';
 import axios from 'axios';
-(globalThis as any).TronWeb = require('tronweb');
+const TronWeb = require('tronweb');
 
 describe('Test TronWeb', () => {
   it('test_tronWeb_trx', async () => {

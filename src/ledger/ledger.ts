@@ -35,7 +35,12 @@ export const ledgerProxy = async (
       response = await LedgerInternal.isWebHIDSupported();
       break;
     default:
-      response = await ledger[method].apply(ledger, args);
+      try {
+        response = await ledger[method]?.apply(ledger, args);
+      } catch (error) {
+        console.log("🚀 ~ file: ledger.ts:41 ~ error:", error)
+        
+      }
       break;
   }
   return response;
