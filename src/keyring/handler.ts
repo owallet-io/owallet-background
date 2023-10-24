@@ -201,6 +201,7 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
     await service.permissionService.checkOrGrantBasicAccessPermission(env, msg.chainId, msg.origin);
 
     const key = await service.getKey(msg.chainId);
+    console.log('🚀 ~ file: handler.ts:204 ~ return ~ key:', key);
     const isInj = msg.chainId?.startsWith('injective');
     const pubkeyLedger = service.getKeyRingLedgerPubKey();
     console.log('🚀 ~ file: handler.ts:206 ~ return ~ pubkeyLedger:', pubkeyLedger);

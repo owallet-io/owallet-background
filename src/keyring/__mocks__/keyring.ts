@@ -11,7 +11,8 @@ import {
   mockKeyStoreSha256PrivateKey
 } from './keystores';
 import { KeyStore } from '../crypto';
-import { BIP44HDPath, CommonCrypto, ScryptParams } from '../types';
+import { BIP44HDPath } from '@owallet/types';
+import {  CommonCrypto, ScryptParams } from '../types';
 import { TypeMockKeyStore } from './types';
 export const mockMultiKeyStore: KeyStore[] = [
   mockKeyStorePbkdf2Ledger,

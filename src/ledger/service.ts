@@ -6,7 +6,7 @@ import { Ledger } from './ledger';
 import delay from 'delay';
 
 import { APP_PORT, Env } from '@owallet/router';
-import { BIP44HDPath } from '../keyring';
+import { BIP44HDPath } from '@owallet/types';
 import { KVStore, LedgerAppType } from '@owallet/common';
 import { InteractionService } from '../interaction';
 import { LedgerOptions } from './options';

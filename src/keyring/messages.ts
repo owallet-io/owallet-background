@@ -2,18 +2,18 @@ import { EthermintChainIdHelper } from '@owallet/cosmos';
 import { Message, OWalletError } from '@owallet/router';
 import { ROUTE } from './constants';
 import { KeyRing, KeyRingStatus, MultiKeyStoreInfoWithSelected } from './keyring';
-import { BIP44HDPath, ExportKeyRingData, SignEthereumTypedDataObject } from './types';
+import { ExportKeyRingData, SignEthereumTypedDataObject } from './types';
 
 import { Bech32Address, checkAndValidateADR36AminoSignDoc } from '@owallet/cosmos';
-import { BIP44, OWalletSignOptions, Key } from '@owallet/types';
+import { BIP44, OWalletSignOptions, Key, BIP44HDPath } from '@owallet/types';
 
 import { AminoSignResponse, StdSignature } from '@cosmjs/launchpad';
 import { StdSignDoc } from '@owallet/types';
 import Long from 'long';
-import { Int } from "@owallet/unit";
-import bigInteger from "big-integer";
+import { Int } from '@owallet/unit';
+import bigInteger from 'big-integer';
 const bip39 = require('bip39');
-import { SignDoc } from "@owallet/proto-types/cosmos/tx/v1beta1/tx";
+import { SignDoc } from '@owallet/proto-types/cosmos/tx/v1beta1/tx';
 export class RestoreKeyRingMsg extends Message<{
   status: KeyRingStatus;
   multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
@@ -318,7 +318,11 @@ export class AddPrivateKeyMsg extends Message<{
     return 'add-private-key';
   }
 
-  constructor(public readonly kdf: 'scrypt' | 'sha256' | 'pbkdf2', public readonly privateKey: Uint8Array, public readonly meta: Record<string, string>) {
+  constructor(
+    public readonly kdf: 'scrypt' | 'sha256' | 'pbkdf2',
+    public readonly privateKey: Uint8Array,
+    public readonly meta: Record<string, string>
+  ) {
     super();
   }
 
@@ -352,7 +356,11 @@ export class AddLedgerKeyMsg extends Message<{
     return 'add-ledger-key';
   }
 
-  constructor(public readonly kdf: 'scrypt' | 'sha256' | 'pbkdf2', public readonly meta: Record<string, string>, public readonly bip44HDPath: BIP44HDPath) {
+  constructor(
+    public readonly kdf: 'scrypt' | 'sha256' | 'pbkdf2',
+    public readonly meta: Record<string, string>,
+    public readonly bip44HDPath: BIP44HDPath
+  ) {
     super();
   }
 
@@ -553,7 +561,9 @@ export class RequestSignEIP712CosmosTxMsg_v0 extends Message<AminoSignResponse> 
         return new Int(value);
       })();
       if (!ethChainIdInMsg.equals(new Int(ethChainId))) {
-        throw new Error(`Unmatched chain id for eth (expected: ${ethChainId}, actual: ${this.eip712.domain['chainId']})`);
+        throw new Error(
+          `Unmatched chain id for eth (expected: ${ethChainId}, actual: ${this.eip712.domain['chainId']})`
+        );
       }
     } else {
       throw new Error("Can't sign ADR-36 with EIP-712");
@@ -1006,7 +1016,12 @@ export class RequestVerifyADR36AminoSignDoc extends Message<boolean> {
     return 'request-verify-adr-36-amino-doc';
   }
 
-  constructor(public readonly chainId: string, public readonly signer: string, public readonly data: Uint8Array, public readonly signature: StdSignature) {
+  constructor(
+    public readonly chainId: string,
+    public readonly signer: string,
+    public readonly data: Uint8Array,
+    public readonly signature: StdSignature
+  ) {
     super();
   }
 

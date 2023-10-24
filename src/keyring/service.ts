@@ -3,10 +3,14 @@ import { TYPES } from '../types';
 
 import { Key, KeyRing, KeyRingStatus, MultiKeyStoreInfoWithSelected } from './keyring';
 
-import { Bech32Address, checkAndValidateADR36AminoSignDoc, makeADR36AminoSignDoc, verifyADR36AminoSignDoc } from '@owallet/cosmos';
+import {
+  Bech32Address,
+  checkAndValidateADR36AminoSignDoc,
+  makeADR36AminoSignDoc,
+  verifyADR36AminoSignDoc
+} from '@owallet/cosmos';
 import {
   AddressesLedger,
-  BIP44HDPath,
   CommonCrypto,
   ECDSASignature,
   ExportKeyRingData,
@@ -18,10 +22,19 @@ import {
 } from './types';
 import TronWeb from 'tronweb';
 
-import { KVStore, fetchAdapter, EVMOS_NETWORKS, MyBigInt, getChainInfoOrThrow, isEthermintLike, escapeHTML, sortObjectByKey } from '@owallet/common';
+import {
+  KVStore,
+  fetchAdapter,
+  EVMOS_NETWORKS,
+  MyBigInt,
+  getChainInfoOrThrow,
+  isEthermintLike,
+  escapeHTML,
+  sortObjectByKey
+} from '@owallet/common';
 import { ChainsService } from '../chains';
 import { LedgerService } from '../ledger';
-import { BIP44, ChainInfo, OWalletSignOptions, StdSignDoc } from '@owallet/types';
+import { BIP44, ChainInfo, OWalletSignOptions, StdSignDoc, BIP44HDPath } from '@owallet/types';
 import { APP_PORT, Env, OWalletError, WEBPAGE_PORT } from '@owallet/router';
 import { InteractionService } from '../interaction';
 import { PermissionService } from '../permission';
@@ -385,7 +398,11 @@ export class KeyRingService {
           throw new OWalletError('keyring', 232, 'Unmatched signer in new sign doc');
         }
       } else {
-        throw new OWalletError('keyring', 237, 'Signing request was for ADR-36. But, accidentally, new sign doc is not for ADR-36');
+        throw new OWalletError(
+          'keyring',
+          237,
+          'Signing request was for ADR-36. But, accidentally, new sign doc is not for ADR-36'
+        );
       }
     }
 
@@ -413,7 +430,9 @@ export class KeyRingService {
 
     // sign get here
     const key = this.keyRing.getKey(chainId, coinType);
-    const bech32Address = new Bech32Address(key.address).toBech32((await this.chainsService.getChainInfo(chainId)).bech32Config.bech32PrefixAccAddr);
+    const bech32Address = new Bech32Address(key.address).toBech32(
+      (await this.chainsService.getChainInfo(chainId)).bech32Config.bech32PrefixAccAddr
+    );
     if (signer !== bech32Address) {
       throw new Error('Signer mismatched');
     }
@@ -462,7 +481,11 @@ export class KeyRingService {
     }
   }
 
-  async requestSignEthereumTypedData(env: Env, chainId: string, data: SignEthereumTypedDataObject): Promise<ECDSASignature> {
+  async requestSignEthereumTypedData(
+    env: Env,
+    chainId: string,
+    data: SignEthereumTypedDataObject
+  ): Promise<ECDSASignature> {
     try {
       const rawTxHex = await this.keyRing.signEthereumTypedData({
         typedMessage: data.typedMessage,
@@ -564,7 +587,12 @@ export class KeyRingService {
     return { ...data, gasPrice, gasLimit, memo, fees };
   }
 
-  async verifyADR36AminoSignDoc(chainId: string, signer: string, data: Uint8Array, signature: StdSignature): Promise<boolean> {
+  async verifyADR36AminoSignDoc(
+    chainId: string,
+    signer: string,
+    data: Uint8Array,
+    signature: StdSignature
+  ): Promise<boolean> {
     const coinType = await this.chainsService.getChainCoinType(chainId);
 
     const key = this.keyRing.getKey(chainId, coinType);
@@ -582,7 +610,12 @@ export class KeyRingService {
 
     const signDoc = makeADR36AminoSignDoc(signer, data);
 
-    return verifyADR36AminoSignDoc(bech32Prefix, signDoc, Buffer.from(signature.pub_key.value, 'base64'), Buffer.from(signature.signature, 'base64'));
+    return verifyADR36AminoSignDoc(
+      bech32Prefix,
+      signDoc,
+      Buffer.from(signature.pub_key.value, 'base64'),
+      Buffer.from(signature.signature, 'base64')
+    );
   }
 
   // here
@@ -651,7 +684,10 @@ export class KeyRingService {
   }
 
   async setKeyStoreCoinType(chainId: string, coinType: number): Promise<void> {
-    const prevCoinType = this.keyRing.computeKeyStoreCoinType(chainId, await this.chainsService.getChainCoinType(chainId));
+    const prevCoinType = this.keyRing.computeKeyStoreCoinType(
+      chainId,
+      await this.chainsService.getChainCoinType(chainId)
+    );
 
     await this.keyRing.setKeyStoreCoinType(chainId, coinType);
 
@@ -660,7 +696,10 @@ export class KeyRingService {
     }
   }
 
-  async getKeyStoreBIP44Selectables(chainId: string, paths: BIP44[]): Promise<{ readonly path: BIP44; readonly bech32Address: string }[]> {
+  async getKeyStoreBIP44Selectables(
+    chainId: string,
+    paths: BIP44[]
+  ): Promise<{ readonly path: BIP44; readonly bech32Address: string }[]> {
     if (this.isKeyStoreCoinTypeSet(chainId)) {
       return [];
     }
@@ -728,7 +767,9 @@ export class KeyRingService {
 
       // const transactionData = Buffer.from(transaction.raw_data_hex, 'hex');
 
-      transaction.signature = [Buffer.from(await this.keyRing.sign(env, chainId, 195, transaction?.txID)).toString('hex')];
+      transaction.signature = [
+        Buffer.from(await this.keyRing.sign(env, chainId, 195, transaction?.txID)).toString('hex')
+      ];
 
       const receipt = await tronWeb.trx.sendRawTransaction(transaction);
       return receipt.txid ?? receipt.transaction.raw_data_hex;

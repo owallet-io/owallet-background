@@ -28,7 +28,6 @@ import { TYPED_MESSAGE_SCHEMA } from './constants';
 import { Crypto, KeyStore } from './crypto';
 import PRE from 'proxy-recrypt-js';
 import {
-  BIP44HDPath,
   CommonCrypto,
   ECDSASignature,
   ExportKeyRingData,
@@ -43,6 +42,7 @@ import {
 import { KeyringHelper } from './utils';
 import { getChainInfoOrThrow } from '@owallet/common';
 import { isEthermintLike } from '@owallet/common';
+import { BIP44HDPath } from '@owallet/types';
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
 
@@ -817,6 +817,8 @@ export class KeyRing {
     } else {
       // Sign with Evmos/Ethereum
       const privKey = this.loadPrivKey(coinType);
+      console.log('🚀 ~ file: keyring.ts:820 ~ privKey:', privKey);
+      console.log('🚀 ~ file: keyring.ts:820 ~ coinType:', coinType);
 
       // Check cointype = 60 in the case that network is evmos(still cosmos but need to sign with ethereum)
 

@@ -1,5 +1,5 @@
 import { getNetworkTypeByBip44HDPath } from '@owallet/common';
-import { BIP44HDPath } from '../../keyring/types';
+import { BIP44HDPath } from '@owallet/types';
 const mockBip44HDPath: BIP44HDPath = {
   coinType: 118,
   account: 0,
