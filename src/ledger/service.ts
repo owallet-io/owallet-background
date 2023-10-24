@@ -6,12 +6,11 @@ import { Ledger } from './ledger';
 import delay from 'delay';
 
 import { APP_PORT, Env } from '@owallet/router';
-import { BIP44HDPath } from '../keyring';
-import { KVStore } from '@owallet/common';
+import { BIP44HDPath } from '@owallet/types';
+import { KVStore, LedgerAppType } from '@owallet/common';
 import { InteractionService } from '../interaction';
 import { LedgerOptions } from './options';
 import { Buffer } from 'buffer';
-import { LedgerAppType } from './ledger-internal';
 
 @singleton()
 export class LedgerService {
@@ -32,11 +31,7 @@ export class LedgerService {
     };
   }
 
-  async getPublicKey(
-    env: Env,
-    bip44HDPath: BIP44HDPath,
-    ledgerType: LedgerAppType
-  ): Promise<any> {
+  async getPublicKey(env: Env, bip44HDPath: BIP44HDPath, ledgerType: LedgerAppType): Promise<any> {
     return await this.useLedger(env, ledgerType, async (ledger, retryCount) => {
       try {
         // Cosmos App on Ledger doesn't support the coin type other than 118.
@@ -68,43 +63,39 @@ export class LedgerService {
     message: Uint8Array,
     ledgerType: LedgerAppType
   ): Promise<Uint8Array | any> {
-    return await this.useLedger(
-      env,
-      ledgerType,
-      async (ledger, retryCount: number) => {
-        try {
-          const pubKey = await ledger.getPublicKey(path);
-          console.log('it gone her 2e===', pubKey);
+    return await this.useLedger(env, ledgerType, async (ledger, retryCount: number) => {
+      try {
+        const pubKey = await ledger.getPublicKey(path);
+        console.log('it gone her 2e===', pubKey);
 
-          // if (
-          //   Buffer.from(expectedPubKey).toString('hex') !==
-          //   Buffer.from(pubKey).toString('hex')
-          // ) {
-          //   throw new Error('Unmatched public key');
-          // }
-          // Cosmos App on Ledger doesn't support the coin type other than 118.
-          const signature = await ledger.sign(path, message);
+        // if (
+        //   Buffer.from(expectedPubKey).toString('hex') !==
+        //   Buffer.from(pubKey).toString('hex')
+        // ) {
+        //   throw new Error('Unmatched public key');
+        // }
+        // Cosmos App on Ledger doesn't support the coin type other than 118.
+        const signature = await ledger.sign(path, message);
 
-          // Notify UI Ledger signing succeeded only when Ledger initialization is tried again.
-          if (retryCount > 0) {
-            this.interactionService.dispatchEvent(APP_PORT, 'ledger-init', {
-              event: 'sign',
-              success: true
-            });
-          }
-          return signature;
-        } catch (e) {
-          // Notify UI Ledger signing failed only when Ledger initialization is tried again.
-          if (retryCount > 0) {
-            this.interactionService.dispatchEvent(APP_PORT, 'ledger-init', {
-              event: 'sign',
-              success: false
-            });
-          }
-          throw e;
+        // Notify UI Ledger signing succeeded only when Ledger initialization is tried again.
+        if (retryCount > 0) {
+          this.interactionService.dispatchEvent(APP_PORT, 'ledger-init', {
+            event: 'sign',
+            success: true
+          });
         }
+        return signature;
+      } catch (e) {
+        // Notify UI Ledger signing failed only when Ledger initialization is tried again.
+        if (retryCount > 0) {
+          this.interactionService.dispatchEvent(APP_PORT, 'ledger-init', {
+            event: 'sign',
+            success: false
+          });
+        }
+        throw e;
       }
-    );
+    });
   }
 
   async useLedger<T>(
@@ -128,16 +119,9 @@ export class LedgerService {
     }
   }
 
-  async initLedger(
-    env: Env,
-    ledgerType: LedgerAppType
-  ): Promise<{ ledger: Ledger; retryCount: number }> {
+  async initLedger(env: Env, ledgerType: LedgerAppType): Promise<{ ledger: Ledger; retryCount: number }> {
     if (this.previousInitAborter) {
-      this.previousInitAborter(
-        new Error(
-          'New ledger request occurred before the ledger was initialized'
-        )
-      );
+      this.previousInitAborter(new Error('New ledger request occurred before the ledger was initialized'));
     }
 
     const aborter = (() => {
@@ -260,11 +244,7 @@ export class LedgerService {
       const views = browser.extension.getViews();
       let find = false;
       for (const view of views) {
-        if (
-          view.location.href.includes(
-            browser.runtime.getURL('popup.html#/ledger-grant')
-          )
-        ) {
+        if (view.location.href.includes(browser.runtime.getURL('popup.html#/ledger-grant'))) {
           find = true;
           break;
         }

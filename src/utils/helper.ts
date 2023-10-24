@@ -1,21 +1,5 @@
-import { TRON_ID } from '@owallet/common';
-import { BIP44HDPath } from 'src/keyring';
-import { LedgerAppType } from 'src/ledger';
-import { _TypedDataEncoder as TypedDataEncoder } from "@ethersproject/hash";
+import { _TypedDataEncoder as TypedDataEncoder } from '@ethersproject/hash';
 import Joi from 'joi';
-export function splitPath(path: string): BIP44HDPath {
-  const bip44HDPathOrder = ['coinType', 'account', 'change', 'addressIndex'];
-  const result = {} as BIP44HDPath;
-  const components = path.split('/');
-  if (path.startsWith('44')) {
-    components.shift();
-  }
-  components.forEach((element, index) => {
-    result[bip44HDPathOrder[index]] = element.replace("'", '');
-  });
-
-  return result;
-}
 export const EIP712DomainTypeValidator = Joi.array()
   .items(
     Joi.object<{
@@ -91,11 +75,7 @@ export const domainHash = (message: {
   types: Record<string, { name: string; type: string }[]>;
   domain: Record<string, any>;
 }): string =>
-  TypedDataEncoder.hashStruct(
-    "EIP712Domain",
-    { EIP712Domain: message.types["EIP712Domain"] },
-    message.domain
-  );
+  TypedDataEncoder.hashStruct('EIP712Domain', { EIP712Domain: message.types['EIP712Domain'] }, message.domain);
 
 // Seems that there is no way to set primary type and the first type becomes primary type.
 export const messageHash = (message: {
@@ -107,7 +87,7 @@ export const messageHash = (message: {
     (() => {
       const types = { ...message.types };
 
-      delete types["EIP712Domain"];
+      delete types['EIP712Domain'];
 
       const primary = types[message.primaryType];
 
@@ -119,7 +99,7 @@ export const messageHash = (message: {
 
       return {
         [message.primaryType]: primary,
-        ...types,
+        ...types
       };
     })()
   ).hash(message.message);
@@ -156,34 +136,4 @@ export function stringifyPath(paths: number[]): string {
     }
   });
   return stringPaths;
-}
-
-export function getNetworkTypeByBip44HDPath(path: BIP44HDPath): LedgerAppType {
-  switch (path.coinType) {
-    case 118:
-      return 'cosmos';
-    case 60:
-      return 'eth';
-    case 195:
-      return 'trx';
-    default:
-      return 'cosmos';
-  }
-}
-
-export function formatNeworkTypeToLedgerAppName(network: string, chainId?: string | number): LedgerAppType {
-  switch (network) {
-    case 'cosmos':
-      if ((chainId as string).startsWith('injective')) {
-        return 'eth';
-      }
-      return 'cosmos';
-    case 'evm':
-      if (chainId && chainId === TRON_ID) {
-        return 'trx';
-      }
-      return 'eth';
-    default:
-      return 'cosmos';
-  }
 }

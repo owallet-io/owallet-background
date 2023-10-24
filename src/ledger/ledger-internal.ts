@@ -8,6 +8,7 @@ import { signatureImport } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
 import { EIP712MessageValidator, stringifyPath, ethSignatureToBytes, domainHash, messageHash } from '../utils/helper';
+import { LedgerAppType } from '@owallet/common';
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 
 export enum LedgerInitErrorOn {
@@ -26,7 +27,6 @@ export class LedgerInitError extends Error {
 }
 
 export type TransportMode = 'webusb' | 'webhid' | 'ble';
-export type LedgerAppType = 'cosmos' | 'eth' | 'trx';
 
 export class LedgerInternal {
   constructor(private readonly ledgerApp: CosmosApp | EthApp | TrxApp, private readonly type: LedgerAppType) {}
@@ -195,7 +195,9 @@ export class LedgerInternal {
 
         try {
           // Unfortunately, signEIP712Message not works on ledger yet.
-          return ethSignatureToBytes(await this.ledgerApp.signEIP712HashedMessage(stringifyPath(path), domainHash(data), messageHash(data)));
+          return ethSignatureToBytes(
+            await this.ledgerApp.signEIP712HashedMessage(stringifyPath(path), domainHash(data), messageHash(data))
+          );
         } catch (e) {
           if (e?.message.includes('(0x6985)')) {
             throw new Error('User rejected signing');
