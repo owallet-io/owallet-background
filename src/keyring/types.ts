@@ -1,12 +1,6 @@
+import { BIP44HDPath } from '@owallet/types';
 export type CoinTypeForChain = {
   [identifier: string]: number;
-};
-
-export type BIP44HDPath = {
-  coinType?: number;
-  account: number;
-  change: number;
-  addressIndex: number;
 };
 
 export type AddressesLedger = {
@@ -17,6 +11,11 @@ export type AddressesLedger = {
   tbtc?: string;
 };
 
+export type PubkeyLedger = {
+  cosmos?: string;
+  eth?: string;
+  trx?: string;
+};
 export interface CommonCrypto {
   scrypt: (text: string, params: ScryptParams) => Promise<Uint8Array>;
 }

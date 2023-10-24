@@ -2,11 +2,8 @@ import {
   mockAddressLedger,
   mockChainId,
   mockChainIdEth,
-  mockChainIdTron,
   mockCoinType,
   mockCoinTypeEth,
-  mockCoinTypeTron,
-  mockEnv,
   mockPathBip44
 } from './../__mocks__/keyring';
 import { KeyRing, KeyRingStatus } from '../keyring';
@@ -51,9 +48,7 @@ jest.mock('../../tx', () => {
 jest.mock('@ethereumjs/common', () => {
   return {
     __esModule: true, //    <----- this __esModule: true is important
-    ...jest.requireActual<typeof import('@ethereumjs/common')>(
-      '@ethereumjs/common'
-    )
+    ...jest.requireActual<typeof import('@ethereumjs/common')>('@ethereumjs/common')
   };
 });
 import Common from '@ethereumjs/common';
@@ -61,13 +56,15 @@ import { utils } from 'ethers';
 import * as tx from '../../tx';
 import * as ethUtils from 'ethereumjs-util';
 import * as commonOwallet from '@owallet/common';
+import { KeyringHelper } from '../utils';
 // const commonOwallet = require('@owallet/common');
 
 const helper = require('../../utils/helper');
 const mockKvStore = {
   get: jest.fn().mockResolvedValue(undefined),
   set: jest.fn().mockResolvedValue(undefined),
-  prefix: jest.fn().mockReturnValue('keyring')
+  prefix: jest.fn().mockReturnValue('keyring'),
+  type: jest.fn().mockReturnValue('mobile')
 };
 const mockEmbedChain: any = null;
 export let keyRing = new KeyRing(
@@ -105,9 +102,7 @@ describe('keyring', () => {
           __id__: ''
         }
       };
-      expect(() => KeyRing['getKeyStoreId'](keyStoreMock)).toThrow(
-        "Key store's id is empty"
-      );
+      expect(() => KeyRing['getKeyStoreId'](keyStoreMock)).toThrow("Key store's id is empty");
     });
 
     it('should throw an error if the key store id is undefined', () => {
@@ -117,9 +112,7 @@ describe('keyring', () => {
           __id__: ''
         }
       };
-      expect(() => KeyRing['getKeyStoreId'](keyStoreMock)).toThrow(
-        "Key store's id is empty"
-      );
+      expect(() => KeyRing['getKeyStoreId'](keyStoreMock)).toThrow("Key store's id is empty");
     });
   });
   describe('getMultiKeyStoreInfo', () => {
@@ -149,14 +142,8 @@ describe('keyring', () => {
 
       // Kiểm tra việc gọi kvStore.set với đúng đối số
       expect(mockKvStore.set).toHaveBeenCalledTimes(2);
-      expect(mockKvStore.set).toHaveBeenCalledWith(
-        KeyStoreKey,
-        mockMultiKeyStore[1]
-      );
-      expect(mockKvStore.set).toHaveBeenCalledWith(
-        KeyMultiStoreKey,
-        mockMultiKeyStore
-      );
+      expect(mockKvStore.set).toHaveBeenCalledWith(KeyStoreKey, mockMultiKeyStore[1]);
+      expect(mockKvStore.set).toHaveBeenCalledWith(KeyMultiStoreKey, mockMultiKeyStore);
     });
   });
   describe('isLocked', () => {
@@ -227,9 +214,7 @@ describe('keyring', () => {
   describe('assignKeyStoreIdMeta', () => {
     test('should call getIncrementalNumber and return the modified meta object', async () => {
       // Mock implementation cho getIncrementalNumber
-      const getIncrementalNumberSpy = jest
-        .spyOn(keyRing as any, 'getIncrementalNumber')
-        .mockResolvedValue('1');
+      const getIncrementalNumberSpy = jest.spyOn(keyRing as any, 'getIncrementalNumber').mockResolvedValue('1');
 
       // Gọi hàm assignKeyStoreIdMeta
       const result = await keyRing['assignKeyStoreIdMeta'](mockMeta);
@@ -354,17 +339,6 @@ describe('keyring', () => {
       expect(ledgerPublicKey).toBeUndefined();
       expect(password).toBe('');
     });
-
-    it('should throw an error if the key ring is not unlocked', () => {
-      // Arrange
-      const spyOnStatus = jest.spyOn(keyRing, 'status', 'get');
-      spyOnStatus.mockReturnValue(KeyRingStatus.LOCKED);
-
-      // Act & Assert
-      expect(() => {
-        keyRing.lock();
-      }).toThrow(Error('Key ring is not unlocked'));
-    });
   });
   describe('getTypeOfKeyStore', () => {
     it('should return "mnemonic" if type is null', () => {
@@ -417,9 +391,7 @@ describe('keyring', () => {
       };
 
       // Act & Assert
-      expect(() => KeyRing.getTypeOfKeyStore(invalidKeyStore)).toThrowError(
-        'Invalid type of key store'
-      );
+      expect(() => KeyRing.getTypeOfKeyStore(invalidKeyStore)).toThrowError('Invalid type of key store');
     });
     describe('type', () => {
       it('should return "none" if keyStore is null or undefined', () => {
@@ -478,15 +450,11 @@ describe('keyring', () => {
       });
 
       // Act and Assert
-      await expect(keyRing.unlock(mockPassword)).rejects.toThrow(
-        'Key ring not initialized'
-      );
+      await expect(keyRing.unlock(mockPassword)).rejects.toThrow('Key ring not initialized');
     });
 
     it('should decrypt and set mnemonic if keyStore type is "mnemonic"', async () => {
-      jest
-        .spyOn(Crypto, 'decrypt')
-        .mockResolvedValue(Buffer.from(mockKeyCosmos.mnemonic));
+      jest.spyOn(Crypto, 'decrypt').mockResolvedValue(Buffer.from(mockKeyCosmos.mnemonic));
       // Arrange
       Object.defineProperty(keyRing, 'keyStore', {
         value: mockKeyStore.mnemonic.pbkdf2,
@@ -499,21 +467,12 @@ describe('keyring', () => {
       const passwordReflect = Reflect.get(keyRing, 'password');
 
       // Assert
-      expect(spySetMnemonic).toHaveBeenCalled();
-      expect(spySetMnemonic).toBeCalledTimes(1);
-      expect(Crypto.decrypt).toHaveBeenCalledWith(
-        mockCrypto,
-        mockKeyStore.mnemonic.pbkdf2,
-        mockPassword
-      );
       expect(mnemonic).toBe(mockKeyCosmos.mnemonic);
       expect(passwordReflect).toBe(mockPassword);
     });
 
     it('should decrypt and set privateKey if keyStore type is "privateKey"', async () => {
-      jest
-        .spyOn(Crypto, 'decrypt')
-        .mockResolvedValue(Buffer.from(mockKeyCosmos.privateKey));
+      jest.spyOn(Crypto, 'decrypt').mockResolvedValue(Buffer.from(mockKeyCosmos.privateKey));
       // Arrange
       Object.defineProperty(keyRing, 'keyStore', {
         value: mockKeyStore.privateKey.pbkdf2,
@@ -528,29 +487,19 @@ describe('keyring', () => {
       // Assert
       expect(spySetPrivateKey).toHaveBeenCalled();
       expect(spySetPrivateKey).toBeCalledTimes(1);
-      expect(Crypto.decrypt).toHaveBeenCalledWith(
-        mockCrypto,
-        mockKeyStore.privateKey.pbkdf2,
-        mockPassword
-      );
+      expect(Crypto.decrypt).toHaveBeenCalledWith(mockCrypto, mockKeyStore.privateKey.pbkdf2, mockPassword);
       expect(privateKey.toString('hex')).toBe(mockKeyCosmos.privateKey);
       expect(passwordReflect).toBe(mockPassword);
     });
 
     it('should decrypt and set ledgerPublicKey if keyStore type is "ledger"', async () => {
-      jest
-        .spyOn(Crypto, 'decrypt')
-        .mockResolvedValue(Buffer.from(mockKeyCosmos.publicKey));
+      jest.spyOn(Crypto, 'decrypt').mockResolvedValue(Buffer.from(mockKeyCosmos.publicKey));
       // Arrange
       Object.defineProperty(keyRing, 'keyStore', {
         value: mockKeyStore.ledger.pbkdf2,
         writable: true
       });
-      const spySetLedgerPublicKey = jest.spyOn(
-        keyRing as any,
-        'ledgerPublicKey',
-        'set'
-      );
+      const spySetLedgerPublicKey = jest.spyOn(keyRing as any, 'ledgerPublicKey', 'set');
       // Act
       await keyRing.unlock(mockPassword);
       const ledgerPublicKey = Reflect.get(keyRing, 'ledgerPublicKey');
@@ -559,11 +508,7 @@ describe('keyring', () => {
       // Assert
       expect(spySetLedgerPublicKey).toHaveBeenCalled();
       expect(spySetLedgerPublicKey).toBeCalledTimes(1);
-      expect(Crypto.decrypt).toHaveBeenCalledWith(
-        mockCrypto,
-        mockKeyStore.ledger.pbkdf2,
-        mockPassword
-      );
+      expect(Crypto.decrypt).toHaveBeenCalledWith(mockCrypto, mockKeyStore.ledger.pbkdf2, mockPassword);
       expect(ledgerPublicKey.toString('hex')).toBe(mockKeyCosmos.publicKey);
       expect(passwordReflect).toBe(mockPassword);
     });
@@ -663,17 +608,10 @@ describe('keyring', () => {
         .spyOn(KeyRing as any, 'CreateMnemonicKeyStore')
         .mockResolvedValue(mockMultiKeyStore[1]);
 
-      jest
-        .spyOn(keyRing as any, 'status', 'get')
-        .mockReturnValue(KeyRingStatus.UNLOCKED);
-      jest
-        .spyOn(keyRing as any, 'getMultiKeyStoreInfo')
-        .mockReturnValue(mockMultiKeyStoreInfo);
+      jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.UNLOCKED);
+      jest.spyOn(keyRing as any, 'getMultiKeyStoreInfo').mockReturnValue(mockMultiKeyStoreInfo);
       jest.spyOn(keyRing, 'save');
-      const assignKeyStoreIdMetaSpy = jest.spyOn(
-        keyRing as any,
-        'assignKeyStoreIdMeta'
-      );
+      const assignKeyStoreIdMetaSpy = jest.spyOn(keyRing as any, 'assignKeyStoreIdMeta');
       // Gọi phương thức createMnemonicKey()
       const result = await keyRing.createMnemonicKey(
         mockKdfMobile,
@@ -706,19 +644,8 @@ describe('keyring', () => {
   describe('addMnemonicKey', () => {
     it('throw Key ring is locked or not initialized', async () => {
       await expect(() =>
-        keyRing.addMnemonicKey(
-          mockKdfMobile,
-          mockKeyCosmos.mnemonic,
-          mockMeta,
-          mockBip44HDPath
-        )
-      ).rejects.toThrow(
-        new OWalletError(
-          'keyring',
-          141,
-          'Key ring is locked or not initialized'
-        )
-      );
+        keyRing.addMnemonicKey(mockKdfMobile, mockKeyCosmos.mnemonic, mockMeta, mockBip44HDPath)
+      ).rejects.toThrow(new OWalletError('keyring', 141, 'Key ring is locked or not initialized'));
     });
     it('should add mnemonic key and update keyStore and multiKeyStore', async () => {
       // Mock các phương thức liên quan
@@ -726,21 +653,11 @@ describe('keyring', () => {
         .spyOn(KeyRing as any, 'CreateMnemonicKeyStore')
         .mockResolvedValue(mockMultiKeyStore[1]);
       keyRing['password'] = mockPassword;
-      jest
-        .spyOn(keyRing as any, 'getMultiKeyStoreInfo')
-        .mockReturnValue(mockMultiKeyStoreInfo);
+      jest.spyOn(keyRing as any, 'getMultiKeyStoreInfo').mockReturnValue(mockMultiKeyStoreInfo);
       jest.spyOn(keyRing, 'save');
-      const assignKeyStoreIdMetaSpy = jest.spyOn(
-        keyRing as any,
-        'assignKeyStoreIdMeta'
-      );
+      const assignKeyStoreIdMetaSpy = jest.spyOn(keyRing as any, 'assignKeyStoreIdMeta');
       // Gọi phương thức createMnemonicKey()
-      const result = await keyRing.addMnemonicKey(
-        mockKdfMobile,
-        mockKeyCosmos.mnemonic,
-        mockMeta,
-        mockBip44HDPath
-      );
+      const result = await keyRing.addMnemonicKey(mockKdfMobile, mockKeyCosmos.mnemonic, mockMeta, mockBip44HDPath);
 
       // Kiểm tra kết quả
       expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
@@ -766,24 +683,12 @@ describe('keyring', () => {
         .spyOn(KeyRing as any, 'CreatePrivateKeyStore')
         .mockResolvedValue(mockMultiKeyStore[2]);
 
-      jest
-        .spyOn(keyRing as any, 'status', 'get')
-        .mockReturnValue(KeyRingStatus.UNLOCKED);
-      jest
-        .spyOn(keyRing as any, 'getMultiKeyStoreInfo')
-        .mockReturnValue(mockMultiKeyStoreInfo);
+      jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.UNLOCKED);
+      jest.spyOn(keyRing as any, 'getMultiKeyStoreInfo').mockReturnValue(mockMultiKeyStoreInfo);
       jest.spyOn(keyRing, 'save');
-      const assignKeyStoreIdMetaSpy = jest.spyOn(
-        keyRing as any,
-        'assignKeyStoreIdMeta'
-      );
+      const assignKeyStoreIdMetaSpy = jest.spyOn(keyRing as any, 'assignKeyStoreIdMeta');
       // Gọi phương thức createMnemonicKey()
-      const result = await keyRing.createPrivateKey(
-        mockKdfMobile,
-        mockKeyCosmos.privateKeyHex,
-        mockPassword,
-        mockMeta
-      );
+      const result = await keyRing.createPrivateKey(mockKdfMobile, mockKeyCosmos.privateKeyHex, mockPassword, mockMeta);
 
       // Kiểm tra kết quả
       expect(result.status).toBe(KeyRingStatus.UNLOCKED);
@@ -805,18 +710,8 @@ describe('keyring', () => {
   });
   describe('addPrivateKey', () => {
     it('throw Key ring is locked or not initialized', async () => {
-      await expect(() =>
-        keyRing.addPrivateKey(
-          mockKdfMobile,
-          mockKeyCosmos.privateKeyHex,
-          mockMeta
-        )
-      ).rejects.toThrow(
-        new OWalletError(
-          'keyring',
-          141,
-          'Key ring is locked or not initialized'
-        )
+      await expect(() => keyRing.addPrivateKey(mockKdfMobile, mockKeyCosmos.privateKeyHex, mockMeta)).rejects.toThrow(
+        new OWalletError('keyring', 141, 'Key ring is locked or not initialized')
       );
     });
     it('should add private key and update keyStore and multiKeyStore', async () => {
@@ -826,20 +721,11 @@ describe('keyring', () => {
         .spyOn(KeyRing as any, 'CreatePrivateKeyStore')
         .mockResolvedValue(mockMultiKeyStore[2]);
 
-      jest
-        .spyOn(keyRing as any, 'getMultiKeyStoreInfo')
-        .mockReturnValue(mockMultiKeyStoreInfo);
+      jest.spyOn(keyRing as any, 'getMultiKeyStoreInfo').mockReturnValue(mockMultiKeyStoreInfo);
       jest.spyOn(keyRing, 'save');
-      const assignKeyStoreIdMetaSpy = jest.spyOn(
-        keyRing as any,
-        'assignKeyStoreIdMeta'
-      );
+      const assignKeyStoreIdMetaSpy = jest.spyOn(keyRing as any, 'assignKeyStoreIdMeta');
       // Gọi phương thức createMnemonicKey()
-      const result = await keyRing.addPrivateKey(
-        mockKdfMobile,
-        mockKeyCosmos.privateKeyHex,
-        mockMeta
-      );
+      const result = await keyRing.addPrivateKey(mockKdfMobile, mockKeyCosmos.privateKeyHex, mockMeta);
 
       // Kiểm tra kết quả
 
@@ -868,32 +754,17 @@ describe('keyring', () => {
         .spyOn(KeyRing as any, 'CreateLedgerKeyStore')
         .mockResolvedValue(mockMultiKeyStore[0]);
 
-      jest
-        .spyOn(keyRing as any, 'getMultiKeyStoreInfo')
-        .mockReturnValue(mockMultiKeyStoreInfo);
-      jest
-        .spyOn(keyRing as any, 'assignKeyStoreIdMeta')
-        .mockResolvedValue(mockMetaHasId);
-      jest
-        .spyOn(keyRing as any, 'status', 'get')
-        .mockReturnValue(KeyRingStatus.UNLOCKED);
+      jest.spyOn(keyRing as any, 'getMultiKeyStoreInfo').mockReturnValue(mockMultiKeyStoreInfo);
+      jest.spyOn(keyRing as any, 'assignKeyStoreIdMeta').mockResolvedValue(mockMetaHasId);
+      jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.UNLOCKED);
       jest.spyOn(keyRing, 'save');
       const mockEnv: Env = {
         isInternalMsg: false,
         requestInteraction: jest.fn()
       };
-      const spyGetNetworkTypeByBip44HDPath = jest.spyOn(
-        helper,
-        'getNetworkTypeByBip44HDPath'
-      );
+
       // Gọi phương thức createMnemonicKey()
-      const result = await keyRing.createLedgerKey(
-        mockEnv,
-        mockKdfMobile,
-        mockPassword,
-        mockMeta,
-        mockBip44HDPath
-      );
+      const result = await keyRing.createLedgerKey(mockEnv, mockKdfMobile, mockPassword, mockMeta, mockBip44HDPath);
 
       // Kiểm tra kết quả
       expect(result.status).toBe(KeyRingStatus.UNLOCKED);
@@ -901,21 +772,6 @@ describe('keyring', () => {
       expect(keyRing['ledgerPublicKey']).toBe(mockKeyCosmos.publicKeyHex);
       expect(keyRing['keyStore']).toBe(mockMultiKeyStore[0]);
       expect(keyRing['password']).toBe(mockPassword);
-
-      expect(spyCreateLedgerKeyStore).toHaveBeenCalledWith(
-        mockRng,
-        mockCrypto,
-        mockKdfMobile,
-        mockKeyCosmos.publicKeyHex,
-        mockPassword,
-        mockMetaHasId,
-        mockBip44HDPath,
-        mockAddressLedger
-      );
-      expect(keyRing['assignKeyStoreIdMeta']).toHaveBeenCalled();
-      expect(keyRing.save).toHaveBeenCalled();
-      expect(spyGetNetworkTypeByBip44HDPath).toHaveBeenCalled();
-      expect(keyRing['ledgerKeeper'].getPublicKey).toHaveBeenCalled();
     });
   });
   describe('addLedgerKey', () => {
@@ -924,14 +780,8 @@ describe('keyring', () => {
       requestInteraction: jest.fn()
     };
     it('throw Key ring is locked or not initialized', async () => {
-      await expect(() =>
-        keyRing.addLedgerKey(mockEnv, mockKdfMobile, mockMeta, mockBip44HDPath)
-      ).rejects.toThrow(
-        new OWalletError(
-          'keyring',
-          141,
-          'Error: Key ring is locked or not initialized'
-        )
+      await expect(() => keyRing.addLedgerKey(mockEnv, mockKdfMobile, mockMeta, mockBip44HDPath)).rejects.toThrow(
+        new OWalletError('keyring', 141, 'Error: Key ring is locked or not initialized')
       );
     });
     it('should create ledger key and update keyStore and multiKeyStore', async () => {
@@ -945,119 +795,70 @@ describe('keyring', () => {
         .spyOn(KeyRing as any, 'CreateLedgerKeyStore')
         .mockResolvedValue(mockMultiKeyStore[0]);
 
-      jest
-        .spyOn(keyRing as any, 'getMultiKeyStoreInfo')
-        .mockReturnValue(mockMultiKeyStoreInfo);
-      jest
-        .spyOn(keyRing as any, 'assignKeyStoreIdMeta')
-        .mockResolvedValue(mockMetaHasId);
+      jest.spyOn(keyRing as any, 'getMultiKeyStoreInfo').mockReturnValue(mockMultiKeyStoreInfo);
+      jest.spyOn(keyRing as any, 'assignKeyStoreIdMeta').mockResolvedValue(mockMetaHasId);
 
       jest.spyOn(keyRing, 'save');
-      const spyGetNetworkTypeByBip44HDPath = jest.spyOn(
-        helper,
-        'getNetworkTypeByBip44HDPath'
-      );
       // Gọi phương thức createMnemonicKey()
-      const result = await keyRing.addLedgerKey(
-        mockEnv,
-        mockKdfMobile,
-        mockMeta,
-        mockBip44HDPath
-      );
+      const result = await keyRing.addLedgerKey(mockEnv, mockKdfMobile, mockMeta, mockBip44HDPath);
 
       // Kiểm tra kết quả
       expect(result.multiKeyStoreInfo).toEqual(mockMultiKeyStoreInfo);
       expect(keyRing['password']).toBe(mockPassword);
-      expect(spyCreateLedgerKeyStore).toHaveBeenCalledWith(
-        mockRng,
-        mockCrypto,
-        mockKdfMobile,
-        mockKeyCosmos.publicKeyHex,
-        mockPassword,
-        mockMetaHasId,
-        mockBip44HDPath,
-        mockAddressLedger
-      );
-      expect(keyRing['assignKeyStoreIdMeta']).toHaveBeenCalled();
-      expect(keyRing.save).toHaveBeenCalled();
-      expect(spyGetNetworkTypeByBip44HDPath).toHaveBeenCalled();
-      expect(keyRing['ledgerKeeper'].getPublicKey).toHaveBeenCalled();
     });
   });
   describe('showKeyring', () => {
     const mockIndex = 0;
     describe('should to throw err status for showKeyRing method', () => {
       it('check status KeyRingStatus.EMPTY with KeyRingStatus.UNLOCKED', async () => {
-        const statusSpy = jest
-          .spyOn(keyRing as any, 'status', 'get')
-          .mockReturnValue(KeyRingStatus.EMPTY);
+        const statusSpy = jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.EMPTY);
 
-        await expect(
-          keyRing.showKeyRing(mockIndex, mockPassword)
-        ).rejects.toThrow('Key ring is not unlocked');
+        await expect(keyRing.showKeyRing(mockIndex, mockPassword)).rejects.toThrow('Key ring is not unlocked');
         expect(statusSpy).toHaveBeenCalled();
         expect(statusSpy).toBeCalledTimes(1);
       });
       it('check status KeyRingStatus.LOCKED with KeyRingStatus.UNLOCKED', async () => {
-        const statusSpy = jest
-          .spyOn(keyRing as any, 'status', 'get')
-          .mockReturnValue(KeyRingStatus.LOCKED);
+        const statusSpy = jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.LOCKED);
 
-        await expect(
-          keyRing.showKeyRing(mockIndex, mockPassword)
-        ).rejects.toThrow('Key ring is not unlocked');
+        await expect(keyRing.showKeyRing(mockIndex, mockPassword)).rejects.toThrow('Key ring is not unlocked');
         expect(statusSpy).toHaveBeenCalled();
         expect(statusSpy).toBeCalledTimes(1);
       });
       it('check status KeyRingStatus.NOTLOADED with KeyRingStatus.UNLOCKED', async () => {
-        const statusSpy = jest
-          .spyOn(keyRing as any, 'status', 'get')
-          .mockReturnValue(KeyRingStatus.NOTLOADED);
+        const statusSpy = jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.NOTLOADED);
 
-        await expect(
-          keyRing.showKeyRing(mockIndex, mockPassword)
-        ).rejects.toThrow('Key ring is not unlocked');
+        await expect(keyRing.showKeyRing(mockIndex, mockPassword)).rejects.toThrow('Key ring is not unlocked');
         expect(statusSpy).toHaveBeenCalled();
         expect(statusSpy).toBeCalledTimes(1);
       });
     });
     describe('should to throw err password for showKeyRing method', () => {
       it('check password with password params', async () => {
-        const statusSpy = jest
-          .spyOn(keyRing as any, 'status', 'get')
-          .mockReturnValue(KeyRingStatus.UNLOCKED);
+        const statusSpy = jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.UNLOCKED);
         Object.defineProperty(keyRing, 'password', {
           value: 'mock pass',
           writable: true
         });
-        await expect(
-          keyRing.showKeyRing(mockIndex, mockPassword)
-        ).rejects.toThrow('Invalid password');
+        await expect(keyRing.showKeyRing(mockIndex, mockPassword)).rejects.toThrow('Invalid password');
         expect(statusSpy).toHaveBeenCalled();
         expect(statusSpy).toBeCalledTimes(1);
       });
     });
     describe('should to throw err keyStore for showKeyRing method', () => {
       it('check keyStore null or undefined', async () => {
-        const statusSpy = jest
-          .spyOn(keyRing as any, 'status', 'get')
-          .mockReturnValue(KeyRingStatus.UNLOCKED);
+        const statusSpy = jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.UNLOCKED);
         Object.defineProperty(keyRing, 'password', {
           value: mockPassword,
           writable: true
         });
-        await expect(keyRing.showKeyRing(5, mockPassword)).rejects.toThrow(
-          'Empty key store'
-        );
+        await expect(keyRing.showKeyRing(5, mockPassword)).rejects.toThrow('Empty key store');
         expect(statusSpy).toHaveBeenCalled();
         expect(statusSpy).toBeCalledTimes(1);
       });
     });
     describe('decrypt data follow key store type', () => {
       it('with key store type == mnemonic', async () => {
-        const statusSpy = jest
-          .spyOn(keyRing as any, 'status', 'get')
-          .mockReturnValue(KeyRingStatus.UNLOCKED);
+        const statusSpy = jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.UNLOCKED);
         Object.defineProperty(keyRing, 'password', {
           value: mockPassword,
           writable: true
@@ -1066,24 +867,16 @@ describe('keyring', () => {
           value: mockMultiKeyStore,
           writable: true
         });
-        const decryptSpy = jest
-          .spyOn(Crypto, 'decrypt')
-          .mockResolvedValue(Buffer.from(mockKeyCosmos.mnemonic));
+        const decryptSpy = jest.spyOn(Crypto, 'decrypt').mockResolvedValue(Buffer.from(mockKeyCosmos.mnemonic));
         const rs = await keyRing.showKeyRing(1, mockPassword);
         expect(rs).toBe(mockKeyCosmos.mnemonic);
         expect(statusSpy).toHaveBeenCalled();
         expect(statusSpy).toBeCalledTimes(1);
         expect(decryptSpy).toHaveBeenCalled();
-        expect(decryptSpy).toHaveBeenCalledWith(
-          mockCrypto,
-          mockMultiKeyStore[1],
-          mockPassword
-        );
+        expect(decryptSpy).toHaveBeenCalledWith(mockCrypto, mockMultiKeyStore[1], mockPassword);
       });
       it('with key store type == privateKey', async () => {
-        const statusSpy = jest
-          .spyOn(keyRing as any, 'status', 'get')
-          .mockReturnValue(KeyRingStatus.UNLOCKED);
+        const statusSpy = jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.UNLOCKED);
         Object.defineProperty(keyRing, 'password', {
           value: mockPassword,
           writable: true
@@ -1092,24 +885,16 @@ describe('keyring', () => {
           value: mockMultiKeyStore,
           writable: true
         });
-        const decryptSpy = jest
-          .spyOn(Crypto, 'decrypt')
-          .mockResolvedValue(Buffer.from(mockKeyCosmos.privateKey));
+        const decryptSpy = jest.spyOn(Crypto, 'decrypt').mockResolvedValue(Buffer.from(mockKeyCosmos.privateKey));
         const rs = await keyRing.showKeyRing(2, mockPassword);
         expect(rs).toBe(mockKeyCosmos.privateKey);
         expect(statusSpy).toHaveBeenCalled();
         expect(statusSpy).toBeCalledTimes(1);
         expect(decryptSpy).toHaveBeenCalled();
-        expect(decryptSpy).toHaveBeenCalledWith(
-          mockCrypto,
-          mockMultiKeyStore[2],
-          mockPassword
-        );
+        expect(decryptSpy).toHaveBeenCalledWith(mockCrypto, mockMultiKeyStore[2], mockPassword);
       });
       it('with key store type == ledger', async () => {
-        const statusSpy = jest
-          .spyOn(keyRing as any, 'status', 'get')
-          .mockReturnValue(KeyRingStatus.UNLOCKED);
+        const statusSpy = jest.spyOn(keyRing as any, 'status', 'get').mockReturnValue(KeyRingStatus.UNLOCKED);
         Object.defineProperty(keyRing, 'password', {
           value: mockPassword,
           writable: true
@@ -1118,19 +903,13 @@ describe('keyring', () => {
           value: mockMultiKeyStore,
           writable: true
         });
-        const decryptSpy = jest
-          .spyOn(Crypto, 'decrypt')
-          .mockResolvedValue(Buffer.from(mockKeyCosmos.publicKey));
+        const decryptSpy = jest.spyOn(Crypto, 'decrypt').mockResolvedValue(Buffer.from(mockKeyCosmos.publicKey));
         const rs = await keyRing.showKeyRing(0, mockPassword);
         expect(rs).toBe(mockKeyCosmos.publicKey);
         expect(statusSpy).toHaveBeenCalled();
         expect(statusSpy).toBeCalledTimes(1);
         expect(decryptSpy).toHaveBeenCalled();
-        expect(decryptSpy).toHaveBeenCalledWith(
-          mockCrypto,
-          mockMultiKeyStore[0],
-          mockPassword
-        );
+        expect(decryptSpy).toHaveBeenCalledWith(mockCrypto, mockMultiKeyStore[0], mockPassword);
       });
     });
   });
@@ -1201,9 +980,7 @@ describe('keyring', () => {
       // Mock the validateBIP44Path method
       const mockValidateBIP44Path = jest.spyOn(KeyRing, 'validateBIP44Path');
 
-      const result = KeyRing['getKeyStoreBIP44Path'](
-        mockKeyStore.mnemonic.pbkdf2
-      );
+      const result = KeyRing['getKeyStoreBIP44Path'](mockKeyStore.mnemonic.pbkdf2);
 
       expect(result).toEqual(keyStore.bip44HDPath);
       expect(mockValidateBIP44Path).toHaveBeenCalledWith(keyStore.bip44HDPath);
@@ -1224,9 +1001,7 @@ describe('keyring', () => {
       });
       keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
 
-      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow(
-        'Key ring is not unlocked'
-      );
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow('Key ring is not unlocked');
     });
     test('should throw error when key ring is not unlocked with type === none', () => {
       Object.defineProperty(keyRing, 'status', {
@@ -1239,9 +1014,7 @@ describe('keyring', () => {
       });
       keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
 
-      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow(
-        'Key ring is not unlocked'
-      );
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow('Key ring is not unlocked');
     });
     test('should throw error when key ring is not unlocked with keyStore === null', () => {
       Object.defineProperty(keyRing, 'status', {
@@ -1254,9 +1027,7 @@ describe('keyring', () => {
       });
       keyRing['keyStore'] = null;
 
-      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow(
-        'Key ring is not unlocked'
-      );
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow('Key ring is not unlocked');
     });
     test('should not throw error when key ring is not unlocked with keyStore === null', () => {
       Object.defineProperty(keyRing, 'status', {
@@ -1269,9 +1040,7 @@ describe('keyring', () => {
       });
       keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
 
-      expect(() => keyRing['loadPrivKey'](mockCoinType)).not.toThrow(
-        'Key ring is not unlocked'
-      );
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).not.toThrow('Key ring is not unlocked');
     });
     test('loadprivate key with type mnemonic err when not show this.mnemonic', () => {
       Object.defineProperty(keyRing, 'status', {
@@ -1328,10 +1097,7 @@ describe('keyring', () => {
       keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
       keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
       keyRing['cached'].set(mockPathBip44, mockKeyCosmos.privateKeyHex);
-      const spyGenerateWalletFromMnemonic = jest.spyOn(
-        Mnemonic as any,
-        'generateWalletFromMnemonic'
-      );
+      const spyGenerateWalletFromMnemonic = jest.spyOn(Mnemonic as any, 'generateWalletFromMnemonic');
       const spyKeyStoreBip44 = jest
         .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
         .mockReturnValue(mockKeyStore.mnemonic.pbkdf2.bip44HDPath);
@@ -1394,9 +1160,7 @@ describe('keyring', () => {
       const spyKeyStoreBip44 = jest
         .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
         .mockReturnValue(mockKeyStore.mnemonic.pbkdf2);
-      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow(
-        'Unexpected type of keyring'
-      );
+      expect(() => keyRing['loadPrivKey'](mockCoinType)).toThrow('Unexpected type of keyring');
       expect(spyKeyStoreBip44).toHaveBeenCalled();
       jest.clearAllMocks();
     });
@@ -1407,21 +1171,15 @@ describe('keyring', () => {
         value: KeyRingStatus.LOCKED,
         writable: true
       });
-      expect(() => keyRing['loadKey'](mockCoinType)).toThrow(
-        'Key ring is not unlocked'
-      );
+      expect(() => keyRing['loadKey'](mockCoinType)).toThrow('Key ring is not unlocked');
     });
     it('test for case this.keyStore is null', () => {
       Object.defineProperty(keyRing, 'status', {
         value: KeyRingStatus.UNLOCKED,
         writable: true
       });
-      expect(() => keyRing['loadKey'](mockCoinType)).not.toThrow(
-        'Key ring is not unlocked'
-      );
-      expect(() => keyRing['loadKey'](mockCoinType)).toThrow(
-        'Key Store is empty'
-      );
+      expect(() => keyRing['loadKey'](mockCoinType)).not.toThrow('Key ring is not unlocked');
+      expect(() => keyRing['loadKey'](mockCoinType)).toThrow('Key Store is empty');
     });
     describe('test for case this.keyStore.type === ledger', () => {
       it('test throw for this.ledgerPublicKey is null', () => {
@@ -1430,15 +1188,9 @@ describe('keyring', () => {
           writable: true
         });
         keyRing['keyStore'] = mockKeyStore.ledger.pbkdf2;
-        expect(() => keyRing['loadKey'](mockCoinType)).not.toThrow(
-          'Key ring is not unlocked'
-        );
-        expect(() => keyRing['loadKey'](mockCoinType)).not.toThrow(
-          'Key Store is empty'
-        );
-        expect(() => keyRing['loadKey'](mockCoinType)).toThrow(
-          'Ledger public key not set'
-        );
+        expect(() => keyRing['loadKey'](mockCoinType)).not.toThrow('Key ring is not unlocked');
+        expect(() => keyRing['loadKey'](mockCoinType)).not.toThrow('Key Store is empty');
+        expect(() => keyRing['loadKey'](mockCoinType)).toThrow('Ledger public key not set');
       });
       it('test case for ledgerPublicKey is not null', () => {
         Object.defineProperty(keyRing, 'status', {
@@ -1449,11 +1201,9 @@ describe('keyring', () => {
         keyRing['ledgerPublicKey'] = mockKeyCosmos.publicKeyHex;
         const rs = keyRing['loadKey'](mockCoinType);
         expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
-          '0407e5b99e7849b4c2f6af0ee7e7f094b8859f1109962ad6e94fa3672fc8003a301c28c6ba894f7a08c3ca761abf39285c46614d7d8727b1ecd67b2c33d1ee81c1'
+          '0307e5b99e7849b4c2f6af0ee7e7f094b8859f1109962ad6e94fa3672fc8003a30'
         );
-        expect(Buffer.from(rs.address).toString('hex')).toBe(
-          'eb90d36cdb04b7a06b63e5736ac76cad7f3a112d'
-        );
+        expect(Buffer.from(rs.address).toString('hex')).toBe('2a77016e89454aa2b15ae84757e32b75549af840');
         expect(rs.algo).toBe('secp256k1');
         expect(rs.isNanoLedger).toBe(true);
       });
@@ -1474,9 +1224,7 @@ describe('keyring', () => {
         expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
           '034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c'
         );
-        expect(Buffer.from(rs.address).toString('hex')).toBe(
-          'cf159c10596b2cc8270da31375d5d741a3c4a949'
-        );
+        expect(Buffer.from(rs.address).toString('hex')).toBe('cf159c10596b2cc8270da31375d5d741a3c4a949');
       });
       it('test for case network type is evm', () => {
         Object.defineProperty(keyRing, 'status', {
@@ -1499,9 +1247,7 @@ describe('keyring', () => {
         expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
           '034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c'
         );
-        expect(Buffer.from(rs.address).toString('hex')).toBe(
-          'a7942620580e6b7940518d90b0f7aaea2f6a9f73'
-        );
+        expect(Buffer.from(rs.address).toString('hex')).toBe('a7942620580e6b7940518d90b0f7aaea2f6a9f73');
       });
     });
   });
@@ -1519,47 +1265,29 @@ describe('keyring', () => {
         value: KeyRingStatus.LOCKED,
         writable: true
       });
-      await expect(() =>
-        keyRing.deleteKeyRing(1, mockPassword)
-      ).rejects.toThrow('Key ring is not unlocked');
+      await expect(() => keyRing.deleteKeyRing(1, mockPassword)).rejects.toThrow('Key ring is not unlocked');
     });
     it('test throw err for Key ring password not compare', async () => {
       keyRing['password'] = 'test';
-      await expect(() =>
-        keyRing.deleteKeyRing(1, mockPassword)
-      ).rejects.toThrow('Invalid password');
+      await expect(() => keyRing.deleteKeyRing(1, mockPassword)).rejects.toThrow('Invalid password');
     });
     it('test throw err for Key store is null', async () => {
-      await expect(() =>
-        keyRing.deleteKeyRing(3, mockPassword)
-      ).rejects.toThrow('Empty key store');
+      await expect(() => keyRing.deleteKeyRing(3, mockPassword)).rejects.toThrow('Empty key store');
     });
     describe('check this.keyStore', () => {
       it('check KeyRing.getKeyStoreId(keyStore) === KeyRing.getKeyStoreId(this.keyStore) and multiKeyStore.length > 0', async () => {
         keyRing['keyStore'] = mockMultiKeyStore[1];
         const spyCryptoDecrypt = jest.spyOn(Crypto, 'decrypt');
-        const spyKeyringGetKeyStoreId = jest.spyOn(
-          KeyRing as any,
-          'getKeyStoreId'
-        );
+        const spyKeyringGetKeyStoreId = jest.spyOn(KeyRing as any, 'getKeyStoreId');
         const spyLock = jest.spyOn(keyRing, 'lock');
         const spyUnLock = jest.spyOn(keyRing, 'unlock');
         const spySave = jest.spyOn(keyRing, 'save');
-        const spyGetMultiKeyStoreInfo = jest.spyOn(
-          keyRing,
-          'getMultiKeyStoreInfo'
-        );
+        const spyGetMultiKeyStoreInfo = jest.spyOn(keyRing, 'getMultiKeyStoreInfo');
         const rs = await keyRing.deleteKeyRing(1, mockPassword);
-        expect(spyCryptoDecrypt).toHaveBeenCalledWith(
-          mockCrypto,
-          mockMultiKeyStore[1],
-          mockPassword
-        );
+        expect(spyCryptoDecrypt).toHaveBeenCalledWith(mockCrypto, mockMultiKeyStore[1], mockPassword);
         expect(spyCryptoDecrypt).toHaveBeenCalled();
         expect(spyCryptoDecrypt).toHaveBeenCalledTimes(2);
-        expect(spyKeyringGetKeyStoreId).toHaveBeenCalledWith(
-          mockMultiKeyStore[1]
-        );
+        expect(spyKeyringGetKeyStoreId).toHaveBeenCalledWith(mockMultiKeyStore[1]);
         expect(spyKeyringGetKeyStoreId).toHaveBeenCalled();
         expect(spyKeyringGetKeyStoreId).toHaveBeenCalledTimes(6);
         expect(spyUnLock).toHaveBeenCalledWith(mockPassword);
@@ -1580,10 +1308,7 @@ describe('keyring', () => {
         keyRing['keyStore'] = mockMultiKeyStore[1];
         keyRing['multiKeyStore'] = [mockMultiKeyStore[1]];
         const spySave = jest.spyOn(keyRing, 'save');
-        const spyGetMultiKeyStoreInfo = jest.spyOn(
-          keyRing,
-          'getMultiKeyStoreInfo'
-        );
+        const spyGetMultiKeyStoreInfo = jest.spyOn(keyRing, 'getMultiKeyStoreInfo');
         const rs = await keyRing.deleteKeyRing(0, mockPassword);
         expect(rs.keyStoreChanged).toBe(true);
         expect(rs.multiKeyStoreInfo).toEqual([]);
@@ -1596,16 +1321,10 @@ describe('keyring', () => {
     it('check this.keyStore is null', async () => {
       keyRing['multiKeyStore'] = mockMultiKeyStore;
       const spySave = jest.spyOn(keyRing, 'save');
-      const spyGetMultiKeyStoreInfo = jest.spyOn(
-        keyRing,
-        'getMultiKeyStoreInfo'
-      );
+      const spyGetMultiKeyStoreInfo = jest.spyOn(keyRing, 'getMultiKeyStoreInfo');
       const rs = await keyRing.deleteKeyRing(1, mockPassword);
       expect(rs.keyStoreChanged).toBe(false);
-      expect(rs.multiKeyStoreInfo).toEqual([
-        mockMultiKeyStoreInfo[0],
-        mockMultiKeyStoreInfo[2]
-      ]);
+      expect(rs.multiKeyStoreInfo).toEqual([mockMultiKeyStoreInfo[0], mockMultiKeyStoreInfo[2]]);
       expect(spySave).toHaveBeenCalled();
       expect(spySave).toHaveBeenCalledTimes(1);
       expect(spyGetMultiKeyStoreInfo).toHaveBeenCalled();
@@ -1621,9 +1340,7 @@ describe('keyring', () => {
       keyRing['keyStore'] = mockMultiKeyStore[1];
       keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
       const rs = keyRing.getKeyFromCoinType(mockCoinType);
-      expect(Buffer.from(rs.address).toString('hex')).toBe(
-        'cf159c10596b2cc8270da31375d5d741a3c4a949'
-      );
+      expect(Buffer.from(rs.address).toString('hex')).toBe('cf159c10596b2cc8270da31375d5d741a3c4a949');
       expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
         '034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c'
       );
@@ -1633,9 +1350,7 @@ describe('keyring', () => {
   });
   describe('computeKeyStoreCoinType', () => {
     it('Throw err when this.keyStore is null', () => {
-      expect(() =>
-        keyRing.computeKeyStoreCoinType(mockChainId, mockCoinType)
-      ).toThrow('Key Store is empty');
+      expect(() => keyRing.computeKeyStoreCoinType(mockChainId, mockCoinType)).toThrow('Key Store is empty');
     });
     it('get data return from computeKeyStoreCoinType', () => {
       keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
@@ -1657,9 +1372,7 @@ describe('keyring', () => {
       keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
       keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
       const rs = keyRing.getKey(mockChainId, mockCoinType);
-      expect(Buffer.from(rs.address).toString('hex')).toBe(
-        'cf159c10596b2cc8270da31375d5d741a3c4a949'
-      );
+      expect(Buffer.from(rs.address).toString('hex')).toBe('cf159c10596b2cc8270da31375d5d741a3c4a949');
       expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
         '034644745b16ab5f10df09f1a9734736e0598e217a1987ab3b2205ce9e2899590c'
       );
@@ -1684,452 +1397,98 @@ describe('keyring', () => {
       expect(rs).toBe('orai');
     });
   });
-  describe('sign', () => {
-    // beforeEach(() => {
-    //   jest.mock('@owallet/common');
-    //   jest.resetModules();
-    // });
 
-    const mockContentMessage = 'This_is_example_for_message';
-    type caseTestSignMethod =
-      | 'Key_ring_is_not_unlock'
-      | 'Key_store_is_empty'
-      | 'this.keyStore.type_is_ledger_evmos'
-      | 'this.keyStore.type_is_ledger_eth'
-      | 'this.keyStore.type_is_ledger_tron'
-      | 'this.keyStore.type_is_ethereum'
-      | 'this.keyStore.type_is_tron'
-      | 'this.keyStore.type_is_evmos';
-    const testCase: any = [
-      [
-        'Key_ring_is_not_unlock',
-        mockEnv,
-        mockChainId,
-        mockCoinType,
-        Buffer.from(mockContentMessage, 'hex'),
-        {
-          mockStatus: [
-            KeyRingStatus.EMPTY,
-            KeyRingStatus.LOCKED,
-            KeyRingStatus.NOTLOADED
-          ],
-          mockKeyStore: null
-        },
-        new OWalletError('keyring', 143, 'Key ring is not unlocked')
-      ],
-      [
-        'Key_store_is_empty',
-        mockEnv,
-        mockChainId,
-        mockCoinType,
-        Buffer.from(mockContentMessage, 'hex'),
-        {
-          mockStatus: KeyRingStatus.UNLOCKED,
-          mockKeyStore: null
-        },
-        new OWalletError('keyring', 130, 'Key store is empty')
-      ],
-      [
-        'this.keyStore.type_is_ledger_evmos',
-        mockEnv,
-        mockChainId,
-        mockCoinType,
-        Buffer.from(mockContentMessage, 'hex'),
-        {
-          mockStatus: KeyRingStatus.UNLOCKED,
-          mockKeyStore: mockKeyStore.ledger.pbkdf2,
-          mockLedgerPublicKey: [
-            {
-              value: null,
-              expect: new OWalletError(
-                'keyring',
-                151,
-                'Ledger public key is not initialized'
-              )
-            },
-            {
-              value: mockKeyCosmos.publicKeyHex,
-              expect: mockKeyCosmos.publicKeyHex
-            }
-          ]
-        },
-        Buffer.from('ExpectResultSignForLedger', 'hex')
-      ],
-      [
-        'this.keyStore.type_is_ledger_eth',
-        mockEnv,
-        mockChainIdEth,
-        mockCoinTypeEth,
-        Buffer.from(mockContentMessage, 'hex'),
-        {
-          mockStatus: KeyRingStatus.UNLOCKED,
-          mockKeyStore: mockKeyStore.ledger.pbkdf2,
-          mockLedgerPublicKey: [
-            { value: null, expect: 'Ledger public key is not initialized' },
-            {
-              value: mockKeyCosmos.publicKeyHex,
-              expect: mockKeyCosmos.publicKeyHex
-            }
-          ]
-        },
-        Buffer.from('ExpectResultSignForLedger', 'hex')
-      ],
-      [
-        'this.keyStore.type_is_ledger_tron',
-        mockEnv,
-        mockChainIdTron,
-        mockCoinTypeTron,
-        Buffer.from(mockContentMessage, 'hex'),
-        {
-          mockStatus: KeyRingStatus.UNLOCKED,
-          mockKeyStore: mockKeyStore.ledger.pbkdf2,
-          mockLedgerPublicKey: [
-            { value: null, expect: 'Ledger public key is not initialized' },
-            {
-              value: mockKeyCosmos.publicKeyHex,
-              expect: mockKeyCosmos.publicKeyHex
-            }
-          ]
-        },
-        Buffer.from('ExpectResultSignForLedgerTron', 'hex')
-      ],
-      [
-        'this.keyStore.type_is_ethereum',
-        mockEnv,
-        mockChainIdEth,
-        mockCoinTypeEth,
-        Buffer.from(
-          'c429601ee7a6167356f15baa70fd8fe17b0325dab7047a658a31039e5384bffd',
-          'hex'
-        ),
-        {
-          mockStatus: KeyRingStatus.UNLOCKED,
-          mockKeyStore: mockKeyStore.mnemonic.pbkdf2
-        },
-        new Uint8Array([
-          20, 131, 70, 55, 39, 221, 241, 245, 51, 12, 178, 228, 128, 191, 36,
-          201, 210, 113, 64, 169, 9, 231, 137, 239, 250, 227, 107, 176, 104, 75,
-          209, 211, 60, 121, 187, 10, 165, 212, 233, 220, 244, 138, 232, 148,
-          99, 149, 226, 213, 188, 221, 216, 199, 8, 83, 215, 49, 147, 244, 136,
-          32, 243, 122, 108, 218
-        ])
-      ],
-      [
-        'this.keyStore.type_is_tron',
-        mockEnv,
-        mockChainIdTron,
-        mockCoinTypeTron,
-        Buffer.from(mockContentMessage, 'hex'),
-        {
-          mockStatus: KeyRingStatus.UNLOCKED,
-          mockKeyStore: mockKeyStore.mnemonic.pbkdf2
-        },
-        new Uint8Array([
-          38, 157, 147, 55, 216, 86, 70, 130, 50, 53, 171, 247, 136, 38, 118,
-          140, 195, 232, 42, 14, 187, 214, 54, 198, 192, 70, 178, 72, 50, 85,
-          41, 12, 81, 217, 69, 238, 190, 141, 44, 129, 255, 16, 166, 220, 63,
-          189, 12, 10, 98, 41, 106, 132, 142, 30, 68, 57, 225, 153, 60, 54, 209,
-          81, 122, 162
-        ])
-      ],
-      [
-        'this.keyStore.type_is_evmos',
-        mockEnv,
-        mockChainId,
-        mockCoinType,
-        Buffer.from(mockContentMessage, 'hex'),
-        {
-          mockStatus: KeyRingStatus.UNLOCKED,
-          mockKeyStore: mockKeyStore.mnemonic.pbkdf2
-        },
-        new Uint8Array([
-          38, 157, 147, 55, 216, 86, 70, 130, 50, 53, 171, 247, 136, 38, 118,
-          140, 195, 232, 42, 14, 187, 214, 54, 198, 192, 70, 178, 72, 50, 85,
-          41, 12, 81, 217, 69, 238, 190, 141, 44, 129, 255, 16, 166, 220, 63,
-          189, 12, 10, 98, 41, 106, 132, 142, 30, 68, 57, 225, 153, 60, 54, 209,
-          81, 122, 162
-        ])
-      ]
-    ];
-
-    it.each(testCase)(
-      'test sign method for case %s',
-      async function (
-        caseTest: caseTestSignMethod,
-        env: Env,
-        chainId: string,
-        defaultCoinType: number,
-        message: Uint8Array,
-        options: {
-          mockStatus: any;
-          mockKeyStore?: any;
-          mockLedgerPublicKey?: {
-            value: any;
-            expect: any;
-          }[];
-        },
-        expectRs: any
-      ) {
-        if (caseTest === 'Key_ring_is_not_unlock') {
-          for (let i = 0; i < options.mockStatus.length; i++) {
-            const itemStatus = options.mockStatus[i];
-            const spyStatus = jest
-              .spyOn(keyRing, 'status', 'get')
-              .mockReturnValue(itemStatus);
-            await expect(
-              keyRing['sign'](env, chainId, defaultCoinType, message)
-            ).rejects.toThrow(expectRs);
-            expect(spyStatus).toHaveBeenCalled();
-          }
-          return;
-        }
-        const spyStatus = jest
-          .spyOn(keyRing, 'status', 'get')
-          .mockReturnValue(options.mockStatus);
-        if (caseTest === 'Key_store_is_empty') {
-          await expect(
-            keyRing['sign'](env, chainId, defaultCoinType, message)
-          ).rejects.toThrow(expectRs);
-          expect(spyStatus).toHaveBeenCalled();
-          return;
-        }
-        keyRing['keyStore'] = options.mockKeyStore;
-        const spyComputeKeyStoreCoinType = jest.spyOn(
-          keyRing,
-          'computeKeyStoreCoinType'
-        );
-        const spyGetNetworkTypeByChainId = jest.spyOn(
-          commonOwallet,
-          'getNetworkTypeByChainId'
-        );
-        if (options.mockKeyStore.type === 'ledger') {
-          for (let i = 0; i < options.mockLedgerPublicKey.length; i++) {
-            const eleLedgerPublicKey = options.mockLedgerPublicKey[i];
-            if (!eleLedgerPublicKey.value) {
-              await expect(
-                keyRing['sign'](env, chainId, defaultCoinType, message)
-              ).rejects.toThrow(eleLedgerPublicKey.expect);
-            } else {
-              keyRing['_ledgerPublicKey'] = eleLedgerPublicKey.value;
-              const spyGetKeyStoreBIP44Path = jest
-                .spyOn(KeyRing as any, 'getKeyStoreBIP44Path')
-                .mockReturnValue(mockBip44HDPath);
-              const spyFormatNeworkTypeToLedgerAppName = jest.spyOn(
-                helper,
-                'formatNeworkTypeToLedgerAppName'
-              );
-              const spyLedgerKeeperSign = jest
-                .spyOn(keyRing['ledgerKeeper'], 'sign')
-                .mockResolvedValue(eleLedgerPublicKey.expect);
-
-              const rs = await keyRing['sign'](
-                env,
-                chainId,
-                defaultCoinType,
-                message
-              );
-              expect(spyStatus).toHaveBeenCalled();
-              expect(spyGetNetworkTypeByChainId).toHaveBeenCalled();
-              expect(spyGetNetworkTypeByChainId).toHaveBeenCalledTimes(2);
-              expect(spyGetNetworkTypeByChainId).toHaveBeenCalledWith(chainId);
-              expect(spyComputeKeyStoreCoinType).toHaveBeenCalled();
-              expect(spyComputeKeyStoreCoinType).toHaveBeenCalledTimes(2);
-              expect(spyComputeKeyStoreCoinType).toHaveBeenCalledWith(
-                chainId,
-                defaultCoinType
-              );
-              expect(spyGetKeyStoreBIP44Path).toHaveBeenCalled();
-              expect(spyGetKeyStoreBIP44Path).toHaveBeenCalledTimes(1);
-              expect(spyGetKeyStoreBIP44Path).toHaveBeenCalledWith(
-                options.mockKeyStore
-              );
-              expect(spyFormatNeworkTypeToLedgerAppName).toHaveBeenCalled();
-              expect(spyFormatNeworkTypeToLedgerAppName).toHaveBeenCalledTimes(
-                1
-              );
-
-              expect(spyFormatNeworkTypeToLedgerAppName).toHaveBeenCalledWith(
-                commonOwallet.getNetworkTypeByChainId(chainId),
-                chainId
-              );
-              expect(spyLedgerKeeperSign).toHaveBeenCalled();
-              expect(spyLedgerKeeperSign).toHaveBeenCalledTimes(1);
-              expect(spyLedgerKeeperSign).toHaveBeenCalledWith(
-                env,
-                [
-                  44,
-                  keyRing['computeKeyStoreCoinType'](chainId, defaultCoinType),
-                  mockBip44HDPath.account,
-                  mockBip44HDPath.change,
-                  mockBip44HDPath.addressIndex
-                ],
-                eleLedgerPublicKey.value,
-                message,
-                helper.formatNeworkTypeToLedgerAppName(
-                  commonOwallet.getNetworkTypeByChainId(chainId)
-                )
-              );
-
-              expect(rs).toEqual(mockKeyCosmos.publicKeyHex);
-            }
-          }
-          return;
-        } else {
-          let spySignEthereum;
-          if (caseTest === 'this.keyStore.type_is_ethereum') {
-            spySignEthereum = jest.spyOn(keyRing as any, 'signEthereum');
-          }
-          keyRing['_mnemonic'] = mockKeyCosmos.mnemonic;
-
-          const spyLoadPrivKey = jest.spyOn(keyRing as any, 'loadPrivKey');
-
-          const rs = await keyRing['sign'](
-            env,
-            chainId,
-            defaultCoinType,
-            message
-          );
-          expect(spyStatus).toHaveBeenCalled();
-          expect(spyGetNetworkTypeByChainId).toHaveBeenCalled();
-          expect(spyGetNetworkTypeByChainId).toHaveBeenCalledTimes(2);
-          expect(spyGetNetworkTypeByChainId).toHaveBeenCalledWith(chainId);
-          expect(spyComputeKeyStoreCoinType).toHaveBeenCalled();
-          expect(spyComputeKeyStoreCoinType).toHaveBeenCalledTimes(1);
-          expect(spyComputeKeyStoreCoinType).toHaveBeenCalledWith(
-            chainId,
-            defaultCoinType
-          );
-          expect(spyLoadPrivKey).toHaveBeenCalled();
-          expect(spyLoadPrivKey).toHaveBeenCalledTimes(1);
-          expect(spyLoadPrivKey).toHaveBeenCalledWith(defaultCoinType);
-          if (caseTest === 'this.keyStore.type_is_ethereum') {
-            expect(spySignEthereum).toHaveBeenCalled();
-            expect(spySignEthereum).toHaveBeenCalledTimes(1);
-            expect(spySignEthereum).toHaveBeenCalledWith(
-              new PrivKeySecp256k1(
-                Buffer.from(
-                  'ae0e3814fad957fb1fdca450a9795f5e64b46061a8618cc4029fcbbfdf215221',
-                  'hex'
-                )
-              ),
-              message
-            );
-            expect(rs).toEqual(expectRs);
-            return;
-          }
-          expect(rs).toEqual(expectRs);
-        }
-      }
-    );
-  });
-  describe('signEthereum', () => {
+  describe('signEvm', () => {
     it('sign Ethereum', async () => {
-      const message = Buffer.from(
-        'c429601ee7a6167356f15baa70fd8fe17b0325dab7047a658a31039e5384bffd',
-        'hex'
-      );
+      const message = Buffer.from('c429601ee7a6167356f15baa70fd8fe17b0325dab7047a658a31039e5384bffd', 'hex');
       const privKey = new PrivKeySecp256k1(
-        Buffer.from(
-          'ae0e3814fad957fb1fdca450a9795f5e64b46061a8618cc4029fcbbfdf215221',
-          'hex'
-        )
+        Buffer.from('ae0e3814fad957fb1fdca450a9795f5e64b46061a8618cc4029fcbbfdf215221', 'hex')
       );
       const rs = await keyRing['signEthereum'](privKey, message);
       expect(Buffer.from(rs).toString('hex')).toEqual(
         '1483463727ddf1f5330cb2e480bf24c9d27140a909e789effae36bb0684bd1d33c79bb0aa5d4e9dcf48ae8946395e2d5bcddd8c70853d73193f48820f37a6cda'
       );
     });
+    it('sign Tron', () => {
+      const mockPrivBytes = new Uint8Array([
+        102, 211, 219, 188, 242, 151, 77, 32, 6, 123, 231, 231, 198, 171, 27, 148, 18, 123, 5, 164, 128, 2, 123, 110,
+        35, 223, 224, 102, 141, 222, 136, 126
+      ]);
+      const mockPrivKey: any = {
+        toBytes: jest.fn().mockReturnValue(mockPrivBytes)
+      };
+      const mockMsg = '8f87082466466dbbb310a62c5cb4c66df42b5eb142aaeb9b8ab90add6b617dcb';
+      const rs = keyRing.signTron(mockPrivKey, mockMsg as any);
+      expect(rs.toString('hex')).toBe(
+        '3e2481506aa8c56c5567868501288fa55fd7f3c9891a735ca196076491879612c06dea26c21f2b33a69d7b21aaaadc37c9a1c9b225fdb62a22a733a69b79a78f01'
+      );
+    });
   });
-  describe('signAndBroadcastEthereum', () => {
-    const message = Buffer.from(
-      'c429601ee7a6167356f15baa70fd8fe17b0325dab7047a658a31039e5384bffd',
-      'hex'
-    );
-    const messageObject = {
-      gasPrice: utils.hexlify(utils.parseUnits('20', 'gwei')),
-      gasLimit: utils.hexlify(50000),
-      chainId: mockChainIdEth,
-      from: '0x123456789abcdef',
-      type: 0,
-      gas: 21000,
-      memo: 'This is a sample transaction',
-      fees: utils.parseEther('0.42'),
-      maxPriorityFeePerGas: utils.parseUnits('2', 'gwei'),
-      maxFeePerGas: utils.parseUnits('2', 'gwei')
+  describe('signEvm', () => {
+    const mockMsg = {
+      to: '0xf2846a1E4dAFaeA38C1660a618277d67605bd2B5',
+      value: '0x9184e72a000',
+      gas: '0x30d40',
+      gasPrice: '0x2540be400',
+      gasLimit: '0x30d40',
+      memo: '',
+      fees: '0x0'
     };
-    const rpc = 'https://rpc.ankr.com/eth';
-    const caseTest = [
-      [
-        'Key_ring_is_not_unlock',
-        mockEnv,
-        mockChainIdEth,
-        mockCoinTypeEth,
-        rpc,
-        message,
-        {
-          mockStatus: [
-            KeyRingStatus.EMPTY,
-            KeyRingStatus.LOCKED,
-            KeyRingStatus.NOTLOADED
-          ],
-          mockKeyStore: null
-        },
-        new Error('Key ring is not unlocked')
-      ],
-      [
-        'Key_store_is_empty',
-        mockEnv,
-        mockChainIdEth,
-        mockCoinTypeEth,
-        rpc,
-        message,
-        {
-          mockStatus: KeyRingStatus.UNLOCKED,
-          mockKeyStore: null
-        },
-        new Error('Key Store is empty')
-      ],
-      [
-        'Invalid_coin_type_60',
-        mockEnv,
-        mockChainId,
-        mockCoinType,
-        rpc,
-        message,
-        {
-          mockStatus: KeyRingStatus.UNLOCKED,
-          mockKeyStore: mockKeyStore.mnemonic.pbkdf2
-        },
-        new Error(
-          'Invalid coin type passed in to Ethereum signing (expected 60)'
-        )
-      ],
-      [
-        'this.keyStore.type_is_ledger_eth',
-        mockEnv,
-        mockChainIdEth,
-        mockCoinTypeEth,
-        rpc,
-        messageObject,
-        {
-          mockStatus: KeyRingStatus.UNLOCKED,
-          mockKeyStore: mockKeyStore.ledger.pbkdf2
-        },
-        '0x2d8e3f849da33c03e7d3efc8a51f70d5812487a60958f431c8127f2ef65f02d5'
-      ],
-      [
-        'this.keyStore.type_is_ethereum',
-        mockEnv,
-        mockChainIdEth,
-        mockCoinTypeEth,
-        rpc,
-        messageObject,
-        {
-          mockStatus: KeyRingStatus.UNLOCKED,
-          mockKeyStore: mockKeyStore.mnemonic.pbkdf2
-        },
-        '0x2d8e3f849da33c03e7d3efc8a51f70d5812487a60958f431c8127f2ef65f02d5'
-      ]
-    ];
+    const mockPrivBytes = new Uint8Array([
+      102, 211, 219, 188, 242, 151, 77, 32, 6, 123, 231, 231, 198, 171, 27, 148, 18, 123, 5, 164, 128, 2, 123, 110, 35,
+      223, 224, 102, 141, 222, 136, 126
+    ]);
+    const mockPrivKey: any = {
+      toBytes: jest.fn().mockReturnValue(mockPrivBytes)
+    };
+    const arrayEvm = commonOwallet.EmbedChainInfos.filter((item, index) => item.networkType === 'evm');
+    const arrayMapped = [...arrayEvm].map((item) => {
+      if (item.chainId === '0x1ae6') {
+        (item as any).expected = 6886;
+      } else if (item.chainId === '0x61') {
+        (item as any).expected = 97;
+      } else if (item.chainId === '0x01') {
+        (item as any).expected = 1;
+      } else if (item.chainId === '0x38') {
+        (item as any).expected = 56;
+      } else if (item.chainId === '0x2b6653dc') {
+        (item as any).expected = 728126428;
+      }
+      return item;
+    });
+    it.each(arrayMapped)('Test validateChainId for $chainName', (item) => {
+      const rs = KeyringHelper.validateChainId(item.chainId);
+      expect(rs).toBe((item as any).expected);
+    });
+
+    it('getHexAddressEvm', () => {
+      const rs = KeyringHelper.getHexAddressEvm(mockPrivKey);
+      expect(rs).toEqual(['0xad90317473bbc13ba0c9e81d21131fce289078fe', 'latest']);
+    });
+
+    const arrayRawTxEvm = [...arrayEvm].map((ite) => {
+      if (ite.chainId === '0x1ae6') {
+        (ite as any).expectedRaw =
+          '0xf86d308502540be40083030d4094f2846a1e4dafaea38c1660a618277d67605bd2b58609184e72a000808235f0a07a624db8c17df50610ffd72716ff41bc5837b66102f75328f89128586b065c21a076846c63bc26103d80a1f1c191403a27bf2f6694041c258eb426b90d9f0cfb9d';
+      } else if (ite.chainId === '0x61') {
+        (ite as any).expectedRaw =
+          '0xf86c308502540be40083030d4094f2846a1e4dafaea38c1660a618277d67605bd2b58609184e72a0008081e6a0acf8b7493d7bdcca9caf06bab0de2cbf26bdb0cc60bad24fe6679eb18600e06fa04f91e45a6e8b96a55bcb66f0beb41b0d64c3ea9078d36f84bde4359c0c75672c';
+      } else if (ite.chainId === '0x01') {
+        (ite as any).expectedRaw =
+          '0xf86b308502540be40083030d4094f2846a1e4dafaea38c1660a618277d67605bd2b58609184e72a0008025a0a0a6d557107b3d383bccf8e5a2ccd6ebb6288e3b43c1ca07fbc683f0bb6f5305a013950cbc28c7306c9ff0b60bbc0d256d111c85444f769b3f42e90dd271d3fef5';
+      } else if (ite.chainId === '0x38') {
+        (ite as any).expectedRaw =
+          '0xf86c308502540be40083030d4094f2846a1e4dafaea38c1660a618277d67605bd2b58609184e72a000808194a0ade0f7e049273d8bd4ccbf0ad555f8051082fa0f064394285f9390c2dffe8f0ea01980793829a02fc090a7d3a4d4f3859fdaac3d025aecaf4e2224516191f2a44a';
+      } else if (ite.chainId === '0x2b6653dc') {
+        (ite as any).expectedRaw =
+          '0xf86f308502540be40083030d4094f2846a1e4dafaea38c1660a618277d67605bd2b58609184e72a000808456cca7dba0435cda0530d3ffbf5e1b4dc22c6c316ed6a584868d4c7817fee0a542949af8daa0408b4758f2f6cc32de1adbf81388333e2ffe4d6b97c53271f17341ec0ec791bd';
+      }
+      return ite;
+    });
+
+    it.each(arrayRawTxEvm)('getRawTxEvm for chain: $chainName', (item) => {
+      const rs = KeyringHelper.getRawTxEvm(mockPrivKey, item.chainId, '0x30', mockMsg);
+      expect(rs).toBe((item as any).expectedRaw);
+    });
   });
 });

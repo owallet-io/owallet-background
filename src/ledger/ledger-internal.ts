@@ -8,14 +8,10 @@ import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
 import { signatureImport, publicKeyConvert } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
-import { stringifyPath } from '../utils/helper';
+import { EIP712MessageValidator, stringifyPath, ethSignatureToBytes, domainHash, messageHash } from '../utils/helper';
+import { LedgerAppType } from '@owallet/common';
 import { payments } from 'bitcoinjs-lib';
-import {
-  convertStringToMessage,
-  getCoinNetwork,
-  getTransaction,
-  toBufferLE
-} from '@owallet/bitcoin';
+import { convertStringToMessage, getCoinNetwork, getTransaction, toBufferLE } from '@owallet/bitcoin';
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 export interface UTXO {
   txid: string;
@@ -42,13 +38,9 @@ export class LedgerInitError extends Error {
 }
 
 export type TransportMode = 'webusb' | 'webhid' | 'ble';
-export type LedgerAppType = 'cosmos' | 'eth' | 'trx' | 'btc';
 
 export class LedgerInternal {
-  constructor(
-    private readonly ledgerApp: CosmosApp | EthApp | TrxApp | BtcApp,
-    private readonly type: LedgerAppType
-  ) {}
+  constructor(private readonly ledgerApp: CosmosApp | EthApp | TrxApp | BtcApp, private readonly type: LedgerAppType) {}
 
   static transportIniters: Record<TransportMode, TransportIniter> = {
     webusb: TransportWebUSB.create.bind(TransportWebUSB),
@@ -57,11 +49,7 @@ export class LedgerInternal {
     ble: () => Promise.resolve(null)
   };
 
-  static async init(
-    mode: TransportMode,
-    initArgs: any[] = [],
-    ledgerAppType: LedgerAppType
-  ): Promise<LedgerInternal> {
+  static async init(mode: TransportMode, initArgs: any[] = [], ledgerAppType: LedgerAppType): Promise<LedgerInternal> {
     const transportIniter = LedgerInternal.transportIniters[mode];
     // console.log('transportIniter', transportIniter);
 
@@ -126,8 +114,7 @@ export class LedgerInternal {
       throw new Error('Cosmos App not initialized');
     }
 
-    const { version, device_locked, major, test_mode } =
-      await app.getAppConfiguration();
+    const { version, device_locked, major, test_mode } = await app.getAppConfiguration();
 
     return {
       deviceLocked: device_locked,
@@ -157,41 +144,35 @@ export class LedgerInternal {
 
     if (this.ledgerApp instanceof CosmosApp) {
       // make compartible with ledger-cosmos-js
-      const { publicKey, address } = await this.ledgerApp.getAddress(
-        stringifyPath(path),
-        'cosmos'
-      );
+      const { publicKey, address } = await this.ledgerApp.getAddress(stringifyPath(path), 'cosmos');
       return { publicKey: Buffer.from(publicKey, 'hex'), address };
     } else if (this.ledgerApp instanceof EthApp) {
-      const { publicKey, address } = await this.ledgerApp.getAddress(
-        stringifyPath(path)
-      );
+      const { publicKey, address } = await this.ledgerApp.getAddress(stringifyPath(path));
 
       console.log('get here eth ===', publicKey, address);
 
       const pubKey = Buffer.from(publicKey, 'hex');
       // Compress the public key
       return {
-        publicKey: publicKeyConvert(pubKey, true),
-        address
+        // publicKey: publicKeyConvert(pubKey, true),
+        address,
+        publicKey: pubKey
       };
     } else if (this.ledgerApp instanceof BtcApp) {
-      const { publicKey, bitcoinAddress } =
-        await this.ledgerApp.getWalletPublicKey(stringifyPath(path), {
-          format: 'bech32',
-          verify: false
-        });
+      const { publicKey, bitcoinAddress } = await this.ledgerApp.getWalletPublicKey(stringifyPath(path), {
+        format: 'bech32',
+        verify: false
+      });
       const pubKey = Buffer.from(publicKey, 'hex');
       // Compress the public key
       return {
-        publicKey: publicKeyConvert(pubKey, true),
-        address: bitcoinAddress
+        // publicKey: publicKeyConvert(pubKey, true),
+        address: bitcoinAddress,
+        publicKey: pubKey
       };
     } else {
       console.log('get here trx === ', path, stringifyPath(path));
-      const { publicKey, address } = await this.ledgerApp.getAddress(
-        stringifyPath(path)
-      );
+      const { publicKey, address } = await this.ledgerApp.getAddress(stringifyPath(path));
       console.log('get here trx  2 === ', address);
 
       // Compress the public key
@@ -206,20 +187,55 @@ export class LedgerInternal {
     }
 
     if (this.ledgerApp instanceof CosmosApp) {
-      const { signature } = await this.ledgerApp.sign(
-        stringifyPath(path),
-        message
-      );
+      const { signature } = await this.ledgerApp.sign(stringifyPath(path), message);
 
       // Parse a DER ECDSA signature
       return signatureImport(signature);
     } else if (this.ledgerApp instanceof EthApp) {
       const rawTxHex = Buffer.from(message).toString('hex');
 
-      const signature = await this.ledgerApp.signTransaction(
-        stringifyPath(path),
-        rawTxHex
-      );
+      const signDoc = (() => {
+        try {
+          return JSON.parse(Buffer.from(message).toString());
+        } catch (error) {
+          return null;
+        }
+      })();
+
+      if (signDoc && signDoc?.chain_id && signDoc?.chain_id?.startsWith('injective')) {
+        const eip712 = { ...signDoc?.eip712 };
+        delete signDoc.eip712;
+        let data: any;
+        try {
+          const message = Buffer.from(
+            JSON.stringify({
+              types: eip712.types,
+              domain: eip712.domain,
+              primaryType: eip712.primaryType,
+              message: signDoc
+            })
+          );
+          data = await EIP712MessageValidator.validateAsync(JSON.parse(Buffer.from(message).toString()));
+        } catch (e) {
+          console.log('🚀 ~ file: ledger-internal.ts:188 ~ LedgerInternal ~ sign ~ e:', e);
+
+          throw new Error(e.message || e.toString());
+        }
+
+        try {
+          // Unfortunately, signEIP712Message not works on ledger yet.
+          return ethSignatureToBytes(
+            await this.ledgerApp.signEIP712HashedMessage(stringifyPath(path), domainHash(data), messageHash(data))
+          );
+        } catch (e) {
+          if (e?.message.includes('(0x6985)')) {
+            throw new Error('User rejected signing');
+          }
+          throw new Error(e.message || e.toString());
+        }
+      }
+
+      const signature = await this.ledgerApp.signTransaction(stringifyPath(path), rawTxHex);
       return signature;
       // return convertEthSignature(signature);
     } else if (this.ledgerApp instanceof BtcApp) {
@@ -255,10 +271,7 @@ export class LedgerInternal {
 
         return signature;
       } catch (error) {
-        console.log(
-          '🚀 ~ file: ledger-internal.ts:240 ~ LedgerInternal ~ sign ~ error:',
-          error
-        );
+        console.log('🚀 ~ file: ledger-internal.ts:240 ~ LedgerInternal ~ sign ~ error:', error);
       }
     } else {
       // const rawTxHex = Buffer.from(message).toString('hex');
@@ -301,8 +314,7 @@ export class LedgerInternal {
       address: changeAddress,
       network: getCoinNetwork(selectCrypto)
     });
-    const refundBalance =
-      BigInt(confirmAmount) - (BigInt(amount) + BigInt(feeAmount));
+    const refundBalance = BigInt(confirmAmount) - (BigInt(amount) + BigInt(feeAmount));
     const targets = [
       {
         amount: toBufferLE(BigInt(amount), 8),
@@ -320,9 +332,7 @@ export class LedgerInternal {
       //This is a patch for the following: https://github.com/coreyphillips/moonshine/issues/52
       const buffers: any = [msgCobvert];
       if (messageLength > 0 && messageLength < lengthMin)
-        buffers.push(
-          Buffer.from(' '.repeat(lengthMin - messageLength), 'utf8')
-        );
+        buffers.push(Buffer.from(' '.repeat(lengthMin - messageLength), 'utf8'));
       const data = Buffer.concat(buffers);
       const embed = payments.embed({
         data: [data],
@@ -348,7 +358,7 @@ export class LedgerInternal {
       segwit: true,
       additionals: ['bitcoin', 'bech32']
     });
-    console.log("🚀 ~ file: ledger-internal.ts:351 ~ LedgerInternal ~ signature:", signature)
+    console.log('🚀 ~ file: ledger-internal.ts:351 ~ LedgerInternal ~ signature:', signature);
     return signature;
   }
   static async isWebHIDSupported(): Promise<boolean> {

@@ -5,6 +5,7 @@ import {
   GetKeyMsg,
   UnlockKeyRingMsg,
   RequestSignAminoMsg,
+  RequestSignEIP712CosmosTxMsg_v0,
   RequestSignDirectMsg,
   LockKeyRingMsg,
   DeleteKeyRingMsg,
@@ -69,6 +70,7 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(SetKeyStoreCoinTypeMsg);
   router.registerMessage(CheckPasswordMsg);
   router.registerMessage(ExportKeyRingDatasMsg);
+  router.registerMessage(RequestSignEIP712CosmosTxMsg_v0);
   router.registerMessage(ChangeChainMsg);
   router.addHandler(ROUTE, getHandler(service));
 }
