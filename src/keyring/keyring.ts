@@ -726,10 +726,12 @@ export class KeyRing {
     const isEthermint = (() => {
       if (chainId) {
         const chainInfo = getChainInfoOrThrow(chainId as string);
-        return isEthermintLike(chainInfo);
+        const rs = isEthermintLike(chainInfo);
+        return rs;
       }
       return coinType === 60;
     })();
+
     const pubKey = this.getPubKey(coinType);
     const address = (() => {
       if (isEthermint) {
@@ -759,7 +761,7 @@ export class KeyRing {
       isNanoLedger: this.keyStore.type === 'ledger'
     };
   }
-  private loadPrivKey(coinType: number, chainId?: string | number): PrivKeySecp256k1 {
+  private loadPrivKey(coinType: number): PrivKeySecp256k1 {
     if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
       throw new Error('Key ring is not unlocked');
     }
@@ -768,14 +770,13 @@ export class KeyRing {
     if (this.type === 'mnemonic') {
       const coinTypeModified = bip44HDPath.coinType ?? coinType;
 
-      const path = getHDPath({
-        chainId,
-        coinType: coinTypeModified,
-        bip44HDPath
-      });
-      console.log('🚀 ~ file: keyring.ts:759 ~ path:', path);
-
-      // const path = `m/44'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
+      const keyDelivery = (() => {
+        if (coinType === 1 || coinType === 0) {
+          return 84;
+        }
+        return 44;
+      })();
+      const path = `m/${keyDelivery}'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
       const cachedKey = this.cached.get(path);
       if (cachedKey) {
         return new PrivKeySecp256k1(cachedKey);
