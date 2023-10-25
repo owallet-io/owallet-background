@@ -573,16 +573,19 @@ export class KeyRing {
   }
 
   public async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string, chainId: string | number) {
+    console.log('🚀 ~ file: keyring.ts:576 ~ setKeyStoreLedgerAddress ~ bip44HDPath:', bip44HDPath);
     try {
       if (!this.keyStore) {
         throw new Error('Empty key store');
       }
-      const networkType = getNetworkTypeByChainId(chainId);
-      const ledgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
+      const chainInfo = getChainInfoOrThrow(chainId as string);
+      const ledgerAppType = formatNeworkTypeToLedgerAppName(chainInfo.networkType, chainId);
+      const path = splitPath(bip44HDPath);
       // Update ledger address here with this function below
-      const { publicKey, address } =
-        (await this.ledgerKeeper.getPublicKey(env, splitPath(bip44HDPath), ledgerAppType)) || {};
+      const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, path, ledgerAppType)) || {};
       // // this.ledgerPublicKey = publicKey;
+      console.log('🚀 ~ file: keyring.ts:586 ~ setKeyStoreLedgerAddress ~ publicKey:', publicKey);
+      console.log('🚀 ~ file: keyring.ts:586 ~ setKeyStoreLedgerAddress ~ address:', address);
       const pubKey = publicKey ? Buffer.from(publicKey).toString('hex') : null;
       const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
         return (
@@ -594,10 +597,10 @@ export class KeyRing {
 
       if (keyStoreInMulti) {
         const keyStoreAddresses = { ...keyStoreInMulti.addresses };
-        const returnedAddresses = Object.assign(keyStoreAddresses, {
-          [ledgerAppType]: address
-        });
-
+        const returnedAddresses = Object.assign(
+          keyStoreAddresses,
+          handleAddressLedgerByChainId(ledgerAppType, address, chainId)
+        );
         keyStoreInMulti.addresses = returnedAddresses;
         this.keyStore.addresses = returnedAddresses;
         if (!!publicKey) {
@@ -950,14 +953,12 @@ export class KeyRing {
 
     if (this.keyStore.type === 'ledger') {
       const messageHex = Buffer.from(JSON.stringify(message));
-
       const signature = await this.sign(env, chainId, getCoinTypeByChainId(chainId), messageHex);
-      console.log('🚀 ~ file: keyring.ts:1066 ~ signature:', signature);
       const txRes = await wallet.pushtx.default({
         rawTx: signature,
         selectedCrypto: chainId
       });
-      console.log('🚀 ~ file: keyring.ts:1071 ~ txRes:', txRes);
+
       if (txRes?.error) {
         throw Error(txRes?.data?.message || 'Transaction Failed');
       }

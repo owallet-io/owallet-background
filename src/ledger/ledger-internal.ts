@@ -159,24 +159,28 @@ export class LedgerInternal {
         publicKey: pubKey
       };
     } else if (this.ledgerApp instanceof BtcApp) {
-      const { publicKey, bitcoinAddress } = await this.ledgerApp.getWalletPublicKey(stringifyPath(path), {
-        format: 'bech32',
-        verify: false
-      });
-      const pubKey = Buffer.from(publicKey, 'hex');
-      // Compress the public key
-      return {
-        // publicKey: publicKeyConvert(pubKey, true),
-        address: bitcoinAddress,
-        publicKey: pubKey
-      };
+      try {
+        const pathBtc = stringifyPath(path);
+        const { publicKey, bitcoinAddress } = await this.ledgerApp.getWalletPublicKey(pathBtc, {
+          format: 'bech32',
+          verify: false
+        });
+
+        const pubKey = Buffer.from(publicKey, 'hex');
+        // Compress the public key
+        return {
+          // publicKey: publicKeyConvert(pubKey, true),
+          address: bitcoinAddress,
+          publicKey: pubKey
+        };
+      } catch (error) {
+        console.log('🚀 ~ file: ledger-internal.ts:182 ~ LedgerInternal ~ getPublicKey ~ error:', error);
+      }
     } else {
       console.log('get here trx === ', path, stringifyPath(path));
       const { publicKey, address } = await this.ledgerApp.getAddress(stringifyPath(path));
       console.log('get here trx  2 === ', address);
-
       // Compress the public key
-
       return { publicKey: Buffer.from(publicKey, 'hex'), address };
     }
   }
