@@ -6,7 +6,7 @@ import { ExportKeyRingData, SignEthereumTypedDataObject } from './types';
 
 import { Bech32Address, checkAndValidateADR36AminoSignDoc } from '@owallet/cosmos';
 import { BIP44, OWalletSignOptions, Key, BIP44HDPath } from '@owallet/types';
-
+import Joi from 'joi';
 import { AminoSignResponse, StdSignature } from '@cosmjs/launchpad';
 import { StdSignDoc } from '@owallet/types';
 import Long from 'long';
@@ -14,6 +14,7 @@ import { Int } from '@owallet/unit';
 import bigInteger from 'big-integer';
 const bip39 = require('bip39');
 import { SignDoc } from '@owallet/proto-types/cosmos/tx/v1beta1/tx';
+import { schemaRequestSignBitcoin } from './validates';
 export class RestoreKeyRingMsg extends Message<{
   status: KeyRingStatus;
   multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
@@ -797,6 +798,11 @@ export class RequestSignBitcoinMsg extends Message<{
 
     if (!this.data) {
       throw new OWalletError('keyring', 231, 'data not set');
+    }
+    const { value, error } = schemaRequestSignBitcoin.validate(this.data);
+
+    if (!!error) {
+      throw new OWalletError('keyring', 231, error);
     }
   }
 

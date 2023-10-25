@@ -84,7 +84,6 @@ export const getHDPath = ({
   coinType: number;
 }): string => {
   const networkType = getNetworkTypeByChainId(chainId);
-  console.log('🚀 ~ file: helper.ts:87 ~ networkType:', networkType);
   if (networkType === 'bitcoin') {
     return getBaseDerivationPath({
       selectedCrypto: chainId as string,
