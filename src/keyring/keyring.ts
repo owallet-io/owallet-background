@@ -3,7 +3,7 @@ import { keccak256 } from '@ethersproject/keccak256';
 import { serialize } from '@ethersproject/transactions';
 import { Wallet } from '@ethersproject/wallet';
 import {
-  formatNeworkTypeToLedgerAppName,
+  getLedgerAppNameByNetwork,
   getCoinTypeByChainId,
   getNetworkTypeByBip44HDPath,
   getNetworkTypeByChainId,
@@ -579,7 +579,7 @@ export class KeyRing {
         throw new Error('Empty key store');
       }
       const chainInfo = getChainInfoOrThrow(chainId as string);
-      const ledgerAppType = formatNeworkTypeToLedgerAppName(chainInfo.networkType, chainId);
+      const ledgerAppType = getLedgerAppNameByNetwork(chainInfo.networkType, chainId);
       const path = splitPath(bip44HDPath);
       // Update ledger address here with this function below
       const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, path, ledgerAppType)) || {};
@@ -847,7 +847,7 @@ export class KeyRing {
         bip44HDPath.addressIndex
       ];
 
-      const ledgerAppType: LedgerAppType = formatNeworkTypeToLedgerAppName(networkType, chainId);
+      const ledgerAppType: LedgerAppType = getLedgerAppNameByNetwork(networkType, chainId);
       // Need to check ledger here and ledger app type by chainId
       return await this.ledgerKeeper.sign(env, path, pubKey, message, ledgerAppType);
     } else {
