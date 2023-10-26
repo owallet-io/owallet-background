@@ -11,7 +11,7 @@ import { OWalletError } from '@owallet/router';
 import { EIP712MessageValidator, stringifyPath, ethSignatureToBytes, domainHash, messageHash } from '../utils/helper';
 import { LedgerAppType } from '@owallet/common';
 import { payments } from 'bitcoinjs-lib';
-import { convertStringToMessage, getCoinNetwork, getTransaction, toBufferLE } from '@owallet/bitcoin';
+import { convertStringToMessage, getCoinNetwork, getTransactionHex, toBufferLE } from '@owallet/bitcoin';
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 export interface UTXO {
   txid: string;
@@ -248,19 +248,22 @@ export class LedgerInternal {
         throw new Error('Not found messageStr for ledger app type BTC');
       }
       const msgObject = JSON.parse(messageStr);
+
+      const mapData = msgObject.utxos.map(async (utxo) => {
+        const transaction = await getTransactionHex({
+          txId: utxo.txid,
+          coin: msgObject.msgs.selectedCrypto
+        });
+
+        return {
+          hex: transaction.data,
+          ...utxo
+        };
+      });
+
       try {
-        const utxos = await Promise.all(
-          msgObject.utxos.map(async (utxo) => {
-            const transaction = await getTransaction({
-              txHash: utxo.txid,
-              coin: msgObject.msgs.selectedCrypto
-            });
-            return {
-              hex: transaction.data.hex,
-              ...utxo
-            };
-          })
-        );
+        const utxos = await Promise.all(mapData);
+        console.log('🚀 ~ file: ledger-internal.ts:269 ~ LedgerInternal ~ sign ~ utxos:', utxos);
         const signature = await this.signTransactionBtc(
           stringifyPath(path),
           msgObject.msgs.amount,
@@ -362,7 +365,7 @@ export class LedgerInternal {
       segwit: true,
       additionals: ['bitcoin', 'bech32']
     });
-    console.log('🚀 ~ file: ledger-internal.ts:351 ~ LedgerInternal ~ signature:', signature);
+
     return signature;
   }
   static async isWebHIDSupported(): Promise<boolean> {
