@@ -1,9 +1,9 @@
 import { BIP44HDPath } from '@owallet/types';
 import AES, { Counter } from 'aes-js';
-import { CoinTypeForChain, ScryptParams, CommonCrypto, AddressesLedger, PubkeyLedger } from './types';
+import { CoinTypeForChain, ScryptParams, CommonCrypto } from './types';
 import { Hash, RNG } from '@owallet/crypto';
 import pbkdf2 from 'pbkdf2';
-
+import { AddressesLedger } from '@owallet/types';
 import { Buffer } from 'buffer';
 
 /**
@@ -34,7 +34,7 @@ export interface KeyStore {
     mac: string;
   };
   addresses?: AddressesLedger;
-  pubkeys?: PubkeyLedger;
+  pubkeys?: AddressesLedger;
 }
 
 export class Crypto {

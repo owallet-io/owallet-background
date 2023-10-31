@@ -31,13 +31,11 @@ import {
   CommonCrypto,
   ECDSASignature,
   ExportKeyRingData,
-  AddressesLedger,
   MessageTypeProperty,
   MessageTypes,
   SignTypedDataVersion,
   TypedDataV1,
-  TypedMessage,
-  PubkeyLedger
+  TypedMessage
 } from './types';
 import { KeyringHelper } from './utils';
 import { createTransaction, getAddress, getKeyPair, signAndCreateTransaction, wallet } from '@owallet/bitcoin';
@@ -46,6 +44,7 @@ import { isEthermintLike } from '@owallet/common';
 import { isArray, isNumber, isString } from 'util';
 import { BIP44HDPath } from '@owallet/types';
 import { handleAddressLedgerByChainId, getHDPath } from '../utils/helper';
+import { AddressesLedger } from '@owallet/types';
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
 export enum KeyRingStatus {
@@ -69,7 +68,7 @@ export type MultiKeyStoreInfo = MultiKeyStoreInfoElem[];
 export type MultiKeyStoreInfoWithSelectedElem = MultiKeyStoreInfoElem & {
   selected: boolean;
   addresses?: AddressesLedger;
-  pubkeys?: PubkeyLedger;
+  pubkeys?: AddressesLedger;
 };
 export type MultiKeyStoreInfoWithSelected = MultiKeyStoreInfoWithSelectedElem[];
 
@@ -146,9 +145,9 @@ export class KeyRing {
       return KeyRing.getLedgerAddressOfKeyStore(this.keyStore);
     }
   }
-  public get pubkeys(): PubkeyLedger {
+  public get pubkeys(): AddressesLedger {
     if (!this.keyStore) {
-      return {} as PubkeyLedger;
+      return {} as AddressesLedger;
     } else {
       return this.keyStore.pubkeys;
     }
