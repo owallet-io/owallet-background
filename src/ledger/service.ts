@@ -27,7 +27,7 @@ export class LedgerService {
     options: Partial<LedgerOptions>
   ) {
     this.options = {
-      defaultMode: options.defaultMode || 'webusb'
+      defaultMode: options.defaultMode || 'webhid'
     };
   }
 
