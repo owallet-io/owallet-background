@@ -10,12 +10,10 @@ import {
   verifyADR36AminoSignDoc
 } from '@owallet/cosmos';
 import {
-  AddressesLedger,
   CommonCrypto,
   ECDSASignature,
   ExportKeyRingData,
   MessageTypes,
-  PubkeyLedger,
   SignEthereumTypedDataObject,
   SignTypedDataVersion,
   TypedMessage
@@ -34,7 +32,7 @@ import {
 } from '@owallet/common';
 import { ChainsService } from '../chains';
 import { LedgerService } from '../ledger';
-import { BIP44, ChainInfo, OWalletSignOptions, StdSignDoc, BIP44HDPath } from '@owallet/types';
+import { BIP44, ChainInfo, OWalletSignOptions, StdSignDoc, BIP44HDPath, AddressesLedger } from '@owallet/types';
 import { APP_PORT, Env, OWalletError, WEBPAGE_PORT } from '@owallet/router';
 import { InteractionService } from '../interaction';
 import { PermissionService } from '../permission';
@@ -249,7 +247,7 @@ export class KeyRingService {
   getKeyRingLedgerAddresses(): AddressesLedger {
     return this.keyRing.addresses;
   }
-  getKeyRingLedgerPubKey(): PubkeyLedger {
+  getKeyRingLedgerPubKey(): AddressesLedger {
     return this.keyRing.pubkeys;
   }
   async requestSignEIP712CosmosTx_v0_selected(
@@ -478,6 +476,28 @@ export class KeyRingService {
       console.log({ error });
     } finally {
       this.interactionService.dispatchEvent(APP_PORT, 'request-sign-ethereum-end', {});
+    }
+  }
+  async requestSignBitcoin(env: Env, chainId: string, data: object): Promise<string> {
+    // here
+    const newData = (await this.interactionService.waitApprove(
+      env,
+      '/sign-bitcoin',
+      'request-sign-bitcoin',
+      data
+    )) as any;
+    console.log(newData, 'NEW DATA IN BITCOIN');
+
+    // Need to check ledger here and ledger app type by chainId
+    try {
+      const txHash = await this.keyRing.signAndBroadcastBitcoin(env, chainId, newData);
+      return txHash;
+    } catch (error) {
+      console.log('🚀 ~ file: service.ts:547 ~ KeyRingService ~ error:', error);
+      console.log({ error });
+      throw error;
+    } finally {
+      this.interactionService.dispatchEvent(APP_PORT, 'request-sign-bitcoin-end', {});
     }
   }
 

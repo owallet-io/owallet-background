@@ -38,7 +38,7 @@ export class LedgerService {
         console.log('it gone here===', ledgerType);
 
         return await ledger.getPublicKey([
-          44,
+          ledgerType === 'btc' ? 84 : 44,
           bip44HDPath.coinType,
           bip44HDPath.account,
           bip44HDPath.change,
@@ -107,11 +107,9 @@ export class LedgerService {
 
     try {
       ledger = await this.initLedger(env, ledgerType);
-      console.log('ledger ===', ledger);
-
       return await fn(ledger.ledger, ledger.retryCount);
     } catch (error) {
-      console.log('ERROR IN USE LEDGER ,', error);
+      console.log('🚀 ~ file: service.ts:121 ~ LedgerService ~ error:', error);
     } finally {
       if (ledger) {
         await ledger.ledger.close();

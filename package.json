@@ -11,6 +11,7 @@
   "scripts": {
     "clean": "rimraf node_modules build",
     "build": "tsc --project tsconfig.build.json",
+    "rebuild":"rimraf build && yarn build",
     "dev": "tsc -w --project tsconfig.build.json",
     "test": "jest --passWithNoTests",
     "lint-test": "eslint \"src/**/*\" && prettier --check \"src/**/*\"",
@@ -32,6 +33,7 @@
     "@ethersproject/transactions": "5.6.0",
     "@ledgerhq/devices": "^8.0.0",
     "@ledgerhq/hw-app-cosmos": "6.27.2",
+    "@ledgerhq/hw-app-btc": "6.27.1",
     "@ledgerhq/hw-app-eth": "5.27.2",
     "@ledgerhq/hw-app-trx": "6.27.14",
     "@ledgerhq/hw-transport": "6.27.2",

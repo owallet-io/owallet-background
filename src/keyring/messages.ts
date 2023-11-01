@@ -6,7 +6,7 @@ import { ExportKeyRingData, SignEthereumTypedDataObject } from './types';
 
 import { Bech32Address, checkAndValidateADR36AminoSignDoc } from '@owallet/cosmos';
 import { BIP44, OWalletSignOptions, Key, BIP44HDPath } from '@owallet/types';
-
+import Joi from 'joi';
 import { AminoSignResponse, StdSignature } from '@cosmjs/launchpad';
 import { StdSignDoc } from '@owallet/types';
 import Long from 'long';
@@ -14,6 +14,7 @@ import { Int } from '@owallet/unit';
 import bigInteger from 'big-integer';
 const bip39 = require('bip39');
 import { SignDoc } from '@owallet/proto-types/cosmos/tx/v1beta1/tx';
+import { schemaRequestSignBitcoin } from './validates';
 export class RestoreKeyRingMsg extends Message<{
   status: KeyRingStatus;
   multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
@@ -773,6 +774,49 @@ export class RequestSignEthereumMsg extends Message<{
 
   type(): string {
     return RequestSignEthereumMsg.type();
+  }
+}
+
+export class RequestSignBitcoinMsg extends Message<{
+  readonly rawTxHex: string; // raw tx signature to broadcast
+}> {
+  public static type() {
+    return 'request-sign-bitcoin';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: object // public readonly signOptions: OWalletSignOptions = {} // public readonly signer: string, // public readonly signDoc: { //   bodyBytes?: Uint8Array | null; //   authInfoBytes?: Uint8Array | null; //   chainId?: string | null; //   accountNumber?: string | null; // }
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+    const { value, error } = schemaRequestSignBitcoin.validate(this.data);
+    console.log('🚀 ~ file: messages.ts:803 ~ RequestSignBitcoinMsg ~ validateBasic ~ error:', error);
+
+    if (!!error) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignBitcoinMsg.type();
   }
 }
 

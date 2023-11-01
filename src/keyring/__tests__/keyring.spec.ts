@@ -2,11 +2,8 @@ import {
   mockAddressLedger,
   mockChainId,
   mockChainIdEth,
-  mockChainIdTron,
   mockCoinType,
   mockCoinTypeEth,
-  mockCoinTypeTron,
-  mockEnv,
   mockPathBip44
 } from './../__mocks__/keyring';
 import { KeyRing, KeyRingStatus } from '../keyring';
@@ -1221,7 +1218,7 @@ describe('keyring', () => {
         keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
         const spyLoadPrivKey = jest.spyOn(keyRing as any, 'loadPrivKey');
         const rs = keyRing['loadKey'](mockCoinType, mockChainId);
-        expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinType);
+        expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinType, 'Oraichain');
         expect(rs.algo).toBe('secp256k1');
         expect(rs.isNanoLedger).toBe(false);
         expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
@@ -1244,7 +1241,7 @@ describe('keyring', () => {
         keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
         const spyLoadPrivKey = jest.spyOn(keyRing as any, 'loadPrivKey');
         const rs = keyRing['loadKey'](mockCoinTypeEth, mockChainIdEth);
-        expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinTypeEth);
+        expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinTypeEth, '0x1ae6');
         expect(rs.algo).toBe('ethsecp256k1');
         expect(rs.isNanoLedger).toBe(false);
         expect(Buffer.from(rs.pubKey).toString('hex')).toBe(

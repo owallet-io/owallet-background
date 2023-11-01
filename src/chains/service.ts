@@ -138,6 +138,7 @@ export class ChainsService {
 
     return chainInfo.bip44.coinType;
   }
+  
 
   async hasChainInfo(chainId: string): Promise<boolean> {
     return (

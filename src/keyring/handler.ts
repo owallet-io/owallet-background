@@ -1,5 +1,5 @@
 import { Env, Handler, InternalHandler, Message } from '@owallet/router';
-import { getAddressFromBech32, bufferToHex, getBase58Address } from '@owallet/common';
+import { getAddressFromBech32, bufferToHex, getNetworkTypeByChainId, getBase58Address } from '@owallet/common';
 import {
   CreateMnemonicKeyMsg,
   CreatePrivateKeyMsg,
@@ -34,7 +34,8 @@ import {
   RequestSignTronMsg,
   GetDefaultAddressTronMsg,
   RequestSignProxyReEncryptionDataMsg,
-  RequestSignProxyDecryptionDataMsg
+  RequestSignProxyDecryptionDataMsg,
+  RequestSignBitcoinMsg
 } from './messages';
 import { KeyRingService } from './service';
 import { Bech32Address } from '@owallet/cosmos';
@@ -80,6 +81,8 @@ export const getHandler: (service: KeyRingService) => Handler = (service: KeyRin
         return handleRequestSignDirectMsg(service)(env, msg as RequestSignDirectMsg);
       case RequestSignEthereumMsg:
         return handleRequestSignEthereumMsg(service)(env, msg as RequestSignEthereumMsg);
+      case RequestSignBitcoinMsg:
+        return handleRequestSignBitcoinMsg(service)(env, msg as RequestSignBitcoinMsg);
       case RequestSignTronMsg:
         return handleRequestSignTronMsg(service)(env, msg as RequestSignTronMsg);
       case RequestSignEthereumTypedDataMsg:
@@ -201,15 +204,24 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
     await service.permissionService.checkOrGrantBasicAccessPermission(env, msg.chainId, msg.origin);
 
     const key = await service.getKey(msg.chainId);
-    console.log('🚀 ~ file: handler.ts:204 ~ return ~ key:', key);
+    // console.log('🚀 ~ file: handler.ts:310 ~ return ~ key:', key?.bech32Address);
+    const networkType = getNetworkTypeByChainId(msg.chainId);
+
+    // hereeee
+
     const isInj = msg.chainId?.startsWith('injective');
     const pubkeyLedger = service.getKeyRingLedgerPubKey();
-    console.log('🚀 ~ file: handler.ts:206 ~ return ~ pubkeyLedger:', pubkeyLedger);
+
     // console.log('🚀 ~ file: handler.ts:205 ~ return ~ addressLedger:', pubkeyLedger['eth']);
     // hereee
-    const bech32Convert = new Bech32Address(key.address).toBech32(
-      (await service.chainsService.getChainInfo(msg.chainId)).bech32Config.bech32PrefixAccAddr
-    );
+    const bech32Convert =
+      networkType === 'bitcoin'
+        ? new Bech32Address(key.address).toBech32Btc(
+            (await service.chainsService.getChainInfo(msg.chainId)).bech32Config.bech32PrefixAccAddr
+          )
+        : new Bech32Address(key.address).toBech32(
+            (await service.chainsService.getChainInfo(msg.chainId)).bech32Config.bech32PrefixAccAddr
+          );
     return {
       name: service.getKeyStoreMeta('name'),
       algo: 'secp256k1',
@@ -221,6 +233,7 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
         }
         return bech32Convert;
       })(),
+      legacyAddress: key.legacyAddress ?? '',
       isNanoLedger: key.isNanoLedger
     };
   };
@@ -365,6 +378,13 @@ const handleRequestSignProxyReEncryptionData: (
   };
 };
 
+const handleRequestSignBitcoinMsg: (service: KeyRingService) => InternalHandler<RequestSignBitcoinMsg> = (service) => {
+  return async (env, msg) => {
+    const response = await service.requestSignBitcoin(env, msg.chainId, msg.data);
+
+    return { rawTxHex: response };
+  };
+};
 const handleRequestSignEthereumMsg: (service: KeyRingService) => InternalHandler<RequestSignEthereumMsg> = (
   service
 ) => {

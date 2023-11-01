@@ -1,4 +1,7 @@
 import { _TypedDataEncoder as TypedDataEncoder } from '@ethersproject/hash';
+import { getBaseDerivationPath } from '@owallet/bitcoin';
+import { getNetworkTypeByChainId } from '@owallet/common';
+import { BIP44HDPath } from '@owallet/types';
 import Joi from 'joi';
 export const EIP712DomainTypeValidator = Joi.array()
   .items(
@@ -71,6 +74,25 @@ export function ethSignatureToBytes(signature: { v: number | string; r: string; 
 
   return Buffer.concat([r, s, Buffer.from([v])]);
 }
+export const getHDPath = ({
+  bip44HDPath,
+  chainId,
+  coinType
+}: {
+  bip44HDPath: BIP44HDPath;
+  chainId: string | number;
+  coinType: number;
+}): string => {
+  const networkType = getNetworkTypeByChainId(chainId);
+  if (networkType === 'bitcoin') {
+    return getBaseDerivationPath({
+      selectedCrypto: chainId as string,
+      keyDerivationPath: '84'
+    }) as string;
+  }
+  const path = `m/44'/${coinType}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
+  return path;
+};
 export const domainHash = (message: {
   types: Record<string, { name: string; type: string }[]>;
   domain: Record<string, any>;
@@ -137,3 +159,13 @@ export function stringifyPath(paths: number[]): string {
   });
   return stringPaths;
 }
+export const handleAddressLedgerByChainId = (ledgerAppType, address, chainId) => {
+  if (chainId === 'bitcoinTestnet') {
+    return {
+      ['tbtc']: address
+    };
+  }
+  return {
+    [ledgerAppType]: address
+  };
+};

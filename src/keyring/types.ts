@@ -3,17 +3,6 @@ export type CoinTypeForChain = {
   [identifier: string]: number;
 };
 
-export type AddressesLedger = {
-  cosmos?: string;
-  eth?: string;
-  trx?: string;
-};
-
-export type PubkeyLedger = {
-  cosmos?: string;
-  eth?: string;
-  trx?: string;
-};
 export interface CommonCrypto {
   scrypt: (text: string, params: ScryptParams) => Promise<Uint8Array>;
 }
