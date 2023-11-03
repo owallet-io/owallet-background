@@ -718,6 +718,43 @@ export class GetDefaultAddressTronMsg extends Message<{
   }
 }
 
+export class TriggerSmartContractMsg extends Message<{}> {
+  public static type() {
+    return 'trigger-smart-contract-tron';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: {
+      address: string;
+      functionSelector: string;
+      options: { feeLimit?: number };
+      parameters: any[];
+      issuerAddress: string;
+    }
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+  }
+
+  route(): string {
+    return 'keyring';
+  }
+
+  type(): string {
+    return TriggerSmartContractMsg.type();
+  }
+}
+
 // request sign ethereum goes here
 export class RequestSignEthereumMsg extends Message<{
   readonly rawTxHex: string; // raw tx signature to broadcast
