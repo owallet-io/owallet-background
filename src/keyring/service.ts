@@ -768,6 +768,13 @@ export class KeyRingService {
         fullHost: (await this.chainsService.getChainInfo(chainId)).rpc
       });
       tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
+      const parametersConvert =
+        data && data.parameters.length
+          ? data.parameters.map((par) =>
+              par.type === 'uint256' ? { type: 'uint256', value: par.value && par.value.toString() } : par
+            )
+          : [];
+
       return await tronWeb.transactionBuilder.triggerSmartContract(
         data.address,
         data.functionSelector,
@@ -775,7 +782,7 @@ export class KeyRingService {
           feeLimit: 50_000_000,
           callValue: 0
         },
-        data.parameters ?? [],
+        parametersConvert,
         data.issuerAddress
       );
     } catch (error) {
