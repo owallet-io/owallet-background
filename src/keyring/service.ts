@@ -761,7 +761,7 @@ export class KeyRingService {
       tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
       return await tronWeb.trx.sendRawTransaction(transaction);
     } catch (error) {
-      console.log({ error });
+      throw error;
     }
   }
 
@@ -800,7 +800,7 @@ export class KeyRingService {
         data.issuerAddress
       );
     } catch (error) {
-      console.log({ error });
+      throw error;
     }
   }
 
