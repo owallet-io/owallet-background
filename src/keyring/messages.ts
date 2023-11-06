@@ -689,6 +689,46 @@ export class RequestSignTronMsg extends Message<{}> {
   }
 }
 
+export class RequestSendRawTransactionMsg extends Message<object> {
+  public static type() {
+    return 'request-send-raw-transaction';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: {
+      raw_data: any;
+      raw_data_hex: string;
+      txID: string;
+      visible?: boolean;
+    }
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new Error('chain id not set');
+    }
+
+    if (!this.data) {
+      throw new Error('data not set');
+    }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return 'keyring';
+  }
+
+  type(): string {
+    return RequestSendRawTransactionMsg.type();
+  }
+}
+
 export class GetDefaultAddressTronMsg extends Message<{
   hex?: string;
   base58?: string;

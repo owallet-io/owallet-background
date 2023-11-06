@@ -32,6 +32,7 @@ import {
   RequestPublicKeyMsg,
   ChangeChainMsg,
   RequestSignTronMsg,
+  RequestSendRawTransactionMsg,
   GetDefaultAddressTronMsg,
   RequestSignProxyReEncryptionDataMsg,
   RequestSignProxyDecryptionDataMsg,
@@ -100,6 +101,8 @@ export const getHandler: (service: KeyRingService) => Handler = (service: KeyRin
         return handleGetMultiKeyStoreInfoMsg(service)(env, msg as GetMultiKeyStoreInfoMsg);
       case GetDefaultAddressTronMsg:
         return handleGetDefaultAddressMsg(service)(env, msg as GetDefaultAddressTronMsg);
+      case RequestSendRawTransactionMsg:
+        return handleSendRawTransactionMsg(service)(env, msg as RequestSendRawTransactionMsg);
       case TriggerSmartContractMsg:
         return handleTriggerSmartContractMsg(service)(env, msg as TriggerSmartContractMsg);
       case ChangeKeyRingMsg:
@@ -462,6 +465,15 @@ const handleExportKeyRingDatasMsg: (service: KeyRingService) => InternalHandler<
 const handleRequestSignTronMsg: (service: KeyRingService) => InternalHandler<RequestSignTronMsg> = (service) => {
   return async (env, msg) => {
     const response = await service.requestSignTron(env, msg.chainId, msg.data);
+    return { ...response };
+  };
+};
+
+const handleSendRawTransactionMsg: (service: KeyRingService) => InternalHandler<RequestSendRawTransactionMsg> = (
+  service
+) => {
+  return async (env, msg) => {
+    const response = await service.requestSendRawTransaction(env, msg.chainId, msg.data);
     return { ...response };
   };
 };

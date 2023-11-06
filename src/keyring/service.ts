@@ -744,6 +744,27 @@ export class KeyRingService {
     return await this.keyRing.exportKeyRingDatas(password);
   }
 
+  async requestSendRawTransaction(
+    _: Env,
+    chainId: string,
+    transaction: {
+      raw_data: any;
+      raw_data_hex: string;
+      txID: string;
+      visible?: boolean;
+    }
+  ) {
+    try {
+      const tronWeb = new TronWeb({
+        fullHost: (await this.chainsService.getChainInfo(chainId)).rpc
+      });
+      tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
+      return await tronWeb.trx.sendRawTransaction(transaction);
+    } catch (error) {
+      console.log({ error });
+    }
+  }
+
   async requestTriggerSmartContract(
     _: Env,
     chainId: string,

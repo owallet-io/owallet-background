@@ -33,7 +33,8 @@ import {
   RequestSignTronMsg,
   RequestSignBitcoinMsg,
   GetDefaultAddressTronMsg,
-  TriggerSmartContractMsg
+  TriggerSmartContractMsg,
+  RequestSendRawTransactionMsg
 } from './messages';
 import { ROUTE } from './constants';
 import { getHandler } from './handler';
@@ -67,6 +68,7 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(RequestSignReEncryptDataMsg);
   router.registerMessage(GetMultiKeyStoreInfoMsg);
   router.registerMessage(GetDefaultAddressTronMsg);
+  router.registerMessage(RequestSendRawTransactionMsg);
   router.registerMessage(ChangeKeyRingMsg);
   router.registerMessage(GetIsKeyStoreCoinTypeSetMsg);
   router.registerMessage(SetKeyStoreCoinTypeMsg);
