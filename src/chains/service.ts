@@ -81,7 +81,9 @@ export class ChainsService {
 
   async getChainInfosWithoutEndpoints(): Promise<ChainInfoWithoutEndpoints[]> {
     return (await this.getChainInfos()).map<ChainInfoWithoutEndpoints>((chainInfo) => {
-      const chainInfoMutable: Mutable<Optional<ChainInfoWithCoreTypes, 'rpc' | 'rest' | 'updateFromRepoDisabled' | 'embeded'>> = {
+      const chainInfoMutable: Mutable<
+        Optional<ChainInfoWithCoreTypes, 'rpc' | 'rest' | 'updateFromRepoDisabled' | 'embeded'>
+      > = {
         ...chainInfo
       };
 
@@ -108,13 +110,16 @@ export class ChainsService {
         // need to check if network type is evm, then we will convert chain id to number from hex
         chainInfo = (await this.getChainInfos()).find((chainInfo) => {
           return (
-            ChainIdHelper.parse(Number(chainInfo.chainId)).identifier === ChainIdHelper.parse(Number(chainId)).identifier &&
-            chainInfo.networkType === networkType
+            ChainIdHelper.parse(Number(chainInfo.chainId)).identifier ===
+              ChainIdHelper.parse(Number(chainId)).identifier && chainInfo.networkType === networkType
           );
         });
       } else {
         chainInfo = (await this.getChainInfos()).find((chainInfo) => {
-          return ChainIdHelper.parse(chainInfo.chainId).identifier === ChainIdHelper.parse(chainId).identifier && chainInfo.networkType === networkType;
+          return (
+            ChainIdHelper.parse(chainInfo.chainId).identifier === ChainIdHelper.parse(chainId).identifier &&
+            chainInfo.networkType === networkType
+          );
         });
       }
     } else {
@@ -138,7 +143,6 @@ export class ChainsService {
 
     return chainInfo.bip44.coinType;
   }
-  
 
   async hasChainInfo(chainId: string): Promise<boolean> {
     return (
@@ -152,6 +156,13 @@ export class ChainsService {
     chainInfo = await ChainInfoSchema.validateAsync(chainInfo, {
       stripUnknown: true
     });
+
+    if (!chainInfo.networkType) {
+      chainInfo = {
+        ...chainInfo,
+        networkType: 'cosmos'
+      };
+    }
 
     // await this.interactionKeeper.waitApprove(
     //   env,
