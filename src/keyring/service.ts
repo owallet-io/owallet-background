@@ -744,6 +744,66 @@ export class KeyRingService {
     return await this.keyRing.exportKeyRingDatas(password);
   }
 
+  async requestSendRawTransaction(
+    _: Env,
+    chainId: string,
+    transaction: {
+      raw_data: any;
+      raw_data_hex: string;
+      txID: string;
+      visible?: boolean;
+    }
+  ) {
+    try {
+      const tronWeb = new TronWeb({
+        fullHost: (await this.chainsService.getChainInfo(chainId)).rpc
+      });
+      tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
+      return await tronWeb.trx.sendRawTransaction(transaction);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async requestTriggerSmartContract(
+    _: Env,
+    chainId: string,
+    data: {
+      address: string;
+      functionSelector: string;
+      options: { feeLimit?: number };
+      parameters;
+      issuerAddress: string;
+    }
+  ): Promise<{
+    result: any;
+    transaction: {
+      raw_data: any;
+      raw_data_hex: string;
+      txID: string;
+      visible?: boolean;
+    };
+  }> {
+    try {
+      const tronWeb = new TronWeb({
+        fullHost: (await this.chainsService.getChainInfo(chainId)).rpc
+      });
+      tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
+      return await tronWeb.transactionBuilder.triggerSmartContract(
+        data.address,
+        data.functionSelector,
+        data.options ?? {
+          feeLimit: 50_000_000,
+          callValue: 0
+        },
+        data.parameters,
+        data.issuerAddress
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async requestSignTron(env: Env, chainId: string, data: object): Promise<object> {
     const newData = (await this.interactionService.waitApprove(env, '/sign-tron', 'request-sign-tron', data)) as any;
     try {
@@ -759,7 +819,6 @@ export class KeyRingService {
       let transaction: any;
       if (newData?.tokenTrc20) {
         const amount = new MyBigInt(Math.trunc(newData?.amount * Math.pow(10, 6)));
-
         transaction = (
           await tronWeb.transactionBuilder.triggerSmartContract(
             newData.tokenTrc20.contractAddress,

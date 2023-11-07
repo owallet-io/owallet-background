@@ -32,10 +32,12 @@ import {
   RequestPublicKeyMsg,
   ChangeChainMsg,
   RequestSignTronMsg,
+  RequestSendRawTransactionMsg,
   GetDefaultAddressTronMsg,
   RequestSignProxyReEncryptionDataMsg,
   RequestSignProxyDecryptionDataMsg,
-  RequestSignBitcoinMsg
+  RequestSignBitcoinMsg,
+  TriggerSmartContractMsg
 } from './messages';
 import { KeyRingService } from './service';
 import { Bech32Address } from '@owallet/cosmos';
@@ -98,7 +100,11 @@ export const getHandler: (service: KeyRingService) => Handler = (service: KeyRin
       case GetMultiKeyStoreInfoMsg:
         return handleGetMultiKeyStoreInfoMsg(service)(env, msg as GetMultiKeyStoreInfoMsg);
       case GetDefaultAddressTronMsg:
-        return handleGetDefaultAddressMsg(service)(env, msg as any);
+        return handleGetDefaultAddressMsg(service)(env, msg as GetDefaultAddressTronMsg);
+      case RequestSendRawTransactionMsg:
+        return handleSendRawTransactionMsg(service)(env, msg as RequestSendRawTransactionMsg);
+      case TriggerSmartContractMsg:
+        return handleTriggerSmartContractMsg(service)(env, msg as TriggerSmartContractMsg);
       case ChangeKeyRingMsg:
         return handleChangeKeyRingMsg(service)(env, msg as ChangeKeyRingMsg);
       case GetIsKeyStoreCoinTypeSetMsg:
@@ -459,6 +465,24 @@ const handleExportKeyRingDatasMsg: (service: KeyRingService) => InternalHandler<
 const handleRequestSignTronMsg: (service: KeyRingService) => InternalHandler<RequestSignTronMsg> = (service) => {
   return async (env, msg) => {
     const response = await service.requestSignTron(env, msg.chainId, msg.data);
+    return { ...response };
+  };
+};
+
+const handleSendRawTransactionMsg: (service: KeyRingService) => InternalHandler<RequestSendRawTransactionMsg> = (
+  service
+) => {
+  return async (env, msg) => {
+    const response = await service.requestSendRawTransaction(env, msg.chainId, msg.data);
+    return { ...response };
+  };
+};
+
+const handleTriggerSmartContractMsg: (service: KeyRingService) => InternalHandler<TriggerSmartContractMsg> = (
+  service
+) => {
+  return async (env, msg) => {
+    const response = await service.requestTriggerSmartContract(env, msg.chainId, msg.data);
     return { ...response };
   };
 };
