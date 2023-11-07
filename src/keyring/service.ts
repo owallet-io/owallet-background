@@ -792,10 +792,12 @@ export class KeyRingService {
       return await tronWeb.transactionBuilder.triggerSmartContract(
         data.address,
         data.functionSelector,
-        data.options ?? {
-          feeLimit: 50_000_000,
-          callValue: 0
-        },
+        Object.keys(data.options).length > 0
+          ? data.options
+          : {
+              feeLimit: 100_000_000,
+              callValue: 0
+            },
         data.parameters,
         data.issuerAddress
       );
