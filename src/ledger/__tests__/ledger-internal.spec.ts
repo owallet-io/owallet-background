@@ -1,18 +1,8 @@
 import { LedgerInternal } from '../index';
 // class MockCosmosApp {
-//   constructor(transport: any) {}
-//   getAppConfiguration() {}
-// }
-// jest.mock('@ledgerhq/hw-app-cosmos', () => {
-//   return jest.fn().mockImplementation((transport: any) => {
-//     return new MockCosmosApp(transport);
-//   });
-// });
 jest.mock('@ledgerhq/hw-app-cosmos');
 jest.mock('@ledgerhq/hw-app-eth');
 jest.mock('@ledgerhq/hw-app-trx');
-// import TransportWebHID from '@ledgerhq/hw-transport-webhid';
-// import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
 import { OWalletError } from '@owallet/router';
 import CosmosApp from '@ledgerhq/hw-app-cosmos';
 import EthApp from '@ledgerhq/hw-app-eth';
@@ -29,87 +19,6 @@ describe('LedgerInternal', () => {
     ledgerInternal = new LedgerInternal(null, null);
   });
 
-  //   it.each([
-  //     ['webusb', [], 'cosmos'],
-  //     ['webhid', [], 'cosmos'],
-  //     ['ble', [], 'cosmos'],
-  //     ['webusb', [], 'eth'],
-  //     ['webhid', [], 'eth'],
-  //     ['ble', [], 'eth'],
-  //     ['webusb', [], 'trx'],
-  //     ['webhid', [], 'trx'],
-  //     ['ble', [], 'trx']
-  //   ])('init %s', async (mode: any, initArgs, ledgerAppType: any) => {
-  //     LedgerInternal.transportIniters[mode] = jest.fn().mockResolvedValue(null);
-  //     await expect(LedgerInternal.init(mode, initArgs, ledgerAppType)).rejects.toThrowError(
-  //         new OWalletError('ledger',112, `Unknown mode: ${mode}`)
-  //       );
-  //     // const rs = await LedgerInternal.init(mode, initArgs, ledgerAppType);
-  //     // console.log('rs: ', rs);
-  //     // expect(LedgerInternal.transportIniters[mode]).rejects.toHaveBeenCalled();
-  //     // expect((LedgerInternal.transportIniters as jest.Mock))
-  //     // console.log('spyTransportIniters: ', spyTransportIniters);
-  //     // console.log('rs: ', rs);
-  //   });
-  //   it('test', async () => {
-
-  //     // const res = LedgerInternal.transportIniters['webusb'];
-
-  //     LedgerInternal.transportIniters = {
-  //       webusb: jest.fn().mockResolvedValue(null),
-  //       webhid: jest.fn().mockResolvedValue(null),
-  //       ble: jest.fn().mockResolvedValue(null)
-  //     };
-  //     const spyGetVersion = jest
-  //       .spyOn(LedgerInternal.prototype as any, 'getVersion')
-  //       .mockResolvedValue({
-  //         deviceLocked: false
-  //       });
-
-  //     const rs = await LedgerInternal.init('webusb', [], 'cosmos');
-  //     // expect(LedgerInternal.transportIniters).toHaveBeenCalled();
-  //     console.log('rs: ', rs);
-  //   });
-  it('should initialize and return LedgerInternal instance for valid mode and ledgerAppType', async () => {
-    // Mock transportIniters
-    // LedgerInternal.transportIniters = {
-    //   webusb: jest.fn().mockResolvedValue({}),
-    //   webhid: jest.fn().mockResolvedValue({}),
-    //   ble: jest.fn().mockResolvedValue(null)
-    // };
-    // // Mock app classes
-    // const cosmosAppMock = jest.fn().mockReturnValue({});
-    // const ethAppMock = jest.fn().mockReturnValue({});
-    // const trxAppMock = jest.fn().mockReturnValue({});
-    // // Mock getVersion method
-    // jest.spyOn(cosmosAppMock.prototype, 'getVersion').mockResolvedValue({
-    //   deviceLocked: false,
-    // });
-    // jest.spyOn(ethAppMock.prototype, 'getVersion').mockResolvedValue({
-    //   deviceLocked: false,
-    // });
-    // jest.spyOn(trxAppMock.prototype, 'getVersion').mockResolvedValue({
-    //   deviceLocked: false,
-    // });
-    // // Mock constructor of LedgerInternal
-    // jest.spyOn(LedgerInternal.prototype, 'getVersion').mockResolvedValue({
-    //   deviceLocked: false,
-    // } as any);
-    // // Mock app instantiation based on ledgerAppType
-    // jest.spyOn(CosmosApp as any, 'mockImplementation').mockImplementation(cosmosAppMock);
-    // jest.spyOn(EthApp, 'mockImplementation').mockImplementation(ethAppMock);
-    // jest.spyOn(TrxApp as any, 'mockImplementation').mockImplementation(trxAppMock);
-    // Call the init method
-    // jest.spyOn(require('../index'),'LedgerInternal').mockImplementation(()=>{
-    // })
-    // const ledger = await LedgerInternal.init('webusb', [], 'cosmos');
-    // console.log('ledger: ', ledger);
-    // Expectations
-    // expect(LedgerInternal.transportIniters['webusb']).toHaveBeenCalled();
-    // expect(cosmosAppMock).toHaveBeenCalledTimes(1);
-    // expect(LedgerInternal.prototype.getVersion).toHaveBeenCalledTimes(1);
-    // expect(ledger).toBeInstanceOf(LedgerInternal);
-  });
   describe('get version', () => {
     const mockCase = [
       [
@@ -178,7 +87,9 @@ describe('LedgerInternal', () => {
     const mockPathNumber = [44, 118, 0, 0, 0];
     it.each([['cosmos'], ['eth'], ['trx']])('test err %s', async (type) => {
       (ledgerInternal['type'] as any) = type;
-      await expect(ledgerInternal.getPublicKey(mockPathNumber)).rejects.toThrow(`${ledgerInternal['LedgerAppTypeDesc']} not initialized`);
+      await expect(ledgerInternal.getPublicKey(mockPathNumber)).rejects.toThrow(
+        `${ledgerInternal['LedgerAppTypeDesc']} not initialized`
+      );
     });
     it.each([
       [
@@ -201,7 +112,8 @@ describe('LedgerInternal', () => {
         mockPathNumber,
         EthApp,
         {
-          publicKey: '04f21b2b2fec758670c2906e685afa6bdec4a3655a2bcd5f12cabf0ebfbcc83d44eba21d1ba84e520cdd163d510a1e27f8f803c0ad941c7b50a91bd5e11556edaf',
+          publicKey:
+            '04f21b2b2fec758670c2906e685afa6bdec4a3655a2bcd5f12cabf0ebfbcc83d44eba21d1ba84e520cdd163d510a1e27f8f803c0ad941c7b50a91bd5e11556edaf',
           address: '0x1ABC7154748D1CE5144478CDEB574AE244B939B5'
         }
       ],
@@ -249,7 +161,9 @@ describe('LedgerInternal', () => {
     it.each([['cosmos'], ['eth'], ['trx']])('test err %s', async (type) => {
       (ledgerInternal['type'] as any) = type;
       const mockPathNumber = [44, 118, 0, 0, 0];
-      await expect(ledgerInternal.sign(mockPathNumber, 'message sign')).rejects.toThrow(`${ledgerInternal['LedgerAppTypeDesc']} not initialized`);
+      await expect(ledgerInternal.sign(mockPathNumber, 'message sign')).rejects.toThrow(
+        `${ledgerInternal['LedgerAppTypeDesc']} not initialized`
+      );
     });
     const mockMessage =
       '3045022100e3cb8c2abc8b1973c79ebd19a9bba6a4f04efbcefde0f1561a3fe85184aef2b9022008320e35f2d274fbf1bc48a9344412b589396ea86ce0e0b4dcc904650c51c320';
@@ -280,7 +194,14 @@ describe('LedgerInternal', () => {
       ]
     ])(
       'test case sign %s',
-      async (caseTest: string, expectResult: any, path: number[], message: any, ledgerApp: CosmosApp | TrxApp | EthApp, methodSign: string) => {
+      async (
+        caseTest: string,
+        expectResult: any,
+        path: number[],
+        message: any,
+        ledgerApp: CosmosApp | TrxApp | EthApp,
+        methodSign: string
+      ) => {
         (ledgerInternal['ledgerApp'] as any) = new ledgerApp(null);
         let spyMethodSign;
         if (ledgerApp == CosmosApp) {
@@ -288,7 +209,9 @@ describe('LedgerInternal', () => {
             signature: new Uint8Array(Buffer.from(message, 'hex'))
           });
         } else {
-          spyMethodSign = jest.spyOn(ledgerInternal['ledgerApp'], methodSign).mockResolvedValue(new Uint8Array(Buffer.from(message, 'hex')));
+          spyMethodSign = jest
+            .spyOn(ledgerInternal['ledgerApp'], methodSign)
+            .mockResolvedValue(new Uint8Array(Buffer.from(message, 'hex')));
         }
 
         const rs = await ledgerInternal.sign(path, message);
@@ -440,8 +363,12 @@ describe('LedgerInternal', () => {
           testMode: boolean;
         }
       ) => {
-        const TransportWebUSB = jest.createMockFromModule<typeof import('@ledgerhq/hw-transport-webusb')>('@ledgerhq/hw-transport-webusb');
-        const TransportWebHID = jest.createMockFromModule<typeof import('@ledgerhq/hw-transport-webhid')>('@ledgerhq/hw-transport-webhid');
+        const TransportWebUSB = jest.createMockFromModule<typeof import('@ledgerhq/hw-transport-webusb')>(
+          '@ledgerhq/hw-transport-webusb'
+        );
+        const TransportWebHID = jest.createMockFromModule<typeof import('@ledgerhq/hw-transport-webhid')>(
+          '@ledgerhq/hw-transport-webhid'
+        );
 
         LedgerInternal.transportIniters = {
           webusb: jest.fn().mockResolvedValue(caseTest),
@@ -449,7 +376,9 @@ describe('LedgerInternal', () => {
           ble: jest.fn().mockResolvedValue(caseTest)
         };
         if (caseTest === 'transportIniterIsNull') {
-          await expect(LedgerInternal.init(mode, initArgs, ledgerAppType)).rejects.toThrow(new OWalletError('ledger', 112, `Unknown mode: ${mode}`));
+          await expect(LedgerInternal.init(mode, initArgs, ledgerAppType)).rejects.toThrow(
+            new OWalletError('ledger', 112, `Unknown mode: ${mode}`)
+          );
           return;
         }
         const spyTransportIniter = jest.spyOn(LedgerInternal.transportIniters, mode);
@@ -460,7 +389,9 @@ describe('LedgerInternal', () => {
           testMode: versionResponse.testMode
         });
         if (caseTest === 'webhid-cosmos') {
-          await expect(LedgerInternal.init(mode, initArgs, ledgerAppType)).rejects.toThrow('transport.close is not a function');
+          await expect(LedgerInternal.init(mode, initArgs, ledgerAppType)).rejects.toThrow(
+            'transport.close is not a function'
+          );
           return;
         }
         const rs = await LedgerInternal.init(mode, initArgs, ledgerAppType);

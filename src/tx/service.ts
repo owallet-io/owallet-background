@@ -24,11 +24,7 @@ interface ABCIMessageLog {
 }
 
 // TODO: is this place good to place this function?
-export async function request(
-  rpc: string,
-  method: string,
-  params: any[]
-): Promise<any> {
+export async function request(rpc: string, method: string, params: any[]): Promise<any> {
   const restInstance = Axios.create({
     ...{
       baseURL: rpc
@@ -52,14 +48,10 @@ export async function request(
       }
     }
   );
-  console.log('🚀 ~ file: service.ts ~ line 48 ~ params', params);
-  console.log('🚀 ~ file: service.ts ~ line 48 ~ method', method);
-  console.log('🚀 ~ file: service.ts ~ line 55 ~ response', response);
+
   if (response.data.result) return response.data.result;
   if (response.data.error) throw new Error(JSON.stringify(response.data.error));
-  throw new Error(
-    `Unexpected error from the network: ${JSON.stringify(response.data)}`
-  );
+  throw new Error(`Unexpected error from the network: ${JSON.stringify(response.data)}`);
 }
 
 @singleton()
@@ -75,11 +67,7 @@ export class BackgroundTxService {
     protected readonly notification: Notification
   ) {}
 
-  async sendTx(
-    chainId: string,
-    tx: unknown,
-    mode: 'async' | 'sync' | 'block'
-  ): Promise<Uint8Array> {
+  async sendTx(chainId: string, tx: unknown, mode: 'async' | 'sync' | 'block'): Promise<Uint8Array> {
     const chainInfo = await this.chainsService.getChainInfo(chainId);
 
     const restInstance = Axios.create({
@@ -121,10 +109,7 @@ export class BackgroundTxService {
         };
 
     try {
-      const result = await restInstance.post(
-        isProtoTx ? '/cosmos/tx/v1beta1/txs' : '/txs',
-        params
-      );
+      const result = await restInstance.post(isProtoTx ? '/cosmos/tx/v1beta1/txs' : '/txs', params);
 
       const txResponse = isProtoTx ? result.data['tx_response'] : result.data;
 
@@ -153,10 +138,8 @@ export class BackgroundTxService {
     chainId: string;
     isEvm: boolean;
   } {
-    if (!chainId)
-      throw new Error('Invalid empty chain id when switching Ethereum chain');
-    if (chainId.substring(0, 2) === '0x')
-      return { chainId: chainId, isEvm: true };
+    if (!chainId) throw new Error('Invalid empty chain id when switching Ethereum chain');
+    if (chainId.substring(0, 2) === '0x') return { chainId: chainId, isEvm: true };
     return { chainId, isEvm: false };
   }
 
@@ -171,8 +154,7 @@ export class BackgroundTxService {
         const key = await this.keyRingService.getKey(chainIdOrCoinType);
         const ledgerCheck = await this.keyRingService.getKeyRingType();
         if (ledgerCheck === 'ledger') {
-          const addresses =
-            await this.keyRingService.getKeyRingLedgerAddresses();
+          const addresses = await this.keyRingService.getKeyRingLedgerAddresses();
           return [`${addresses?.eth}`];
         }
         return [`0x${Buffer.from(key.address).toString('hex')}`];
@@ -186,26 +168,18 @@ export class BackgroundTxService {
       default:
         chainInfo = await this.chainsService.getChainInfo(chainId);
         if (!chainInfo.rest)
-          throw new Error(
-            `The given chain ID: ${chainId} does not have a RPC endpoint to connect to`
-          );
+          throw new Error(`The given chain ID: ${chainId} does not have a RPC endpoint to connect to`);
         return await request(chainInfo.rest, method, params);
     }
   }
 
-  private static processTxResultNotification(
-    notification: Notification,
-    result: any
-  ): void {
+  private static processTxResultNotification(notification: Notification, result: any): void {
     try {
       if (result.mode === 'commit') {
         if (result.checkTx.code !== undefined && result.checkTx.code !== 0) {
           throw new Error(result.checkTx.log);
         }
-        if (
-          result.deliverTx.code !== undefined &&
-          result.deliverTx.code !== 0
-        ) {
+        if (result.deliverTx.code !== undefined && result.deliverTx.code !== 0) {
           throw new Error(result.deliverTx.log);
         }
       } else {
@@ -227,17 +201,11 @@ export class BackgroundTxService {
     }
   }
 
-  private static processTxErrorNotification(
-    notification: Notification,
-    e: Error
-  ): void {
-    console.log(e);
+  private static processTxErrorNotification(notification: Notification, e: Error): void {
     let message = e.message;
 
     // Tendermint rpc error.
-    const regResult = /code:\s*(-?\d+),\s*message:\s*(.+),\sdata:\s(.+)/g.exec(
-      e.message
-    );
+    const regResult = /code:\s*(-?\d+),\s*message:\s*(.+),\sdata:\s(.+)/g.exec(e.message);
     if (regResult && regResult.length === 4) {
       // If error is from tendermint
       message = regResult[3];

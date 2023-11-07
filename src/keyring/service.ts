@@ -128,8 +128,6 @@ export class KeyRingService {
   }
 
   async requestSignProxyDecryptionData(env: Env, chainId: string, data: object): Promise<object> {
-    console.log('in request sign proxy decryption data: ', chainId);
-
     try {
       const rpc = await this.chainsService.getChainInfo(chainId);
       const rpcCustom = EVMOS_NETWORKS.includes(chainId) ? rpc.evmRpc : rpc.rest;
@@ -145,8 +143,6 @@ export class KeyRingService {
   }
 
   async requestSignProxyReEncryptionData(env: Env, chainId: string, data: object): Promise<object> {
-    console.log('in request sign proxy re-encryption data: ', chainId);
-
     try {
       const rpc = await this.chainsService.getChainInfo(chainId);
       const rpcCustom = EVMOS_NETWORKS.includes(chainId) ? rpc.evmRpc : rpc.rest;
@@ -486,14 +482,11 @@ export class KeyRingService {
       'request-sign-bitcoin',
       data
     )) as any;
-    console.log(newData, 'NEW DATA IN BITCOIN');
-
     // Need to check ledger here and ledger app type by chainId
     try {
       const txHash = await this.keyRing.signAndBroadcastBitcoin(env, chainId, newData);
       return txHash;
     } catch (error) {
-      console.log('🚀 ~ file: service.ts:547 ~ KeyRingService ~ error:', error);
       console.log({ error });
       throw error;
     } finally {

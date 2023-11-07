@@ -81,7 +81,9 @@ export class ChainsService {
 
   async getChainInfosWithoutEndpoints(): Promise<ChainInfoWithoutEndpoints[]> {
     return (await this.getChainInfos()).map<ChainInfoWithoutEndpoints>((chainInfo) => {
-      const chainInfoMutable: Mutable<Optional<ChainInfoWithCoreTypes, 'rpc' | 'rest' | 'updateFromRepoDisabled' | 'embeded'>> = {
+      const chainInfoMutable: Mutable<
+        Optional<ChainInfoWithCoreTypes, 'rpc' | 'rest' | 'updateFromRepoDisabled' | 'embeded'>
+      > = {
         ...chainInfo
       };
 
@@ -103,18 +105,19 @@ export class ChainsService {
 
     if (networkType) {
       if (networkType === 'evm') {
-        console.log('🚀 ~ file: service.ts:128 ~ ChainsService ~ networkType:', networkType);
-        console.log('🚀 ~ file: service.ts:128 ~ ChainsService ~ chainId:', chainId);
         // need to check if network type is evm, then we will convert chain id to number from hex
         chainInfo = (await this.getChainInfos()).find((chainInfo) => {
           return (
-            ChainIdHelper.parse(Number(chainInfo.chainId)).identifier === ChainIdHelper.parse(Number(chainId)).identifier &&
-            chainInfo.networkType === networkType
+            ChainIdHelper.parse(Number(chainInfo.chainId)).identifier ===
+              ChainIdHelper.parse(Number(chainId)).identifier && chainInfo.networkType === networkType
           );
         });
       } else {
         chainInfo = (await this.getChainInfos()).find((chainInfo) => {
-          return ChainIdHelper.parse(chainInfo.chainId).identifier === ChainIdHelper.parse(chainId).identifier && chainInfo.networkType === networkType;
+          return (
+            ChainIdHelper.parse(chainInfo.chainId).identifier === ChainIdHelper.parse(chainId).identifier &&
+            chainInfo.networkType === networkType
+          );
         });
       }
     } else {
@@ -131,14 +134,12 @@ export class ChainsService {
 
   async getChainCoinType(chainId: string): Promise<number> {
     const chainInfo = await this.getChainInfo(chainId);
-    console.log('🚀 ~ file: service.ts:133 ~ ChainsService ~ getChainCoinType ~ chainId:', chainId);
     if (!chainInfo) {
       throw new Error(`There is no chain info for ${chainId}`);
     }
 
     return chainInfo.bip44.coinType;
   }
-  
 
   async hasChainInfo(chainId: string): Promise<boolean> {
     return (
@@ -162,8 +163,6 @@ export class ChainsService {
     //     origin
     //   }
     // );
-
-    console.log('chainInfo 1 ===', chainInfo);
 
     await this.addChainInfo(chainInfo);
   }

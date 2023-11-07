@@ -96,7 +96,6 @@ export const ChainInfoSchema = Joi.object<ChainInfo>({
   rest: Joi.string().required().uri(),
   // TODO: Handle rest config.
   chainId: Joi.string().required().min(1).max(30),
-  networkType:Joi.string().required().valid('cosmos','evm'),
   chainName: Joi.string().required().min(1).max(30),
   stakeCurrency: CurrencySchema.required(),
   bip44: SuggestingBIP44Schema.required(),

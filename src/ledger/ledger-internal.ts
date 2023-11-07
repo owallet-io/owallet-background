@@ -51,8 +51,6 @@ export class LedgerInternal {
 
   static async init(mode: TransportMode, initArgs: any[] = [], ledgerAppType: LedgerAppType): Promise<LedgerInternal> {
     const transportIniter = LedgerInternal.transportIniters[mode];
-    // console.log('transportIniter', transportIniter);
-
     if (!transportIniter) {
       throw new OWalletError('ledger', 112, `Unknown mode: ${mode}`);
     }
@@ -60,8 +58,6 @@ export class LedgerInternal {
     let app: CosmosApp | EthApp | TrxApp | BtcApp;
 
     const transport = await transportIniter(...initArgs);
-
-    // console.log('transport ===', transport);
 
     try {
       if (ledgerAppType === 'trx') {
@@ -86,12 +82,9 @@ export class LedgerInternal {
           throw new Error('Device is on screen saver');
         }
       }
-      // console.log('transportIniter ledger', ledger);
+
       return ledger;
     } catch (e) {
-      console.log('🚀 ~ file: ledger-internal.ts:99 ~ LedgerInternal ~ e:', e);
-
-      // console.log(e);
       if (transport) {
         await transport.close();
       }
@@ -149,8 +142,6 @@ export class LedgerInternal {
     } else if (this.ledgerApp instanceof EthApp) {
       const { publicKey, address } = await this.ledgerApp.getAddress(stringifyPath(path));
 
-      console.log('get here eth ===', publicKey, address);
-
       const pubKey = Buffer.from(publicKey, 'hex');
       // Compress the public key
       return {
@@ -177,9 +168,7 @@ export class LedgerInternal {
         console.log('🚀 ~ file: ledger-internal.ts:182 ~ LedgerInternal ~ getPublicKey ~ error:', error);
       }
     } else {
-      console.log('get here trx === ', path, stringifyPath(path));
       const { publicKey, address } = await this.ledgerApp.getAddress(stringifyPath(path));
-      console.log('get here trx  2 === ', address);
       // Compress the public key
       return { publicKey: Buffer.from(publicKey, 'hex'), address };
     }
@@ -263,7 +252,7 @@ export class LedgerInternal {
 
       try {
         const utxos = await Promise.all(mapData);
-        console.log('🚀 ~ file: ledger-internal.ts:269 ~ LedgerInternal ~ sign ~ utxos:', utxos);
+
         const signature = await this.signTransactionBtc(
           stringifyPath(path),
           msgObject.msgs.amount,

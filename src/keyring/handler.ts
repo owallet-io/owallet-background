@@ -176,7 +176,6 @@ const handleCreateLedgerKeyMsg: (service: KeyRingService) => InternalHandler<Cre
 const handleAddLedgerKeyMsg: (service: KeyRingService) => InternalHandler<AddLedgerKeyMsg> = (service) => {
   return async (env, msg) => {
     const result = await service.addLedgerKey(env, msg.kdf, msg.meta, msg.bip44HDPath);
-    console.log(result, 'result ???');
     return result;
   };
 };
@@ -199,12 +198,10 @@ const handleUnlockKeyRingMsg: (service: KeyRingService) => InternalHandler<Unloc
 
 const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> = (service) => {
   return async (env, msg) => {
-    console.log('msg.chainId ===', msg.chainId);
-
     await service.permissionService.checkOrGrantBasicAccessPermission(env, msg.chainId, msg.origin);
 
     const key = await service.getKey(msg.chainId);
-    // console.log('🚀 ~ file: handler.ts:310 ~ return ~ key:', key?.bech32Address);
+
     const networkType = getNetworkTypeByChainId(msg.chainId);
 
     // hereeee
@@ -212,7 +209,6 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
     const isInj = msg.chainId?.startsWith('injective');
     const pubkeyLedger = service.getKeyRingLedgerPubKey();
 
-    // console.log('🚀 ~ file: handler.ts:205 ~ return ~ addressLedger:', pubkeyLedger['eth']);
     // hereee
     const bech32Convert =
       networkType === 'bitcoin'
@@ -293,9 +289,7 @@ const handleRequestSignEthereumTypedData: (
   service: KeyRingService
 ) => InternalHandler<RequestSignEthereumTypedDataMsg> = (service) => {
   return async (env, msg) => {
-    console.log('REACH HANDLE IN SIGN TYPED DATA');
     const response = await service.requestSignEthereumTypedData(env, msg.chainId, msg.data?.[0]);
-    console.log(response, 'RESPONSE AFTER HANDLE SIGN TYPED DATA');
     return { result: JSON.stringify(response) };
   };
 };
@@ -303,7 +297,6 @@ const handleRequestSignEthereumTypedData: (
 const handleRequestPublicKey: (service: KeyRingService) => InternalHandler<RequestPublicKeyMsg> = (service) => {
   return async (env, msg) => {
     const response = await service.requestPublicKey(env, msg.chainId);
-    console.log(response, 'RESPONSE HERE');
     return { result: JSON.stringify(response) };
   };
 };
@@ -313,7 +306,6 @@ const handleRequestSignDecryptionData: (
 ) => InternalHandler<RequestSignProxyDecryptionDataMsg> = (service) => {
   return async (env, msg) => {
     const response = await service.requestSignDecryptData(env, msg.chainId, msg.data);
-    console.log(response, 'RESPONSE SIGN HERE');
     return { result: JSON.stringify(response) };
   };
 };
@@ -337,7 +329,6 @@ const handleRequestSignProxyDecryptionData: (
 ) => InternalHandler<RequestSignProxyDecryptionDataMsg> = (service) => {
   return async (env, msg) => {
     const response = await service.requestSignProxyDecryptionData(env, msg.chainId, msg.data);
-    console.log(response, 'RESPONSE SIGN HERE');
     return { result: JSON.stringify(response) };
   };
 };
@@ -373,7 +364,7 @@ const handleRequestSignProxyReEncryptionData: (
 ) => InternalHandler<RequestSignProxyReEncryptionDataMsg> = (service) => {
   return async (env, msg) => {
     const response = await service.requestSignReEncryptData(env, msg.chainId, msg.data);
-    console.log(response, 'RESPONSE SIGN HERE');
+
     return { result: JSON.stringify(response) };
   };
 };
@@ -413,7 +404,6 @@ const handleChangeKeyRingMsg: (service: KeyRingService) => InternalHandler<Chang
 
 const handleChangeChainMsg: (service: any) => InternalHandler<ChangeChainMsg> = (service) => {
   return async (_, msg) => {
-    console.log('handleChangeChainMsg handler keyring', msg);
     return await service.changeChain(msg.chainInfos);
   };
 };

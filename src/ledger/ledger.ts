@@ -9,7 +9,7 @@ let initArgs = null;
 
 export const ledgerProxy = async (method: string, args: any[] = []): Promise<any> => {
   let response: any;
-  console.log('ledger proxy params: ', ledger, currentMode, method);
+  
 
   if (!ledger && currentMode && method !== 'init') {
     ledger = await LedgerInternal.init(currentMode, initArgs, ledgerType);
@@ -50,7 +50,6 @@ if (isReactNative) {
       let requestId = Date.now();
       const handler = ({ data }) => {
         if (data.requestId !== requestId) return;
-        console.log(method, data);
         resolve(data.response);
         channelDevice.removeEventListener('message', handler);
       };
