@@ -2,7 +2,7 @@ import { delay, inject, singleton } from 'tsyringe';
 import { TYPES } from '../types';
 
 import { InteractionService } from '../interaction';
-import { Env } from '@owallet/router';
+import { APP_PORT, Env } from '@owallet/router';
 import {
   getBasicAccessPermissionType,
   INTERACTION_TYPE_PERMISSION,
@@ -17,14 +17,14 @@ import { ChainIdHelper } from '@owallet/cosmos';
 export class PermissionService {
   protected permissionMap: {
     [chainIdentifier: string]:
-    | {
-      [type: string]:
       | {
-        [origin: string]: true | undefined;
-      }
+          [type: string]:
+            | {
+                [origin: string]: true | undefined;
+              }
+            | undefined;
+        }
       | undefined;
-    }
-    | undefined;
   } = {};
 
   protected privilegedOrigins: Map<string, boolean> = new Map();
@@ -105,6 +105,7 @@ export class PermissionService {
     );
 
     await this.addPermission(chainIds, type, origins);
+    this.interactionService.dispatchEvent(APP_PORT, 'enable-access-end', {});
   }
 
   private parseChainId({ chainId }: { chainId: string }): {

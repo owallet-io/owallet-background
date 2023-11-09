@@ -1,12 +1,6 @@
+import { BIP44HDPath } from '@owallet/types';
 export type CoinTypeForChain = {
   [identifier: string]: number;
-};
-
-export type BIP44HDPath = {
-  coinType?: number;
-  account: number;
-  change: number;
-  addressIndex: number;
 };
 
 export interface CommonCrypto {

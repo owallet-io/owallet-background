@@ -1,28 +1,20 @@
+import { EthermintChainIdHelper } from '@owallet/cosmos';
 import { Message, OWalletError } from '@owallet/router';
 import { ROUTE } from './constants';
-import {
-  KeyRing,
-  KeyRingStatus,
-  MultiKeyStoreInfoWithSelected
-} from './keyring';
-import {
-  BIP44HDPath,
-  ExportKeyRingData,
-  SignEthereumTypedDataObject
-} from './types';
+import { KeyRing, KeyRingStatus, MultiKeyStoreInfoWithSelected } from './keyring';
+import { ExportKeyRingData, SignEthereumTypedDataObject } from './types';
 
-import {
-  Bech32Address,
-  checkAndValidateADR36AminoSignDoc,
-  cosmos
-} from '@owallet/cosmos';
-import { BIP44, OWalletSignOptions, Key } from '@owallet/types';
-
-import { StdSignDoc, AminoSignResponse, StdSignature } from '@cosmjs/launchpad';
+import { Bech32Address, checkAndValidateADR36AminoSignDoc } from '@owallet/cosmos';
+import { BIP44, OWalletSignOptions, Key, BIP44HDPath } from '@owallet/types';
+import Joi from 'joi';
+import { AminoSignResponse, StdSignature } from '@cosmjs/launchpad';
+import { StdSignDoc } from '@owallet/types';
 import Long from 'long';
-
+import { Int } from '@owallet/unit';
+import bigInteger from 'big-integer';
 const bip39 = require('bip39');
-
+import { SignDoc } from '@owallet/proto-types/cosmos/tx/v1beta1/tx';
+import { schemaRequestSignBitcoin } from './validates';
 export class RestoreKeyRingMsg extends Message<{
   status: KeyRingStatus;
   multiKeyStoreInfo: MultiKeyStoreInfoWithSelected;
@@ -85,7 +77,7 @@ export class UpdateNameKeyRingMsg extends Message<{
     return 'update-name-keyring';
   }
 
-  constructor(public readonly index: number, public readonly name: string) {
+  constructor(public readonly index: number, public readonly name: string, public readonly email?: string) {
     super();
   }
 
@@ -155,11 +147,7 @@ export class CreateMnemonicKeyMsg extends Message<{
   }
 
   validateBasic(): void {
-    if (
-      this.kdf !== 'scrypt' &&
-      this.kdf !== 'sha256' &&
-      this.kdf !== 'pbkdf2'
-    ) {
+    if (this.kdf !== 'scrypt' && this.kdf !== 'sha256' && this.kdf !== 'pbkdf2') {
       throw new OWalletError('keyring', 202, 'Invalid kdf');
     }
 
@@ -211,11 +199,7 @@ export class AddMnemonicKeyMsg extends Message<{
   }
 
   validateBasic(): void {
-    if (
-      this.kdf !== 'scrypt' &&
-      this.kdf !== 'sha256' &&
-      this.kdf !== 'pbkdf2'
-    ) {
+    if (this.kdf !== 'scrypt' && this.kdf !== 'sha256' && this.kdf !== 'pbkdf2') {
       throw new OWalletError('keyring', 202, 'Invalid kdf');
     }
 
@@ -264,11 +248,7 @@ export class CreatePrivateKeyMsg extends Message<{
   }
 
   validateBasic(): void {
-    if (
-      this.kdf !== 'scrypt' &&
-      this.kdf !== 'sha256' &&
-      this.kdf !== 'pbkdf2'
-    ) {
+    if (this.kdf !== 'scrypt' && this.kdf !== 'sha256' && this.kdf !== 'pbkdf2') {
       throw new Error('Invalid kdf');
     }
 
@@ -312,11 +292,7 @@ export class CreateLedgerKeyMsg extends Message<{
   }
 
   validateBasic(): void {
-    if (
-      this.kdf !== 'scrypt' &&
-      this.kdf !== 'sha256' &&
-      this.kdf !== 'pbkdf2'
-    ) {
+    if (this.kdf !== 'scrypt' && this.kdf !== 'sha256' && this.kdf !== 'pbkdf2') {
       throw new OWalletError('keyring', 202, 'Invalid kdf');
     }
 
@@ -352,11 +328,7 @@ export class AddPrivateKeyMsg extends Message<{
   }
 
   validateBasic(): void {
-    if (
-      this.kdf !== 'scrypt' &&
-      this.kdf !== 'sha256' &&
-      this.kdf !== 'pbkdf2'
-    ) {
+    if (this.kdf !== 'scrypt' && this.kdf !== 'sha256' && this.kdf !== 'pbkdf2') {
       throw new OWalletError('keyring', 202, 'Invalid kdf');
     }
 
@@ -394,11 +366,7 @@ export class AddLedgerKeyMsg extends Message<{
   }
 
   validateBasic(): void {
-    if (
-      this.kdf !== 'scrypt' &&
-      this.kdf !== 'sha256' &&
-      this.kdf !== 'pbkdf2'
-    ) {
+    if (this.kdf !== 'scrypt' && this.kdf !== 'sha256' && this.kdf !== 'pbkdf2') {
       throw new OWalletError('keyring', 202, 'Invalid kdf');
     }
 
@@ -441,7 +409,7 @@ export class UnlockKeyRingMsg extends Message<{ status: KeyRingStatus }> {
     return 'unlock-keyring';
   }
 
-  constructor(public readonly password = '') {
+  constructor(public readonly password = '', public readonly saving = false) {
     super();
   }
 
@@ -521,11 +489,7 @@ export class RequestSignAminoMsg extends Message<AminoSignResponse> {
     // ADR-36 sign doc doesn't have the chain id
     if (!checkAndValidateADR36AminoSignDoc(this.signDoc)) {
       if (this.signDoc.chain_id !== this.chainId) {
-        throw new OWalletError(
-          'keyring',
-          234,
-          'Chain id in the message is not matched with the requested chain id'
-        );
+        throw new OWalletError('keyring', 234, 'Chain id in the message is not matched with the requested chain id');
       }
     } else {
       if (this.signDoc.msgs[0].value.signer !== this.signer) {
@@ -550,7 +514,79 @@ export class RequestSignAminoMsg extends Message<AminoSignResponse> {
     return RequestSignAminoMsg.type();
   }
 }
+export class RequestSignEIP712CosmosTxMsg_v0 extends Message<AminoSignResponse> {
+  public static type() {
+    return 'request-sign-eip-712-cosmos-tx-v0';
+  }
 
+  constructor(
+    public readonly chainId: string,
+    public readonly signer: string,
+    public readonly eip712: {
+      types: Record<string, { name: string; type: string }[] | undefined>;
+      domain: Record<string, any>;
+      primaryType: string;
+    },
+    public readonly signDoc: StdSignDoc,
+    public readonly signOptions: OWalletSignOptions
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.signer) {
+      throw new OWalletError('keyring', 230, 'signer not set');
+    }
+
+    // Validate bech32 address.
+    Bech32Address.validate(this.signer);
+
+    // Check and validate the ADR-36 sign doc.
+    // ADR-36 sign doc doesn't have the chain id
+    if (!checkAndValidateADR36AminoSignDoc(this.signDoc)) {
+      if (this.signDoc.chain_id !== this.chainId) {
+        throw new OWalletError('keyring', 234, 'Chain id in the message is not matched with the requested chain id');
+      }
+
+      const { ethChainId } = EthermintChainIdHelper.parse(this.chainId);
+
+      const ethChainIdInMsg: Int = (() => {
+        const value = this.eip712.domain['chainId'];
+        if (typeof value === 'string' && value.startsWith('0x')) {
+          return new Int(bigInteger(value.replace('0x', ''), 16).toString());
+        }
+        return new Int(value);
+      })();
+      if (!ethChainIdInMsg.equals(new Int(ethChainId))) {
+        throw new Error(
+          `Unmatched chain id for eth (expected: ${ethChainId}, actual: ${this.eip712.domain['chainId']})`
+        );
+      }
+    } else {
+      throw new Error("Can't sign ADR-36 with EIP-712");
+    }
+
+    if (!this.signOptions) {
+      throw new OWalletError('keyring', 235, 'Sign options are null');
+    }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignEIP712CosmosTxMsg_v0.type();
+  }
+}
 // request goes here
 export class RequestSignDirectMsg extends Message<{
   readonly signed: {
@@ -591,21 +627,15 @@ export class RequestSignDirectMsg extends Message<{
     // Validate bech32 address.
     Bech32Address.validate(this.signer);
 
-    const signDoc = cosmos.tx.v1beta1.SignDoc.create({
+    const signDoc = SignDoc.create({
       bodyBytes: this.signDoc.bodyBytes,
       authInfoBytes: this.signDoc.authInfoBytes,
       chainId: this.signDoc.chainId,
-      accountNumber: this.signDoc.accountNumber
-        ? Long.fromString(this.signDoc.accountNumber)
-        : undefined
+      accountNumber: this.signDoc.accountNumber ? Long.fromString(this.signDoc.accountNumber) : undefined
     });
 
     if (signDoc.chainId !== this.chainId) {
-      throw new OWalletError(
-        'keyring',
-        234,
-        'Chain id in the message is not matched with the requested chain id'
-      );
+      throw new OWalletError('keyring', 234, 'Chain id in the message is not matched with the requested chain id');
     }
 
     if (!this.signOptions) {
@@ -623,6 +653,145 @@ export class RequestSignDirectMsg extends Message<{
 
   type(): string {
     return RequestSignDirectMsg.type();
+  }
+}
+
+// request sign tron goes here
+export class RequestSignTronMsg extends Message<{}> {
+  public static type() {
+    return 'request-sign-tron';
+  }
+
+  constructor(public readonly chainId: string, public readonly data: object) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignTronMsg.type();
+  }
+}
+
+export class RequestSendRawTransactionMsg extends Message<object> {
+  public static type() {
+    return 'request-send-raw-transaction';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: {
+      raw_data: any;
+      raw_data_hex: string;
+      txID: string;
+      visible?: boolean;
+    }
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new Error('chain id not set');
+    }
+
+    if (!this.data) {
+      throw new Error('data not set');
+    }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return 'keyring';
+  }
+
+  type(): string {
+    return RequestSendRawTransactionMsg.type();
+  }
+}
+
+export class GetDefaultAddressTronMsg extends Message<{
+  hex?: string;
+  base58?: string;
+  name?: string;
+  type?: number;
+}> {
+  public static type() {
+    return 'get-default-address-tron';
+  }
+
+  constructor(public readonly chainId: string) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return GetDefaultAddressTronMsg.type();
+  }
+}
+
+export class TriggerSmartContractMsg extends Message<{}> {
+  public static type() {
+    return 'trigger-smart-contract-tron';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: {
+      address: string;
+      functionSelector: string;
+      options: { feeLimit?: number };
+      parameters: any[];
+      issuerAddress: string;
+    }
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+  }
+
+  route(): string {
+    return 'keyring';
+  }
+
+  type(): string {
+    return TriggerSmartContractMsg.type();
   }
 }
 
@@ -682,6 +851,47 @@ export class RequestSignEthereumMsg extends Message<{
 
   type(): string {
     return RequestSignEthereumMsg.type();
+  }
+}
+
+export class RequestSignBitcoinMsg extends Message<{
+  readonly rawTxHex: string; // raw tx signature to broadcast
+}> {
+  public static type() {
+    return 'request-sign-bitcoin';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: object // public readonly signOptions: OWalletSignOptions = {} // public readonly signer: string, // public readonly signDoc: { //   bodyBytes?: Uint8Array | null; //   authInfoBytes?: Uint8Array | null; //   chainId?: string | null; //   accountNumber?: string | null; // }
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+    const { value, error } = schemaRequestSignBitcoin.validate(this.data);
+    if (!!error) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignBitcoinMsg.type();
   }
 }
 
@@ -798,6 +1008,84 @@ export class RequestSignDecryptDataMsg extends Message<{
 
   type(): string {
     return RequestSignDecryptDataMsg.type();
+  }
+}
+
+export class RequestSignProxyReEncryptionDataMsg extends Message<{
+  readonly result: string; // raw tx signature to broadcast
+}> {
+  public static type() {
+    return 'request-sign-proxy-re-encryption-data';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: object // public readonly signOptions: OWalletSignOptions = {}
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+
+    // if (!this.signOptions) {
+    //   throw new Error('Sign options are null');
+    // }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignProxyReEncryptionDataMsg.type();
+  }
+}
+
+export class RequestSignProxyDecryptionDataMsg extends Message<{
+  readonly result: string; // raw tx signature to broadcast
+}> {
+  public static type() {
+    return 'request-sign-proxy-deryption-data';
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly data: object // public readonly signOptions: OWalletSignOptions = {}
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new OWalletError('keyring', 270, 'chain id not set');
+    }
+
+    if (!this.data) {
+      throw new OWalletError('keyring', 231, 'data not set');
+    }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignProxyDecryptionDataMsg.type();
   }
 }
 
@@ -947,9 +1235,7 @@ export class ChangeChainMsg extends Message<{
     return 'change-chain';
   }
 
-  constructor(
-    public readonly chainInfos: object
-  ) {
+  constructor(public readonly chainInfos: object) {
     super();
   }
 
@@ -1008,10 +1294,7 @@ export class SetKeyStoreCoinTypeMsg extends Message<KeyRingStatus> {
     return 'set-keystore-coin-type';
   }
 
-  constructor(
-    public readonly chainId: string,
-    public readonly coinType: number
-  ) {
+  constructor(public readonly chainId: string, public readonly coinType: number) {
     super();
   }
 
@@ -1035,6 +1318,33 @@ export class SetKeyStoreCoinTypeMsg extends Message<KeyRingStatus> {
 
   type(): string {
     return SetKeyStoreCoinTypeMsg.type();
+  }
+}
+
+export class SetKeyStoreLedgerAddressMsg extends Message<KeyRingStatus> {
+  public static type() {
+    return 'set-keystore-ledger-address';
+  }
+
+  constructor(public readonly bip44HDPath: string, public readonly chainId: string | number) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (this.bip44HDPath === '') {
+      throw new OWalletError('keyring', 240, 'bip44HDPath address can not be empty');
+    }
+    if (this.chainId === '') {
+      throw new OWalletError('keyring', 240, 'chainId address can not be empty');
+    }
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return SetKeyStoreLedgerAddressMsg.type();
   }
 }
 

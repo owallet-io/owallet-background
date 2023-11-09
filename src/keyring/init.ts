@@ -5,6 +5,7 @@ import {
   GetKeyMsg,
   UnlockKeyRingMsg,
   RequestSignAminoMsg,
+  RequestSignEIP712CosmosTxMsg_v0,
   RequestSignDirectMsg,
   LockKeyRingMsg,
   DeleteKeyRingMsg,
@@ -18,6 +19,7 @@ import {
   AddLedgerKeyMsg,
   GetIsKeyStoreCoinTypeSetMsg,
   SetKeyStoreCoinTypeMsg,
+  SetKeyStoreLedgerAddressMsg,
   RestoreKeyRingMsg,
   CheckPasswordMsg,
   ExportKeyRingDatasMsg,
@@ -27,7 +29,12 @@ import {
   RequestSignReEncryptDataMsg,
   RequestSignDecryptDataMsg,
   RequestPublicKeyMsg,
-  ChangeChainMsg
+  ChangeChainMsg,
+  RequestSignTronMsg,
+  RequestSignBitcoinMsg,
+  GetDefaultAddressTronMsg,
+  TriggerSmartContractMsg,
+  RequestSendRawTransactionMsg
 } from './messages';
 import { ROUTE } from './constants';
 import { getHandler } from './handler';
@@ -51,20 +58,23 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(RequestVerifyADR36AminoSignDoc);
   router.registerMessage(RequestSignDirectMsg);
   router.registerMessage(RequestSignEthereumMsg);
+  router.registerMessage(RequestSignTronMsg);
+  router.registerMessage(TriggerSmartContractMsg);
+  router.registerMessage(RequestSignBitcoinMsg);
   router.registerMessage(RequestSignEthereumTypedDataMsg);
-  // thang3
   router.registerMessage(RequestPublicKeyMsg);
+  router.registerMessage(SetKeyStoreLedgerAddressMsg);
   router.registerMessage(RequestSignDecryptDataMsg);
   router.registerMessage(RequestSignReEncryptDataMsg);
   router.registerMessage(GetMultiKeyStoreInfoMsg);
+  router.registerMessage(GetDefaultAddressTronMsg);
+  router.registerMessage(RequestSendRawTransactionMsg);
   router.registerMessage(ChangeKeyRingMsg);
   router.registerMessage(GetIsKeyStoreCoinTypeSetMsg);
   router.registerMessage(SetKeyStoreCoinTypeMsg);
   router.registerMessage(CheckPasswordMsg);
   router.registerMessage(ExportKeyRingDatasMsg);
-  
-  // 
+  router.registerMessage(RequestSignEIP712CosmosTxMsg_v0);
   router.registerMessage(ChangeChainMsg);
-
   router.addHandler(ROUTE, getHandler(service));
 }

@@ -1,6 +1,6 @@
 import { Message } from '@owallet/router';
 import { ChainInfoWithEmbed } from './types';
-import { ChainInfo } from '@owallet/types';
+import { ChainInfo, ChainInfoWithoutEndpoints } from '@owallet/types';
 import { ROUTE } from './constants';
 
 export class GetChainInfosMsg extends Message<{
@@ -74,3 +74,24 @@ export class RemoveSuggestedChainInfoMsg extends Message<ChainInfoWithEmbed[]> {
     return RemoveSuggestedChainInfoMsg.type();
   }
 }
+
+export class GetChainInfosWithoutEndpointsMsg extends Message<{
+  chainInfos: ChainInfoWithoutEndpoints[];
+}> {
+  public static type() {
+    return "get-chain-infos-without-endpoints";
+  }
+
+  validateBasic(): void {
+    // noop
+  }
+
+  route(): string {
+    return "chains";
+  }
+
+  type(): string {
+    return GetChainInfosWithoutEndpointsMsg.type();
+  }
+}
+

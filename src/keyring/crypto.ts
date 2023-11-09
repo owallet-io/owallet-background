@@ -1,13 +1,9 @@
+import { BIP44HDPath } from '@owallet/types';
 import AES, { Counter } from 'aes-js';
-import {
-  BIP44HDPath,
-  CoinTypeForChain,
-  ScryptParams,
-  CommonCrypto
-} from './types';
+import { CoinTypeForChain, ScryptParams, CommonCrypto } from './types';
 import { Hash, RNG } from '@owallet/crypto';
 import pbkdf2 from 'pbkdf2';
-
+import { AddressesLedger } from '@owallet/types';
 import { Buffer } from 'buffer';
 
 /**
@@ -37,6 +33,8 @@ export interface KeyStore {
     kdfparams: ScryptParams;
     mac: string;
   };
+  addresses?: AddressesLedger;
+  pubkeys?: AddressesLedger;
 }
 
 export class Crypto {
@@ -48,7 +46,8 @@ export class Crypto {
     text: string,
     password: string,
     meta: Record<string, string>,
-    bip44HDPath?: BIP44HDPath
+    bip44HDPath?: BIP44HDPath,
+    addresses?: AddressesLedger
   ): Promise<KeyStore> {
     let random = new Uint8Array(32);
     const salt = Buffer.from(await rng(random)).toString('hex');
@@ -68,20 +67,13 @@ export class Crypto {
           return Hash.sha256(Buffer.from(`${salt}/${password}`));
         case 'pbkdf2':
           return new Promise<Uint8Array>((resolve, reject) => {
-            pbkdf2.pbkdf2(
-              password,
-              salt,
-              4000,
-              32,
-              'sha256',
-              (err, derivedKey) => {
-                if (err) {
-                  reject(err);
-                } else {
-                  resolve(new Uint8Array(derivedKey));
-                }
+            pbkdf2.pbkdf2(password, salt, 4000, 32, 'sha256', (err, derivedKey) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(new Uint8Array(derivedKey));
               }
-            );
+            });
           });
         default:
           throw new Error('Unknown kdf');
@@ -97,12 +89,7 @@ export class Crypto {
     const aesCtr = new AES.ModeOfOperation.ctr(derivedKey, counter);
     const ciphertext = Buffer.from(aesCtr.encrypt(buf));
     // Mac is sha256(last 16 bytes of derived key + ciphertext)
-    const mac = Hash.sha256(
-      Buffer.concat([
-        Buffer.from(derivedKey.slice(derivedKey.length / 2)),
-        ciphertext
-      ])
-    );
+    const mac = Hash.sha256(Buffer.concat([Buffer.from(derivedKey.slice(derivedKey.length / 2)), ciphertext]));
     return {
       version: '1.2',
       type,
@@ -118,39 +105,27 @@ export class Crypto {
         kdf,
         kdfparams: scryptParams,
         mac: Buffer.from(mac).toString('hex')
-      }
+      },
+      addresses
     };
   }
 
-  public static async decrypt(
-    crypto: CommonCrypto,
-    keyStore: KeyStore,
-    password: string
-  ): Promise<Uint8Array> {
+  public static async decrypt(crypto: CommonCrypto, keyStore: KeyStore, password: string): Promise<Uint8Array> {
     const derivedKey = await (async () => {
       switch (keyStore.crypto.kdf) {
         case 'scrypt':
           return await crypto.scrypt(password, keyStore.crypto.kdfparams);
         case 'sha256':
-          return Hash.sha256(
-            Buffer.from(`${keyStore.crypto.kdfparams.salt}/${password}`)
-          );
+          return Hash.sha256(Buffer.from(`${keyStore.crypto.kdfparams.salt}/${password}`));
         case 'pbkdf2':
           return new Promise<Uint8Array>((resolve, reject) => {
-            pbkdf2.pbkdf2(
-              password,
-              keyStore.crypto.kdfparams.salt,
-              4000,
-              32,
-              'sha256',
-              (err, derivedKey) => {
-                if (err) {
-                  reject(err);
-                } else {
-                  resolve(new Uint8Array(derivedKey));
-                }
+            pbkdf2.pbkdf2(password, keyStore.crypto.kdfparams.salt, 4000, 32, 'sha256', (err, derivedKey) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(new Uint8Array(derivedKey));
               }
-            );
+            });
           });
         default:
           throw new Error('Unknown kdf');
@@ -171,8 +146,6 @@ export class Crypto {
       throw new Error('Unmatched mac');
     }
 
-    return Buffer.from(
-      aesCtr.decrypt(Buffer.from(keyStore.crypto.ciphertext, 'hex'))
-    );
+    return Buffer.from(aesCtr.decrypt(Buffer.from(keyStore.crypto.ciphertext, 'hex')));
   }
 }

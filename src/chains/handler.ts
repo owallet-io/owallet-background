@@ -3,7 +3,8 @@ import { ChainsService } from './service';
 import {
   GetChainInfosMsg,
   RemoveSuggestedChainInfoMsg,
-  SuggestChainInfoMsg
+  SuggestChainInfoMsg,
+  GetChainInfosWithoutEndpointsMsg
 } from './messages';
 import { ChainInfo } from '@owallet/types';
 
@@ -24,6 +25,11 @@ export const getHandler: (service: ChainsService) => Handler = (service) => {
           env,
           msg as RemoveSuggestedChainInfoMsg
         );
+      case GetChainInfosWithoutEndpointsMsg: 
+        return handleGetChainInfosWithoutEndpointsMsg(service) (
+          env,
+          msg as GetChainInfosWithoutEndpointsMsg
+        )
       default:
         throw new Error('Unknown msg type');
     }
@@ -67,5 +73,16 @@ const handleRemoveSuggestedChainInfoMsg: (
   return async (_, msg) => {
     await service.removeChainInfo(msg.chainId);
     return await service.getChainInfos();
+  };
+};
+
+const handleGetChainInfosWithoutEndpointsMsg: (
+  service: ChainsService
+) => InternalHandler<GetChainInfosWithoutEndpointsMsg> = (service) => {
+  return async (env, msg) => {
+    const chainInfos = await service.getChainInfosWithoutEndpoints();
+    return {
+      chainInfos,
+    };
   };
 };

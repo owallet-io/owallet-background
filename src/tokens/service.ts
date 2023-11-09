@@ -1,6 +1,5 @@
 import { delay, inject, singleton } from 'tsyringe';
 import { TYPES } from '../types';
-import Web3 from 'web3';
 
 import { Env } from '@owallet/router';
 import {
@@ -58,7 +57,7 @@ export class TokensService {
     const chainInfo = await this.chainsService.getChainInfo(chainId);
 
     const find = (await this.getTokens(chainId)).find(
-      (currency) =>
+      currency =>
         'contractAddress' in currency &&
         currency.contractAddress === contractAddress
     );
@@ -90,14 +89,14 @@ export class TokensService {
       viewingKey
     };
 
-    const appCurrency = await this.interactionService.waitApprove(
-      env,
-      '/setting/token/add',
-      SuggestTokenMsg.type(),
-      params
-    );
+    // const appCurrency = await this.interactionService.waitApprove(
+    //   env,
+    //   '/setting/token/add',
+    //   SuggestTokenMsg.type(),
+    //   params
+    // );
 
-    await this.addToken(chainId, appCurrency as AppCurrency);
+    // await this.addToken(chainId, appCurrency as AppCurrency);
   }
 
   async addToken(chainId: string, currency: AppCurrency) {
@@ -145,7 +144,7 @@ export class TokensService {
           await this.saveTokensToChainAndAccount(chainId, currencies);
         } else {
           const index = currencies.findIndex(
-            (cur) => cur.coinMinimalDenom === currency.coinMinimalDenom
+            cur => cur.coinMinimalDenom === currency.coinMinimalDenom
           );
           if (index >= 0) {
             currencies[index] = currency;
@@ -182,13 +181,13 @@ export class TokensService {
 
     if (!isTokenForAccount) {
       const currencies = (await this.getTokensFromChain(chainId)).filter(
-        (cur) => cur.coinMinimalDenom !== currency.coinMinimalDenom
+        cur => cur.coinMinimalDenom !== currency.coinMinimalDenom
       );
       await this.saveTokensToChain(chainId, currencies);
     } else {
       const currencies = (
         await this.getTokensFromChainAndAccount(chainId)
-      ).filter((cur) => cur.coinMinimalDenom !== currency.coinMinimalDenom);
+      ).filter(cur => cur.coinMinimalDenom !== currency.coinMinimalDenom);
       await this.saveTokensToChainAndAccount(chainId, currencies);
     }
   }
@@ -395,7 +394,7 @@ export class TokensService {
     currency = await ERC20CurrencySchema.validateAsync(currency);
 
     // Validate the contract address.
-    if (!Web3.utils.isAddress(currency.contractAddress))
+    if (!currency.contractAddress.startsWith('0x'))
       throw new Error('Not a valid erc20 address');
     return currency;
   }
