@@ -154,6 +154,13 @@ export class ChainsService {
       stripUnknown: true
     });
 
+    if (!chainInfo.networkType) {
+      chainInfo = {
+        ...chainInfo,
+        networkType: 'cosmos'
+      };
+    }
+
     // await this.interactionKeeper.waitApprove(
     //   env,
     //   '/suggest-chain',

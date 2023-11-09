@@ -28,17 +28,12 @@ export const CW20CurrencySchema = (CurrencySchema as ObjectSchema<CW20Currency>)
     contractAddress: Joi.string().required()
   })
   .custom((value: CW20Currency) => {
-    if (
-      value.coinMinimalDenom.startsWith(
-        `${value.type}:${value.contractAddress}:`
-      )
-    ) {
+    if (value.coinMinimalDenom.startsWith(`${value.type}:${value.contractAddress}:`)) {
       return value;
     } else {
       return {
         ...value,
-        coinMinimalDenom:
-          `${value.type}:${value.contractAddress}:` + value.coinMinimalDenom
+        coinMinimalDenom: `${value.type}:${value.contractAddress}:` + value.coinMinimalDenom
       };
     }
   });
@@ -52,26 +47,19 @@ export const ERC20CurrencySchema = (CurrencySchema as ObjectSchema<ERC20Currency
     return value;
   });
 
-export const Secret20CurrencySchema = (
-  CurrencySchema as ObjectSchema<Secret20Currency>
-)
+export const Secret20CurrencySchema = (CurrencySchema as ObjectSchema<Secret20Currency>)
   .keys({
     type: Joi.string().equal('secret20').required(),
     contractAddress: Joi.string().required(),
     viewingKey: Joi.string().required()
   })
   .custom((value: Secret20Currency) => {
-    if (
-      value.coinMinimalDenom.startsWith(
-        `${value.type}:${value.contractAddress}:`
-      )
-    ) {
+    if (value.coinMinimalDenom.startsWith(`${value.type}:${value.contractAddress}:`)) {
       return value;
     } else {
       return {
         ...value,
-        coinMinimalDenom:
-          `${value.type}:${value.contractAddress}:` + value.coinMinimalDenom
+        coinMinimalDenom: `${value.type}:${value.contractAddress}:` + value.coinMinimalDenom
       };
     }
   });
@@ -100,10 +88,7 @@ export const ChainInfoSchema = Joi.object<ChainInfo>({
   stakeCurrency: CurrencySchema.required(),
   bip44: SuggestingBIP44Schema.required(),
   bech32Config: Bech32ConfigSchema.required(),
-  currencies: Joi.array()
-    .min(1)
-    .items(CurrencySchema, CW20CurrencySchema, Secret20CurrencySchema)
-    .required(),
+  currencies: Joi.array().min(1).items(CurrencySchema, CW20CurrencySchema, Secret20CurrencySchema).required(),
   feeCurrencies: Joi.array().min(1).items(CurrencySchema).required(),
   coinType: Joi.number().integer(),
   beta: Joi.boolean(),
@@ -113,16 +98,7 @@ export const ChainInfoSchema = Joi.object<ChainInfo>({
     high: Joi.number().required()
   }),
   features: Joi.array()
-    .items(
-      Joi.string().valid(
-        'stargate',
-        'cosmwasm',
-        'secretwasm',
-        'ibc-transfer',
-        'no-legacy-stdTx',
-        'ibc-go'
-      )
-    )
+    .items(Joi.string().valid('stargate', 'cosmwasm', 'secretwasm', 'ibc-transfer', 'no-legacy-stdTx', 'ibc-go'))
     .unique()
     .custom((value: string[]) => {
       if (value.indexOf('cosmwasm') >= 0 && value.indexOf('secretwasm') >= 0) {
