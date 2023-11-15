@@ -1,3 +1,4 @@
+import { ChainInfo } from '@owallet/types';
 import { PrivKeySecp256k1 } from '@owallet/crypto';
 import { Transaction, TransactionOptions } from 'ethereumjs-tx';
 import Common from '@ethereumjs/common';
@@ -59,8 +60,8 @@ export class KeyringHelper {
     const rawTxHex = '0x' + serializedTx.toString('hex');
     return rawTxHex;
   }
-  static isEthermintByChainId(chainId: string) {
-    const chainInfo = getChainInfoOrThrow(chainId);
+  static isEthermintByChainInfo(chainInfo: ChainInfo) {
+    // const chainInfo = getChainInfoOrThrow(chainId);
     const isEthermint = isEthermintLike(chainInfo);
     return isEthermint;
   }

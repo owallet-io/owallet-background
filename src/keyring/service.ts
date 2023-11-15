@@ -20,16 +20,7 @@ import {
 } from './types';
 import TronWeb from 'tronweb';
 
-import {
-  KVStore,
-  fetchAdapter,
-  EVMOS_NETWORKS,
-  MyBigInt,
-  getChainInfoOrThrow,
-  isEthermintLike,
-  escapeHTML,
-  sortObjectByKey
-} from '@owallet/common';
+import { KVStore, fetchAdapter, EVMOS_NETWORKS, MyBigInt, escapeHTML, sortObjectByKey } from '@owallet/common';
 import { ChainsService } from '../chains';
 import { LedgerService } from '../ledger';
 import { BIP44, ChainInfo, OWalletSignOptions, StdSignDoc, BIP44HDPath, AddressesLedger } from '@owallet/types';
@@ -69,7 +60,7 @@ export class KeyRingService {
     @inject(TYPES.CommonCrypto)
     protected readonly crypto: CommonCrypto
   ) {
-    this.keyRing = new KeyRing(embedChainInfos, kvStore, ledgerService, rng, crypto);
+    this.keyRing = new KeyRing(chainsService, kvStore, ledgerService, rng, crypto);
   }
 
   async restore(): Promise<{
@@ -261,8 +252,9 @@ export class KeyRingService {
   ): Promise<AminoSignResponse> {
     return this.requestSignEIP712CosmosTx_v0(env, origin, chainId, signer, eip712, signDoc, signOptions);
   }
-  processSignDocEIP712(signDoc: StdSignDoc, chainId: string, signer: string, keyInfo: Key) {
-    const isEthermint = KeyringHelper.isEthermintByChainId(chainId);
+  async processSignDocEIP712(signDoc: StdSignDoc, chainId: string, signer: string, keyInfo: Key) {
+    const chainInfo = await this.chainsService.getChainInfo(chainId);
+    const isEthermint = KeyringHelper.isEthermintByChainInfo(chainInfo);
     if (!isEthermint) {
       throw new Error('This feature is only usable on cosmos-sdk evm chain');
     }
@@ -270,7 +262,7 @@ export class KeyRingService {
     if (!keyInfo.isNanoLedger) {
       throw new Error('This feature is only usable on ledger ethereum app');
     }
-    const bech32Prefix = getChainInfoOrThrow(chainId).bech32Config.bech32PrefixAccAddr;
+    const bech32Prefix = (await this.chainsService.getChainInfo(chainId)).bech32Config.bech32PrefixAccAddr;
     const bech32Address = new Bech32Address(keyInfo.address).toBech32(bech32Prefix);
     if (signer !== bech32Address) {
       throw new Error('Signer mismatched');
@@ -297,11 +289,11 @@ export class KeyRingService {
     signOptions: OWalletSignOptions
   ): Promise<AminoSignResponse> {
     const coinType = await this.chainsService.getChainCoinType(chainId);
-    const keyInfo = this.keyRing.getKey(chainId, coinType);
+    const keyInfo = await this.keyRing.getKey(chainId, coinType);
     if (!keyInfo) {
       throw new Error('Null key info');
     }
-    signDoc = this.processSignDocEIP712(signDoc, chainId, signer, keyInfo);
+    signDoc = await this.processSignDocEIP712(signDoc, chainId, signer, keyInfo);
 
     let newSignDoc = (await this.interactionService.waitApprove(env, '/sign', 'request-sign', {
       msgOrigin: origin,
@@ -356,7 +348,7 @@ export class KeyRingService {
   ): Promise<AminoSignResponse> {
     const coinType = await this.chainsService.getChainCoinType(chainId);
 
-    const key = this.keyRing.getKey(chainId, coinType);
+    const key = await this.keyRing.getKey(chainId, coinType);
     const bech32Prefix = (await this.chainsService.getChainInfo(chainId)).bech32Config.bech32PrefixAccAddr;
     const bech32Address = new Bech32Address(key.address).toBech32(bech32Prefix);
     if (signer !== bech32Address) {
@@ -423,7 +415,7 @@ export class KeyRingService {
     const coinType = await this.chainsService.getChainCoinType(chainId);
 
     // sign get here
-    const key = this.keyRing.getKey(chainId, coinType);
+    const key = await this.keyRing.getKey(chainId, coinType);
     const bech32Address = new Bech32Address(key.address).toBech32(
       (await this.chainsService.getChainInfo(chainId)).bech32Config.bech32PrefixAccAddr
     );
@@ -608,7 +600,7 @@ export class KeyRingService {
   ): Promise<boolean> {
     const coinType = await this.chainsService.getChainCoinType(chainId);
 
-    const key = this.keyRing.getKey(chainId, coinType);
+    const key = await this.keyRing.getKey(chainId, coinType);
     const bech32Prefix = (await this.chainsService.getChainInfo(chainId)).bech32Config.bech32PrefixAccAddr;
     const bech32Address = new Bech32Address(key.address).toBech32(bech32Prefix);
     if (signer !== bech32Address) {
@@ -721,7 +713,7 @@ export class KeyRingService {
     const chainInfo = await this.chainsService.getChainInfo(chainId);
 
     for (const path of paths) {
-      const key = this.keyRing.getKeyFromCoinType(path.coinType);
+      const key = await this.keyRing.getKeyFromCoinType(path.coinType);
       const bech32Address = new Bech32Address(key.address).toBech32(chainInfo.bech32Config.bech32PrefixAccAddr);
 
       result.push({
