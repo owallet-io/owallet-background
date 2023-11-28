@@ -39,7 +39,7 @@ import {
   TypedMessage
 } from './types';
 import { KeyringHelper } from './utils';
-import { createTransaction, wallet } from '@owallet/bitcoin';
+import { createTransaction, wallet, getKeyPairByMnemonic, getKeyPairByPrivateKey } from '@owallet/bitcoin';
 import { isEthermintLike } from '@owallet/common';
 import { isArray, isNumber, isString } from 'util';
 import { BIP44HDPath } from '@owallet/types';
@@ -937,17 +937,6 @@ export class KeyRing {
     }
     if (!chainId) throw Error('ChainID Not Empty');
 
-    if (!message?.utxos) throw Error('UTXOS Not Empty');
-    if (!isArray(message?.blacklistedUtxos)) throw Error('BlacklistedUtxos must be Array type');
-    if (!message?.msgs?.address) throw Error('Address Not Empty');
-    if (!message?.msgs?.amount) throw Error('Amount Not Empty');
-    if (!isNumber(message?.msgs?.amount)) throw Error('Amount must be Number type');
-    if (!isNumber(message.msgs.confirmedBalance)) throw Error('ConfirmedBalance must be Number type');
-    if (!message.msgs.confirmedBalance) throw Error('ConfirmedBalance Not Empty');
-    if (!message.msgs.gasPriceStep) throw Error('GasPriceStep Not Empty');
-    if (!message.msgs.changeAddress) throw Error('Change Address Not Empty');
-    if (!isString(message.msgs.message)) throw Error('Message must be string type');
-
     if (this.keyStore.type === 'ledger') {
       const messageHex = Buffer.from(JSON.stringify(message));
       const signature = await this.sign(env, chainId, getCoinTypeByChainId(chainId), messageHex);
@@ -964,10 +953,24 @@ export class KeyRing {
       }
       return txRes?.data;
     } else {
-      if (!this.mnemonic) throw Error('Mnemonic Not Empty');
+      let keyPair;
+      if (!!this.mnemonic) {
+        keyPair = getKeyPairByMnemonic({
+          mnemonic: this.mnemonic,
+          selectedCrypto: chainId as string,
+          keyDerivationPath: '84'
+        });
+      } else if (!!this.privateKey) {
+        keyPair = getKeyPairByPrivateKey({
+          privateKey: this.privateKey,
+          selectedCrypto: chainId as string
+        });
+      }
+      if (!keyPair) throw Error('Your Mnemonic or Private Key is invalid');
+      console.log('🚀 ~ file: keyring.ts:962 ~ signAndBroadcastBitcoin ~ keyPair:', keyPair);
       const res = (await createTransaction({
         selectedCrypto: chainId,
-        mnemonic: this.mnemonic,
+        keyPair: keyPair,
         utxos: message.utxos,
         blacklistedUtxos: message.blacklistedUtxos,
         address: message.msgs.address,
