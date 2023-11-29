@@ -39,11 +39,11 @@ import {
   TypedMessage
 } from './types';
 import { KeyringHelper } from './utils';
-import { createTransaction, wallet, getKeyPairByMnemonic, getKeyPairByPrivateKey } from '@owallet/bitcoin';
-import { isEthermintLike } from '@owallet/common';
-import { isArray, isNumber, isString } from 'util';
+import { createTransaction, wallet, getKeyPairByMnemonic, getKeyPairByPrivateKey, getAddress } from '@owallet/bitcoin';
+import { isEthermintLike, getKeyDerivationFromAddressType } from '@owallet/common';
+
 import { BIP44HDPath } from '@owallet/types';
-import { handleAddressLedgerByChainId, getHDPath } from '../utils/helper';
+import { handleAddressLedgerByChainId } from '../utils/helper';
 import { AddressesLedger } from '@owallet/types';
 import { ChainsService } from 'src/chains';
 // inject TronWeb class
@@ -739,26 +739,19 @@ export class KeyRing {
       }
       return pubKey.getCosmosAddress();
     })();
-    // const keyPair = getKeyPair({
-    //   mnemonic: this.mnemonic,
-    //   selectedCrypto: chainId as string,
-    //   keyDerivationPath: '84'
-    // });
-    // console.log('private key length: ', keyPair.privateKey.length);
-    //this is address type legacyAddress using path m44'/0'/0/0/0 for bitcoin
-    // const legacyAddress = getAddress(keyPair, chainId, 'legacy');
-    // return {
-    //   algo: 'secp256k1',
-    //   pubKey: pubKey.toBytes(),
-    //   address: pubKey.getAddress(),
-    //   legacyAddress: legacyAddress,
-    //   isNanoLedger: false
-    // };
+    const keyPair = this.getKeyPairBtc(chainId as string, '44');
+    console.log('🚀 ~ file: keyring.ts:743 ~ loadKey ~ keyPair:', keyPair);
+
+    const legacyAddress = getAddress(keyPair, chainId, 'legacy');
+
+    console.log('🚀 ~ file: keyring.ts:745 ~ loadKey ~ legacyAddress:', legacyAddress);
+
     return {
       algo: isEthermint ? 'ethsecp256k1' : 'secp256k1',
       pubKey: pubKey.toBytes(),
       address: address,
-      isNanoLedger: this.keyStore.type === 'ledger'
+      isNanoLedger: this.keyStore.type === 'ledger',
+      legacyAddress: legacyAddress
     };
   }
   private loadPrivKey(coinType: number): PrivKeySecp256k1 {
@@ -777,7 +770,9 @@ export class KeyRing {
         return 44;
       })();
       const path = `m/${keyDelivery}'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
+
       const cachedKey = this.cached.get(path);
+
       if (cachedKey) {
         return new PrivKeySecp256k1(cachedKey);
       }
@@ -922,6 +917,23 @@ export class KeyRing {
       return this.processSignEvm(chainId, coinType, rpc, message);
     }
   }
+  protected getKeyPairBtc(chainId: string, keyDerivation: string = '84') {
+    let keyPair;
+    if (!!this.mnemonic) {
+      keyPair = getKeyPairByMnemonic({
+        mnemonic: this.mnemonic,
+        selectedCrypto: chainId as string,
+        keyDerivationPath: keyDerivation
+      });
+    } else if (!!this.privateKey) {
+      keyPair = getKeyPairByPrivateKey({
+        privateKey: this.privateKey,
+        selectedCrypto: chainId as string
+      });
+    }
+    if (!keyPair) throw Error('Your Mnemonic or Private Key is invalid');
+    return keyPair;
+  }
   public async signAndBroadcastBitcoin(env: Env, chainId: string, message: any): Promise<string> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
@@ -953,21 +965,12 @@ export class KeyRing {
       }
       return txRes?.data;
     } else {
-      let keyPair;
-      if (!!this.mnemonic) {
-        keyPair = getKeyPairByMnemonic({
-          mnemonic: this.mnemonic,
-          selectedCrypto: chainId as string,
-          keyDerivationPath: '84'
-        });
-      } else if (!!this.privateKey) {
-        keyPair = getKeyPairByPrivateKey({
-          privateKey: this.privateKey,
-          selectedCrypto: chainId as string
-        });
-      }
-      if (!keyPair) throw Error('Your Mnemonic or Private Key is invalid');
-      console.log('🚀 ~ file: keyring.ts:962 ~ signAndBroadcastBitcoin ~ keyPair:', keyPair);
+      console.log(
+        '🚀 ~ file: keyring.ts:967 ~ signAndBroadcastBitcoin ~ message.msgs.addressType:',
+        message.msgs.addressType
+      );
+      const keyDerivation = getKeyDerivationFromAddressType(message.msgs.addressType);
+      const keyPair = this.getKeyPairBtc(chainId, keyDerivation);
       const res = (await createTransaction({
         selectedCrypto: chainId,
         keyPair: keyPair,
@@ -979,8 +982,9 @@ export class KeyRing {
         changeAddress: message.msgs.changeAddress,
         message: message.msgs.message ?? '',
         transactionFee: message.msgs.gasPriceStep ?? 1,
-        addressType: 'bech32'
+        addressType: message.msgs.addressType
       })) as any;
+      console.log('🚀 ~ file: keyring.ts:985 ~ signAndBroadcastBitcoin ~ res:', res);
       if (res.error) {
         throw Error(res?.data?.message || 'Transaction Failed');
       }
