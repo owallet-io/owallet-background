@@ -739,13 +739,19 @@ export class KeyRing {
       }
       return pubKey.getCosmosAddress();
     })();
-    const keyPair = this.getKeyPairBtc(chainId as string, '44');
-    console.log('🚀 ~ file: keyring.ts:743 ~ loadKey ~ keyPair:', keyPair);
+    const networkType = getNetworkTypeByChainId(chainId);
+    const legacyAddress = (() => {
+      if (networkType === 'bitcoin') {
+        const keyPair = this.getKeyPairBtc(chainId as string, '44');
+        console.log('🚀 ~ file: keyring.ts:743 ~ loadKey ~ keyPair:', keyPair);
 
-    const legacyAddress = getAddress(keyPair, chainId, 'legacy');
+        const address = getAddress(keyPair, chainId, 'legacy');
 
-    console.log('🚀 ~ file: keyring.ts:745 ~ loadKey ~ legacyAddress:', legacyAddress);
-
+        console.log('🚀 ~ file: keyring.ts:745 ~ loadKey ~ legacyAddress:', address);
+        return address;
+      }
+      return null;
+    })();
     return {
       algo: isEthermint ? 'ethsecp256k1' : 'secp256k1',
       pubKey: pubKey.toBytes(),
