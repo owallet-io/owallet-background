@@ -21,7 +21,6 @@ export const schemaRequestSignBitcoin = Joi.object({
     totalFee: Joi.number().required(),
     selectedCrypto: Joi.string().required(),
     confirmedBalance: Joi.number().required(),
-    addressType: Joi.string().required(),
     gasPriceStep: Joi.number().required()
   }).required(),
   confirmedBalance: Joi.number().required(),

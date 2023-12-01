@@ -16,7 +16,7 @@ import {
 import { ChainIdHelper } from '@owallet/cosmos';
 import { Mnemonic, PrivKeySecp256k1, PubKeySecp256k1, RNG, Hash } from '@owallet/crypto';
 import { Env, OWalletError } from '@owallet/router';
-import { ChainInfo } from '@owallet/types';
+import { AddressBtcType, ChainInfo } from '@owallet/types';
 import AES from 'aes-js';
 import { Buffer } from 'buffer';
 import eccrypto from 'eccrypto-js';
@@ -39,7 +39,14 @@ import {
   TypedMessage
 } from './types';
 import { KeyringHelper } from './utils';
-import { createTransaction, wallet, getKeyPairByMnemonic, getKeyPairByPrivateKey, getAddress } from '@owallet/bitcoin';
+import {
+  createTransaction,
+  wallet,
+  getKeyPairByMnemonic,
+  getKeyPairByPrivateKey,
+  getAddress,
+  getAddressTypeByAddress
+} from '@owallet/bitcoin';
 import { isEthermintLike, getKeyDerivationFromAddressType } from '@owallet/common';
 
 import { BIP44HDPath } from '@owallet/types';
@@ -743,11 +750,7 @@ export class KeyRing {
     const legacyAddress = (() => {
       if (networkType === 'bitcoin') {
         const keyPair = this.getKeyPairBtc(chainId as string, '44');
-        console.log('🚀 ~ file: keyring.ts:743 ~ loadKey ~ keyPair:', keyPair);
-
         const address = getAddress(keyPair, chainId, 'legacy');
-
-        console.log('🚀 ~ file: keyring.ts:745 ~ loadKey ~ legacyAddress:', address);
         return address;
       }
       return null;
@@ -971,11 +974,8 @@ export class KeyRing {
       }
       return txRes?.data;
     } else {
-      console.log(
-        '🚀 ~ file: keyring.ts:967 ~ signAndBroadcastBitcoin ~ message.msgs.addressType:',
-        message.msgs.addressType
-      );
-      const keyDerivation = getKeyDerivationFromAddressType(message.msgs.addressType);
+      const addressType = getAddressTypeByAddress(message.msgs.address) as AddressBtcType;
+      const keyDerivation = getKeyDerivationFromAddressType(addressType);
       const keyPair = this.getKeyPairBtc(chainId, keyDerivation);
       const res = (await createTransaction({
         selectedCrypto: chainId,
@@ -988,9 +988,8 @@ export class KeyRing {
         changeAddress: message.msgs.changeAddress,
         message: message.msgs.message ?? '',
         transactionFee: message.msgs.gasPriceStep ?? 1,
-        addressType: message.msgs.addressType
+        addressType: addressType
       })) as any;
-      console.log('🚀 ~ file: keyring.ts:985 ~ signAndBroadcastBitcoin ~ res:', res);
       if (res.error) {
         throw Error(res?.data?.message || 'Transaction Failed');
       }
