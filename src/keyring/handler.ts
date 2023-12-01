@@ -214,16 +214,13 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
 
     const isInj = msg.chainId?.startsWith('injective');
     const pubkeyLedger = service.getKeyRingLedgerPubKey();
-
+    const bech32Address = new Bech32Address(key.address);
+    const { bech32PrefixAccAddr } = (await service.chainsService.getChainInfo(msg.chainId)).bech32Config;
     // hereee
     const bech32Convert =
       networkType === 'bitcoin'
-        ? new Bech32Address(key.address).toBech32Btc(
-            (await service.chainsService.getChainInfo(msg.chainId)).bech32Config.bech32PrefixAccAddr
-          )
-        : new Bech32Address(key.address).toBech32(
-            (await service.chainsService.getChainInfo(msg.chainId)).bech32Config.bech32PrefixAccAddr
-          );
+        ? bech32Address.toBech32Btc(bech32PrefixAccAddr)
+        : bech32Address.toBech32(bech32PrefixAccAddr);
     return {
       name: service.getKeyStoreMeta('name'),
       algo: 'secp256k1',

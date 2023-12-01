@@ -1,3 +1,4 @@
+import { EmbedChainInfos } from '@owallet/common';
 import * as BytesUtils from '@ethersproject/bytes';
 import { keccak256 } from '@ethersproject/keccak256';
 import { serialize } from '@ethersproject/transactions';
@@ -38,13 +39,13 @@ import {
   TypedMessage
 } from './types';
 import { KeyringHelper } from './utils';
-import { createTransaction, getAddress, getKeyPair, signAndCreateTransaction, wallet } from '@owallet/bitcoin';
-import { getChainInfoOrThrow } from '@owallet/common';
+import { createTransaction, wallet, getKeyPairByMnemonic, getKeyPairByPrivateKey } from '@owallet/bitcoin';
 import { isEthermintLike } from '@owallet/common';
 import { isArray, isNumber, isString } from 'util';
 import { BIP44HDPath } from '@owallet/types';
 import { handleAddressLedgerByChainId, getHDPath } from '../utils/helper';
 import { AddressesLedger } from '@owallet/types';
+import { ChainsService } from 'src/chains';
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
 export enum KeyRingStatus {
@@ -100,7 +101,7 @@ export class KeyRing {
   private _iv: string;
 
   constructor(
-    private readonly embedChainInfos: ChainInfo[],
+    private readonly chainsService: ChainsService,
     private readonly kvStore: KVStore,
     private readonly ledgerKeeper: LedgerService,
     private readonly rng: RNG,
@@ -215,8 +216,8 @@ export class KeyRing {
     return this.keyStore.coinTypeForChain[ChainIdHelper.parse(chainId).identifier];
   }
 
-  public getKey(chainId: string, defaultCoinType: number): Key {
-    return this.loadKey(this.computeKeyStoreCoinType(chainId, defaultCoinType), chainId);
+  public async getKey(chainId: string, defaultCoinType: number): Promise<Key> {
+    return await this.loadKey(this.computeKeyStoreCoinType(chainId, defaultCoinType), chainId);
   }
 
   public getKeyStoreMeta(key: string): string {
@@ -237,8 +238,8 @@ export class KeyRing {
       : defaultCoinType;
   }
 
-  public getKeyFromCoinType(coinType: number): Key {
-    return this.loadKey(coinType);
+  public async getKeyFromCoinType(coinType: number): Promise<Key> {
+    return await this.loadKey(coinType);
   }
 
   public async createMnemonicKey(
@@ -511,7 +512,8 @@ export class KeyRing {
 
   private updateLegacyKeyStore(keyStore: KeyStore) {
     keyStore.version = '1.2';
-    for (const chainInfo of this.embedChainInfos) {
+    // EmbedChainInfos
+    for (const chainInfo of EmbedChainInfos) {
       const coinType = (() => {
         if (chainInfo.alternativeBIP44s && chainInfo.alternativeBIP44s.length > 0) {
           return chainInfo.alternativeBIP44s[0].coinType;
@@ -572,12 +574,11 @@ export class KeyRing {
   }
 
   public async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string, chainId: string | number) {
-    
     try {
       if (!this.keyStore) {
         throw new Error('Empty key store');
       }
-      const chainInfo = getChainInfoOrThrow(chainId as string);
+      const chainInfo = await this.chainsService.getChainInfo(chainId as string);
       const ledgerAppType = getLedgerAppNameByNetwork(chainInfo.networkType, chainId);
       const path = splitPath(bip44HDPath);
       // Update ledger address here with this function below
@@ -713,7 +714,7 @@ export class KeyRing {
       return privKey.getPubKey();
     }
   }
-  private loadKey(coinType: number, chainId?: string | number): Key {
+  private async loadKey(coinType: number, chainId?: string | number): Promise<Key> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -722,9 +723,9 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    const isEthermint = (() => {
+    const isEthermint = await (async () => {
       if (chainId) {
-        const chainInfo = getChainInfoOrThrow(chainId as string);
+        const chainInfo = await this.chainsService.getChainInfo(chainId as string);
         const rs = isEthermintLike(chainInfo);
         return rs;
       }
@@ -851,8 +852,8 @@ export class KeyRing {
       const privKey = this.loadPrivKey(coinType);
 
       // Check cointype = 60 in the case that network is evmos(still cosmos but need to sign with ethereum)
-
-      if (KeyringHelper.isEthermintByChainId(chainId)) {
+      const chainInfo = await this.chainsService.getChainInfo(chainId);
+      if (KeyringHelper.isEthermintByChainInfo(chainInfo)) {
         // Only check coinType === 195 for Tron network, because tron is evm but had cointype = 195, not 60
         if (coinType === 195) {
           return this.signTron(privKey, message);
@@ -936,17 +937,6 @@ export class KeyRing {
     }
     if (!chainId) throw Error('ChainID Not Empty');
 
-    if (!message?.utxos) throw Error('UTXOS Not Empty');
-    if (!isArray(message?.blacklistedUtxos)) throw Error('BlacklistedUtxos must be Array type');
-    if (!message?.msgs?.address) throw Error('Address Not Empty');
-    if (!message?.msgs?.amount) throw Error('Amount Not Empty');
-    if (!isNumber(message?.msgs?.amount)) throw Error('Amount must be Number type');
-    if (!isNumber(message.msgs.confirmedBalance)) throw Error('ConfirmedBalance must be Number type');
-    if (!message.msgs.confirmedBalance) throw Error('ConfirmedBalance Not Empty');
-    if (!message.msgs.gasPriceStep) throw Error('GasPriceStep Not Empty');
-    if (!message.msgs.changeAddress) throw Error('Change Address Not Empty');
-    if (!isString(message.msgs.message)) throw Error('Message must be string type');
-
     if (this.keyStore.type === 'ledger') {
       const messageHex = Buffer.from(JSON.stringify(message));
       const signature = await this.sign(env, chainId, getCoinTypeByChainId(chainId), messageHex);
@@ -963,10 +953,24 @@ export class KeyRing {
       }
       return txRes?.data;
     } else {
-      if (!this.mnemonic) throw Error('Mnemonic Not Empty');
+      let keyPair;
+      if (!!this.mnemonic) {
+        keyPair = getKeyPairByMnemonic({
+          mnemonic: this.mnemonic,
+          selectedCrypto: chainId as string,
+          keyDerivationPath: '84'
+        });
+      } else if (!!this.privateKey) {
+        keyPair = getKeyPairByPrivateKey({
+          privateKey: this.privateKey,
+          selectedCrypto: chainId as string
+        });
+      }
+      if (!keyPair) throw Error('Your Mnemonic or Private Key is invalid');
+      console.log('🚀 ~ file: keyring.ts:962 ~ signAndBroadcastBitcoin ~ keyPair:', keyPair);
       const res = (await createTransaction({
         selectedCrypto: chainId,
-        mnemonic: this.mnemonic,
+        keyPair: keyPair,
         utxos: message.utxos,
         blacklistedUtxos: message.blacklistedUtxos,
         address: message.msgs.address,
