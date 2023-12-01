@@ -9,9 +9,10 @@ import { signatureImport, publicKeyConvert } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
 import { EIP712MessageValidator, stringifyPath, ethSignatureToBytes, domainHash, messageHash } from '../utils/helper';
-import { LedgerAppType } from '@owallet/common';
+import { LedgerAppType, getKeyDerivationFromAddressType, keyDerivationToAddressType } from '@owallet/common';
 import { payments } from 'bitcoinjs-lib';
 import { convertStringToMessage, getCoinNetwork, getTransactionHex, toBufferLE } from '@owallet/bitcoin';
+import { KeyDerivationTypeEnum } from '@owallet/types';
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
 export interface UTXO {
   txid: string;
@@ -152,8 +153,12 @@ export class LedgerInternal {
     } else if (this.ledgerApp instanceof BtcApp) {
       try {
         const pathBtc = stringifyPath(path);
+        const keyDerivation = path[0].toString() as KeyDerivationTypeEnum;
+        const format = keyDerivationToAddressType(keyDerivation);
+        console.log('🚀 ~ file: ledger-internal.ts:158 ~ LedgerInternal ~ getPublicKey ~ format:', format);
+        console.log('🚀 ~ file: ledger-internal.ts:155 ~ LedgerInternal ~ getPublicKey ~ pathBtc:', pathBtc);
         const { publicKey, bitcoinAddress } = await this.ledgerApp.getWalletPublicKey(pathBtc, {
-          format: 'bech32',
+          format: format,
           verify: false
         });
 
