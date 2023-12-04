@@ -227,12 +227,12 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
       pubKey: key.pubKey,
       address: key.address,
       bech32Address: (() => {
-        if (isInj && key.isNanoLedger) {
-          return pubkeyLedger && pubkeyLedger['eth'] ? bech32Convert : '';
-        }
+        // if (isInj && key.isNanoLedger) {
+        //   return pubkeyLedger && pubkeyLedger['eth'] ? bech32Convert : '';
+        // }
         return bech32Convert;
       })(),
-      legacyAddress: key.legacyAddress ?? '',
+      // legacyAddress: key.legacyAddress ?? '',
       isNanoLedger: key.isNanoLedger
     };
   };

@@ -710,6 +710,26 @@ export class KeyRing {
     await this.save();
     return this.getMultiKeyStoreInfo();
   }
+  public async updateKeyDerivation(index: number, keyDerivation: string): Promise<MultiKeyStoreInfoWithSelected> {
+    if (this.status !== KeyRingStatus.UNLOCKED) {
+      throw new Error('Key ring is not unlocked');
+    }
+
+    const keyStore = this.multiKeyStore[index];
+
+    if (!keyStore) {
+      throw new Error('Empty key store');
+    }
+
+    keyStore.keyDerivation = keyDerivation;
+
+    // If select key store and changed store are same, sync keystore
+    if (this.keyStore && KeyRing.getKeyStoreId(this.keyStore) === KeyRing.getKeyStoreId(keyStore)) {
+      this.keyStore = keyStore;
+    }
+    await this.save();
+    return this.getMultiKeyStoreInfo();
+  }
   private getPubKey(coinType): PubKeySecp256k1 {
     if (this.keyStore.type === 'ledger') {
       const appName = getNetworkTypeByBip44HDPath({ coinType: coinType } as BIP44HDPath);
@@ -752,25 +772,12 @@ export class KeyRing {
       }
       return pubKey.getCosmosAddress();
     })();
-    const networkType = getNetworkTypeByChainId(chainId);
-    const legacyAddress = (() => {
-      if (networkType === 'bitcoin') {
-        if (this.keyStore.type !== 'ledger') {
-          const keyPair = this.getKeyPairBtc(chainId as string, '44');
-          const address = getAddress(keyPair, chainId, 'legacy');
-          return address;
-        } else {
-          return null;
-        }
-      }
-      return null;
-    })();
+
     return {
       algo: isEthermint ? 'ethsecp256k1' : 'secp256k1',
       pubKey: pubKey.toBytes(),
       address: address,
-      isNanoLedger: this.keyStore.type === 'ledger',
-      legacyAddress: legacyAddress
+      isNanoLedger: this.keyStore.type === 'ledger'
     };
   }
   private loadPrivKey(coinType: number): PrivKeySecp256k1 {
@@ -1661,9 +1668,10 @@ export class KeyRing {
     mnemonic: string,
     password: string,
     meta: Record<string, string>,
-    bip44HDPath: BIP44HDPath
+    bip44HDPath: BIP44HDPath,
+    keyDerivation:string
   ): Promise<KeyStore> {
-    return await Crypto.encrypt(rng, crypto, kdf, 'mnemonic', mnemonic, password, meta, bip44HDPath);
+    return await Crypto.encrypt(rng, crypto, kdf, 'mnemonic', mnemonic, password, meta, bip44HDPath,keyDerivation);
   }
 
   private static async CreatePrivateKeyStore(
