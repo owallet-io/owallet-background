@@ -760,7 +760,7 @@ export class KeyRing {
           const address = getAddress(keyPair, chainId, 'legacy');
           return address;
         } else {
-          return null;
+          return this.addresses[chainId === 'bitcoinTestnet' ? 'tbtc' : 'btc'];
         }
       }
       return null;
@@ -850,13 +850,21 @@ export class KeyRing {
       }
       const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
 
-      const path = [
-        networkType === 'bitcoin' ? 84 : 44,
-        coinType,
-        bip44HDPath.account,
-        bip44HDPath.change,
-        bip44HDPath.addressIndex
-      ];
+      const keyDerivation = (() => {
+        const msgObj = JSON.parse(Buffer.from(message).toString());
+        const addressType = getAddressTypeByAddress(msgObj.address) as AddressBtcType;
+        // console.log('🚀 ~ file: keyring.ts:853 ~ msgObj:', msgObj);
+        if (networkType === 'bitcoin') {
+          if (addressType === AddressBtcType.Bech32) {
+            return 84;
+          } else if (addressType === AddressBtcType.Legacy) {
+            return 44;
+          }
+        }
+        return 44;
+      })();
+
+      const path = [keyDerivation, coinType, bip44HDPath.account, bip44HDPath.change, bip44HDPath.addressIndex];
 
       const ledgerAppType: LedgerAppType = getLedgerAppNameByNetwork(networkType, chainId);
       // Need to check ledger here and ledger app type by chainId
@@ -984,7 +992,7 @@ export class KeyRing {
       }
       return txRes?.data;
     } else {
-      const addressType = getAddressTypeByAddress(message.msgs.address) as AddressBtcType;
+      const addressType = getAddressTypeByAddress(message.msgs.changeAddress) as AddressBtcType;
       const keyDerivation = getKeyDerivationFromAddressType(addressType);
       const keyPair = this.getKeyPairBtc(chainId, keyDerivation);
       const res = (await createTransaction({
