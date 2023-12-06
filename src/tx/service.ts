@@ -49,9 +49,14 @@ export async function request(rpc: string, method: string, params: any[]): Promi
     }
   );
 
+  console.log('🚀 ~ file: service.ts ~ line 48 ~ params', params);
+  console.log('🚀 ~ file: service.ts ~ line 48 ~ method', method);
+  console.log('🚀 ~ file: service.ts ~ line 55 ~ response', response);
+
   if (response.data.result) return response.data.result;
   if (response.data.error) throw new Error(JSON.stringify(response.data.error));
-  throw new Error(`Unexpected error from the network: ${JSON.stringify(response.data)}`);
+  return response.data;
+  // throw new Error(`Unexpected error from the network: ${JSON.stringify(response.data)}`);
 }
 
 @singleton()
@@ -120,7 +125,7 @@ export class BackgroundTxService {
       const txHash = Buffer.from(txResponse.txhash, 'hex');
 
       const txTracer = new TendermintTxTracer(chainInfo.rpc, '/websocket');
-      txTracer.traceTx(txHash).then((tx) => {
+      txTracer.traceTx(txHash).then(tx => {
         txTracer.close();
         BackgroundTxService.processTxResultNotification(this.notification, tx);
       });
@@ -128,7 +133,6 @@ export class BackgroundTxService {
       return txHash;
     } catch (e: any) {
       console.log(e);
-      alert(e.message);
       BackgroundTxService.processTxErrorNotification(this.notification, e);
       throw e;
     }
