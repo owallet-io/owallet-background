@@ -55,7 +55,8 @@ export async function request(rpc: string, method: string, params: any[]): Promi
 
   if (response.data.result) return response.data.result;
   if (response.data.error) throw new Error(JSON.stringify(response.data.error));
-  throw new Error(`Unexpected error from the network: ${JSON.stringify(response.data)}`);
+  return response.data;
+  // throw new Error(`Unexpected error from the network: ${JSON.stringify(response.data)}`);
 }
 
 @singleton()
