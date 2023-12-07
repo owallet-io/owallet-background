@@ -1005,7 +1005,7 @@ export class KeyRing {
         confirmedBalance: message.msgs.confirmedBalance,
         changeAddress: message.msgs.changeAddress,
         message: message.msgs.message ?? '',
-        transactionFee: message.msgs.gasPriceStep ?? 1,
+        transactionFee: message.msgs.feeRate ?? 1,
         addressType: addressType
       })) as any;
       if (res.error) {
