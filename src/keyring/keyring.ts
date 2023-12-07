@@ -995,36 +995,34 @@ export class KeyRing {
       const addressType = getAddressTypeByAddress(message.msgs.changeAddress) as AddressBtcType;
       const keyDerivation = getKeyDerivationFromAddressType(addressType);
       const keyPair = this.getKeyPairBtc(chainId, keyDerivation);
-      try {
-        const res = (await createTransaction({
-          selectedCrypto: chainId,
-          keyPair: keyPair,
-          utxos: message.utxos,
-          recipient: message.msgs.address,
-          amount: message.msgs.amount,
-          sender: message.msgs.changeAddress,
-          message: message.msgs.message ?? '',
-          transactionFee: message.msgs.feeRate ?? MIN_FEE_RATE
-        })) as any;
-        console.log('🚀 ~ file: keyring.ts:1009 ~ signAndBroadcastBitcoin ~ res:', res);
-        if (res.error) {
-          throw Error(res?.data?.message || 'Transaction Failed');
-        }
-        const txRes = await wallet.pushtx.default({
-          rawTx: res.data,
-          selectedCrypto: chainId
-        });
 
-        if (txRes?.error) {
-          throw Error(txRes?.data?.message || 'Transaction Failed');
-        }
-        if (txRes?.data?.code) {
-          throw Error(txRes?.data?.message || 'Transaction Failed');
-        }
-        return txRes?.data;
-      } catch (error) {
-        console.log('🚀 ~ file: keyring.ts:1025 ~ signAndBroadcastBitcoin ~ error:', error);
+      const res = (await createTransaction({
+        selectedCrypto: chainId,
+        keyPair: keyPair,
+        utxos: message.utxos,
+        recipient: message.msgs.address,
+        amount: message.msgs.amount,
+        sender: message.msgs.changeAddress,
+        message: message.msgs.message ?? '',
+        transactionFee: message.msgs.feeRate ?? MIN_FEE_RATE
+      })) as any;
+      console.log('🚀 ~ file: keyring.ts:1009 ~ signAndBroadcastBitcoin ~ res:', res);
+      if (res.error) {
+        throw Error(res?.data?.message || 'Transaction Failed');
       }
+      const txRes = await wallet.pushtx.default({
+        rawTx: res.data,
+        selectedCrypto: chainId
+      });
+      console.log('🚀 ~ file: keyring.ts:1017 ~ signAndBroadcastBitcoin ~ txRes:', txRes);
+
+      if (txRes?.error) {
+        throw Error(txRes?.data?.message || 'Transaction Failed');
+      }
+      if (txRes?.data?.code) {
+        throw Error(txRes?.data?.message || 'Transaction Failed');
+      }
+      return txRes?.data;
     }
   }
 
