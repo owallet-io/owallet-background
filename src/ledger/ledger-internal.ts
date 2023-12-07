@@ -304,7 +304,8 @@ export class LedgerInternal {
       selectedCrypto: selectCrypto,
       totalFee: feeAmount,
       transactionFee,
-      keyPair
+      keyPair,
+      isLedger: true
     });
     const addressType = getAddressTypeByAddress(changeAddress) as AddressBtcType;
 
