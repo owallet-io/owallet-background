@@ -254,7 +254,7 @@ export class LedgerInternal {
           stringifyPath(path),
           msgObject.msgs.amount,
           msgObject.utxos,
-          msgObject.msgs.address,
+          msgObject.msgs.recipient,
           msgObject.msgs.selectedCrypto,
           msgObject.msgs.sender,
           msgObject.msgs.totalFee,
@@ -306,9 +306,13 @@ export class LedgerInternal {
       keyPair
     });
     const addressType = getAddressTypeByAddress(sender) as AddressBtcType;
+    console.log(
+      '🚀 ~ file: ledger-internal.ts:319 ~ LedgerInternal ~ constinputs:Array<[Transaction,number,string|null,number|null]>=utxos.map ~ utxos:',
+      utxos
+    );
     const inputs: Array<[Transaction, number, string | null, number | null]> = utxos.map(({ hex, txid, vout }) => {
       if (!hex) {
-        throw Error(`Missing 'txHex' for UTXO (txHash ${hex})`);
+        throw Error(`Missing 'txHex' for UTXO (txHash ${txid})`);
       }
       const splittedTx = this.ledgerApp.splitTransaction(
         hex,
@@ -316,7 +320,13 @@ export class LedgerInternal {
       );
       return [splittedTx, vout, null, null];
     });
+    console.log(
+      '🚀 ~ file: ledger-internal.ts:323 ~ LedgerInternal ~ constinputs:Array<[Transaction,number,string|null,number|null]>=utxos.map ~ inputs:',
+      inputs
+    );
+
     const associatedKeysets = utxos.map((tx) => path);
+    console.log('🚀 ~ file: ledger-internal.ts:329 ~ LedgerInternal ~ associatedKeysets:', associatedKeysets);
     const newTxHex = psbt.data.globalMap.unsignedTx.toBuffer().toString('hex');
     const newTx: Transaction = this.ledgerApp.splitTransaction(newTxHex, true);
     const outputScriptHex = this.ledgerApp.serializeTransactionOutputs(newTx).toString('hex');
@@ -331,6 +341,7 @@ export class LedgerInternal {
             useTrustedInputForSegwit: true,
             additionals: ['bech32']
           };
+    console.log('🚀 ~ file: ledger-internal.ts:334 ~ LedgerInternal ~ extraData:', extraData);
     const txHex = await this.ledgerApp.createPaymentTransactionNew({
       inputs,
       associatedKeysets,

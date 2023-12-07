@@ -1,4 +1,4 @@
-import { EmbedChainInfos, convertBip44ToHDPath, splitPathStringToHDPath } from '@owallet/common';
+import { EmbedChainInfos, MIN_FEE_RATE, convertBip44ToHDPath, splitPathStringToHDPath } from '@owallet/common';
 import * as BytesUtils from '@ethersproject/bytes';
 import { keccak256 } from '@ethersproject/keccak256';
 import { serialize } from '@ethersproject/transactions';
@@ -1003,7 +1003,7 @@ export class KeyRing {
         amount: message.msgs.amount,
         sender: message.msgs.sender,
         message: message.msgs.message ?? '',
-        transactionFee: message.msgs.feeRate ?? 5
+        transactionFee: message.msgs.feeRate ?? MIN_FEE_RATE
       })) as any;
       if (res.error) {
         throw Error(res?.data?.message || 'Transaction Failed');
