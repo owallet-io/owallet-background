@@ -12,16 +12,18 @@ export const schemaRequestSignBitcoin = Joi.object({
       )
       .required()
   }).required(),
-  recipient: Joi.string().required(),
+  address: Joi.string().required(),
   msgs: Joi.object({
-    recipient: Joi.string().required(),
-    sender: Joi.string().required(),
+    address: Joi.string().required(),
+    changeAddress: Joi.string().required(),
     amount: Joi.number().required(),
     message: Joi.string().empty(''),
     totalFee: Joi.number().required(),
     selectedCrypto: Joi.string().required(),
+    confirmedBalance: Joi.number().required(),
     feeRate: Joi.number().required()
   }).required(),
+  confirmedBalance: Joi.number().required(),
   utxos: Joi.array()
     .items(
       Joi.object({
@@ -38,6 +40,7 @@ export const schemaRequestSignBitcoin = Joi.object({
       })
     )
     .empty(),
+  blacklistedUtxos: Joi.array().items(Joi.object()).empty(),
   amount: Joi.number().required(),
   feeRate: Joi.number().required()
 });

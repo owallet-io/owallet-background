@@ -992,18 +992,21 @@ export class KeyRing {
       }
       return txRes?.data;
     } else {
-      const addressType = getAddressTypeByAddress(message.msgs.sender) as AddressBtcType;
+      const addressType = getAddressTypeByAddress(message.msgs.changeAddress) as AddressBtcType;
       const keyDerivation = getKeyDerivationFromAddressType(addressType);
       const keyPair = this.getKeyPairBtc(chainId, keyDerivation);
       const res = (await createTransaction({
         selectedCrypto: chainId,
         keyPair: keyPair,
         utxos: message.utxos,
-        recipient: message.msgs.recipient,
+        blacklistedUtxos: message.blacklistedUtxos,
+        address: message.msgs.address,
         amount: message.msgs.amount,
-        sender: message.msgs.sender,
+        confirmedBalance: message.msgs.confirmedBalance,
+        changeAddress: message.msgs.changeAddress,
         message: message.msgs.message ?? '',
-        transactionFee: message.msgs.feeRate ?? MIN_FEE_RATE
+        transactionFee: message.msgs.feeRate ?? 1,
+        addressType: addressType
       })) as any;
       if (res.error) {
         throw Error(res?.data?.message || 'Transaction Failed');

@@ -5,13 +5,20 @@ import TrxApp from '@ledgerhq/hw-app-trx';
 import BtcApp from '@ledgerhq/hw-app-btc';
 import TransportWebHID from '@ledgerhq/hw-transport-webhid';
 import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
-import { signatureImport } from 'secp256k1';
+import { signatureImport, publicKeyConvert } from 'secp256k1';
 import { Buffer } from 'buffer';
 import { OWalletError } from '@owallet/router';
 import { EIP712MessageValidator, stringifyPath, ethSignatureToBytes, domainHash, messageHash } from '../utils/helper';
-import { LedgerAppType, keyDerivationToAddressType } from '@owallet/common';
+import { LedgerAppType, getKeyDerivationFromAddressType, keyDerivationToAddressType } from '@owallet/common';
 import * as Bitcoin from 'bitcoinjs-lib';
-import { buildTx, getAddressTypeByAddress, getCoinNetwork } from '@owallet/bitcoin';
+import {
+  buildTxLegacy,
+  convertStringToMessage,
+  getAddressTypeByAddress,
+  getCoinNetwork,
+  getTransactionHex,
+  toBufferLE
+} from '@owallet/bitcoin';
 import { AddressBtcType, KeyDerivationTypeEnum } from '@owallet/types';
 import { Transaction } from '@ledgerhq/hw-app-btc/lib/types';
 export type TransportIniter = (...args: any[]) => Promise<Transport>;
@@ -156,6 +163,8 @@ export class LedgerInternal {
         const pathBtc = stringifyPath(path);
         const keyDerivation = path[0].toString() as KeyDerivationTypeEnum;
         const format = keyDerivationToAddressType(keyDerivation);
+        console.log('🚀 ~ file: ledger-internal.ts:158 ~ LedgerInternal ~ getPublicKey ~ format:', format);
+        console.log('🚀 ~ file: ledger-internal.ts:155 ~ LedgerInternal ~ getPublicKey ~ pathBtc:', pathBtc);
         const { publicKey, bitcoinAddress } = await this.ledgerApp.getWalletPublicKey(pathBtc, {
           format: format,
           verify: false
@@ -164,6 +173,7 @@ export class LedgerInternal {
         const pubKey = Buffer.from(publicKey, 'hex');
         // Compress the public key
         return {
+          // publicKey: publicKeyConvert(pubKey, true),
           address: bitcoinAddress,
           publicKey: pubKey
         };
@@ -244,24 +254,66 @@ export class LedgerInternal {
         address: string;
         publicKey: Buffer;
       };
+      console.log('🚀 ~ file: ledger-internal.ts:254 ~ LedgerInternal ~ data ~ data:', data);
+      // const mapData = msgObject.utxos.map(async (utxo) => {
+      //   const transaction = await getTransactionHex({
+      //     txId: utxo.txid,
+      //     coin: msgObject.msgs.selectedCrypto
+      //   });
+
+      //   return {
+      //     hex: transaction.data,
+      //     ...utxo
+      //   };
+      // });
 
       try {
+        // const utxos = await Promise.all(mapData);
         const keyPair = Bitcoin.ECPair.fromPublicKey(data.publicKey, {
           network: getCoinNetwork(msgObject.msgs.selectedCrypto)
         });
         // const addressType = getAddressTypeByAddress(msgObject.msgs.changeAddress) as AddressBtcType;
-        return await this.signTransactionBtc(
+        return await this.signTransactionLegacyBtc(
           stringifyPath(path),
           msgObject.msgs.amount,
           msgObject.utxos,
-          msgObject.msgs.recipient,
+          msgObject.msgs.address,
           msgObject.msgs.selectedCrypto,
-          msgObject.msgs.sender,
+          msgObject.msgs.changeAddress,
           msgObject.msgs.totalFee,
           msgObject.msgs.message,
           msgObject.msgs.feeRate,
           keyPair
         );
+        // if (addressType === AddressBtcType.Legacy) {
+        //   const signature = await this.signTransactionLegacyBtc(
+        //     stringifyPath(path),
+        //     msgObject.msgs.amount,
+        //     utxos,
+        //     msgObject.msgs.address,
+        //     msgObject.msgs.selectedCrypto,
+        //     msgObject.msgs.changeAddress,
+        //     msgObject.msgs.totalFee,
+        //     msgObject.msgs.message,
+        //     msgObject.msgs.feeRate
+        //   );
+
+        //   return signature;
+        // } else if (addressType === AddressBtcType.Bech32) {
+        //   const signature = await this.signTransactionBtc(
+        //     stringifyPath(path),
+        //     msgObject.msgs.amount,
+        //     utxos,
+        //     msgObject.msgs.address,
+        //     msgObject.msgs.selectedCrypto,
+        //     msgObject.msgs.changeAddress,
+        //     msgObject.msgs.confirmedBalance,
+        //     msgObject.msgs.totalFee,
+        //     msgObject.msgs.message
+        //   );
+
+        //   return signature;
+        // }
       } catch (error) {
         console.log('🚀 ~ file: ledger-internal.ts:240 ~ LedgerInternal ~ sign ~ error:', error);
       }
@@ -281,55 +333,128 @@ export class LedgerInternal {
       await this.ledgerApp.transport.close();
     }
   }
-
   async signTransactionBtc(
+    path: string,
+    amount: number,
+    utxos: Array<UTXO & { hex: string }>,
+    toAddress: string,
+    selectCrypto: string,
+    changeAddress: string,
+    confirmAmount: number,
+    feeAmount: number,
+    message: string
+  ): Promise<string> {
+    const txs = utxos.map((utxo) => {
+      return {
+        tx: this.ledgerApp.splitTransaction(utxo.hex, true),
+        ...utxo
+      };
+    });
+    const script = Bitcoin.payments.p2wpkh({
+      address: toAddress,
+      network: getCoinNetwork(selectCrypto)
+    });
+    const scriptChangeAddress = Bitcoin.payments.p2wpkh({
+      address: changeAddress,
+      network: getCoinNetwork(selectCrypto)
+    });
+    const refundBalance = BigInt(confirmAmount) - (BigInt(amount) + BigInt(feeAmount));
+    const targets = [
+      {
+        amount: toBufferLE(BigInt(amount), 8),
+        script: script.output!
+      },
+      {
+        amount: toBufferLE(refundBalance, 8),
+        script: scriptChangeAddress.output!
+      }
+    ];
+    if (!!message) {
+      const msgCobvert = convertStringToMessage(message);
+      const messageLength = msgCobvert.length;
+      const lengthMin = 5;
+      //This is a patch for the following: https://github.com/coreyphillips/moonshine/issues/52
+      const buffers: any = [msgCobvert];
+      if (messageLength > 0 && messageLength < lengthMin)
+        buffers.push(Buffer.from(' '.repeat(lengthMin - messageLength), 'utf8'));
+      const data = Buffer.concat(buffers);
+      const embed = Bitcoin.payments.embed({
+        data: [data],
+        network: getCoinNetwork(selectCrypto)
+      });
+      targets.push({ script: embed.output, amount: toBufferLE(0, 8) });
+    }
+    const outputScript = this.ledgerApp
+      .serializeTransactionOutputs({
+        version: Buffer.from('01000000', 'hex'),
+        inputs: [],
+        outputs: targets
+      })
+      .toString('hex');
+
+    const associatedKeysets = txs.map((tx) => path);
+    console.log('🚀 ~ file: ledger-internal.ts:376 ~ LedgerInternal ~ associatedKeysets:', associatedKeysets);
+    const signature = this.ledgerApp.createPaymentTransactionNew({
+      inputs: txs.map((utxo) => {
+        return [utxo.tx, utxo.vout, null, null];
+      }),
+      associatedKeysets,
+      outputScriptHex: outputScript,
+      segwit: true,
+      additionals: ['bitcoin', 'bech32']
+    });
+
+    return signature;
+  }
+  async signTransactionLegacyBtc(
     path: string,
     amount: number,
     utxosData: Array<UTXO & { hex: string }>,
     toAddress: string,
     selectCrypto: string,
-    sender: string,
+    changeAddress: string,
     feeAmount: number,
     message: string,
     transactionFee: number,
     keyPair: any
   ): Promise<string> {
-    const { psbt, utxos } = await buildTx({
+    const { psbt, utxos } = await buildTxLegacy({
       recipient: toAddress,
       amount: amount,
       utxos: utxosData,
-      sender: sender,
+      sender: changeAddress,
       memo: message,
       selectedCrypto: selectCrypto,
       totalFee: feeAmount,
       transactionFee,
       keyPair
     });
-    const addressType = getAddressTypeByAddress(sender) as AddressBtcType;
-    console.log(
-      '🚀 ~ file: ledger-internal.ts:319 ~ LedgerInternal ~ constinputs:Array<[Transaction,number,string|null,number|null]>=utxos.map ~ utxos:',
-      utxos
-    );
+    const addressType = getAddressTypeByAddress(changeAddress) as AddressBtcType;
+    console.log('🚀 ~ file: ledger-internal.ts:410 ~ LedgerInternal ~ psbt:', psbt);
+    console.log('🚀 ~ file: ledger-internal.ts:410 ~ LedgerInternal ~ utxos:', utxos);
     const inputs: Array<[Transaction, number, string | null, number | null]> = utxos.map(({ hex, txid, vout }) => {
       if (!hex) {
         throw Error(`Missing 'txHex' for UTXO (txHash ${txid})`);
       }
+      // const utxoTx = Bitcoin.Transaction.fromHex(txid);
+
       const splittedTx = this.ledgerApp.splitTransaction(
         hex,
         addressType === AddressBtcType.Bech32 /* no segwit support */
       );
       return [splittedTx, vout, null, null];
     });
-    console.log(
-      '🚀 ~ file: ledger-internal.ts:323 ~ LedgerInternal ~ constinputs:Array<[Transaction,number,string|null,number|null]>=utxos.map ~ inputs:',
-      inputs
-    );
+    console.log('🚀 ~ file: ledger-internal.ts:415 ~ LedgerInternal:', inputs);
 
+    // const associatedKeysets: string[] = inputs.map((_) => path);
     const associatedKeysets = utxos.map((tx) => path);
-    console.log('🚀 ~ file: ledger-internal.ts:329 ~ LedgerInternal ~ associatedKeysets:', associatedKeysets);
+    console.log('🚀 ~ file: ledger-internal.ts:418 ~ LedgerInternal ~ associatedKeysets:', associatedKeysets);
+
     const newTxHex = psbt.data.globalMap.unsignedTx.toBuffer().toString('hex');
     const newTx: Transaction = this.ledgerApp.splitTransaction(newTxHex, true);
+
     const outputScriptHex = this.ledgerApp.serializeTransactionOutputs(newTx).toString('hex');
+
     const extraData =
       addressType === AddressBtcType.Legacy
         ? {
@@ -341,7 +466,7 @@ export class LedgerInternal {
             useTrustedInputForSegwit: true,
             additionals: ['bech32']
           };
-    console.log('🚀 ~ file: ledger-internal.ts:334 ~ LedgerInternal ~ extraData:', extraData);
+    console.log('🚀 ~ file: ledger-internal.ts:459 ~ LedgerInternal ~ extraData:', extraData);
     const txHex = await this.ledgerApp.createPaymentTransactionNew({
       inputs,
       associatedKeysets,
