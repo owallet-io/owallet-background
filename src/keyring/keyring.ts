@@ -1002,6 +1002,7 @@ export class KeyRing {
         amount: message.msgs.amount,
         sender: message.msgs.changeAddress,
         message: message.msgs.message ?? '',
+        totalFee: message.msgs.totalFee,
         transactionFee: message.msgs.feeRate ?? MIN_FEE_RATE
       })) as any;
       console.log('🚀 ~ file: keyring.ts:1009 ~ signAndBroadcastBitcoin ~ res:', res);

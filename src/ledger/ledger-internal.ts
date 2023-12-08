@@ -214,10 +214,8 @@ export class LedgerInternal {
           data = await EIP712MessageValidator.validateAsync(JSON.parse(Buffer.from(message).toString()));
         } catch (e) {
           console.log('🚀 ~ file: ledger-internal.ts:188 ~ LedgerInternal ~ sign ~ e:', e);
-
           throw new Error(e.message || e.toString());
         }
-
         try {
           // Unfortunately, signEIP712Message not works on ledger yet.
           return ethSignatureToBytes(
