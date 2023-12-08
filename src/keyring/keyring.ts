@@ -588,7 +588,6 @@ export class KeyRing {
   }
 
   public async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string, chainId: string | number) {
-    console.log('🚀 ~ file: keyring.ts:584 ~ setKeyStoreLedgerAddress ~ bip44HDPath:', bip44HDPath);
     try {
       if (!this.keyStore) {
         throw new Error('Empty key store');
@@ -596,12 +595,9 @@ export class KeyRing {
       const chainInfo = await this.chainsService.getChainInfo(chainId as string);
       const ledgerAppType = getLedgerAppNameByNetwork(chainInfo.networkType, chainId);
       const hdPath = splitPathStringToHDPath(bip44HDPath);
-
-      console.log('🚀 ~ file: keyring.ts:592 ~ setKeyStoreLedgerAddress ~ path:', hdPath);
       // Update ledger address here with this function below
       const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
-      console.log('🚀 ~ file: keyring.ts:593 ~ setKeyStoreLedgerAddress ~ publicKey:', publicKey);
-      console.log('🚀 ~ file: keyring.ts:593 ~ setKeyStoreLedgerAddress ~ address:', address);
+
       const pubKey = publicKey ? Buffer.from(publicKey).toString('hex') : null;
       const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
         return (

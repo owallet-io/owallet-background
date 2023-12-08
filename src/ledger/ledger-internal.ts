@@ -156,12 +156,10 @@ export class LedgerInternal {
         const pathBtc = stringifyPath(path);
         const keyDerivation = path[0].toString() as KeyDerivationTypeEnum;
         const format = keyDerivationToAddressType(keyDerivation);
-
         const { publicKey, bitcoinAddress } = await this.ledgerApp.getWalletPublicKey(pathBtc, {
           format: format,
           verify: false
         });
-
         const pubKey = Buffer.from(publicKey, 'hex');
         // Compress the public key
         return {
