@@ -1,4 +1,10 @@
-import { EmbedChainInfos, MIN_FEE_RATE, convertBip44ToHDPath, splitPathStringToHDPath } from '@owallet/common';
+import {
+  EmbedChainInfos,
+  MIN_FEE_RATE,
+  convertBip44ToHDPath,
+  splitPathStringToHDPath,
+  typeBtcLedgerByAddress
+} from '@owallet/common';
 import * as BytesUtils from '@ethersproject/bytes';
 import { keccak256 } from '@ethersproject/keccak256';
 import { serialize } from '@ethersproject/transactions';
@@ -604,13 +610,10 @@ export class KeyRing {
           KeyRing.getKeyStoreId(this.keyStore!)
         );
       });
-
+      const addressLedger = handleAddressLedgerByChainId(ledgerAppType, address, chainInfo);
       if (keyStoreInMulti) {
         const keyStoreAddresses = { ...keyStoreInMulti.addresses };
-        const returnedAddresses = Object.assign(
-          keyStoreAddresses,
-          handleAddressLedgerByChainId(ledgerAppType, address, chainId)
-        );
+        const returnedAddresses = Object.assign(keyStoreAddresses, addressLedger);
         keyStoreInMulti.addresses = returnedAddresses;
         this.keyStore.addresses = returnedAddresses;
         if (!!publicKey) {
@@ -735,10 +738,9 @@ export class KeyRing {
     if (!this.keyStore) {
       throw new Error('Key Store is empty');
     }
-
+    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
     const isEthermint = await (async () => {
       if (chainId) {
-        const chainInfo = await this.chainsService.getChainInfo(chainId as string);
         const rs = isEthermintLike(chainInfo);
         return rs;
       }
@@ -760,7 +762,7 @@ export class KeyRing {
           const address = getAddress(keyPair, chainId, 'legacy');
           return address;
         } else {
-          return this.addresses[chainId === 'bitcoinTestnet' ? 'tbtc' : 'btc'];
+          return this.addresses[typeBtcLedgerByAddress(chainInfo, AddressBtcType.Legacy)];
         }
       }
       return null;

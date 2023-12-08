@@ -1,8 +1,9 @@
 import { _TypedDataEncoder as TypedDataEncoder } from '@ethersproject/hash';
-import { getBaseDerivationPath } from '@owallet/bitcoin';
-import { getNetworkTypeByChainId } from '@owallet/common';
-import { AddressBtcType, BIP44HDPath } from '@owallet/types';
+import { getAddressTypeByAddress, getBaseDerivationPath } from '@owallet/bitcoin';
+import { LedgerAppType, getNetworkTypeByChainId, typeBtcLedgerByAddress } from '@owallet/common';
+import { AddressBtcType, AddressesLedger, BIP44HDPath, ChainInfoWithoutEndpoints } from '@owallet/types';
 import Joi from 'joi';
+import { ChainInfoWithEmbed } from 'src/chains';
 export const EIP712DomainTypeValidator = Joi.array()
   .items(
     Joi.object<{
@@ -141,13 +142,19 @@ export function stringifyPath(paths: number[]): string {
   });
   return stringPaths;
 }
-export const handleAddressLedgerByChainId = (ledgerAppType, address, chainId) => {
-  if (chainId === 'bitcoinTestnet') {
+
+export const handleAddressLedgerByChainId = (
+  ledgerAppType: LedgerAppType,
+  address: string,
+  chainInfo: ChainInfoWithoutEndpoints
+): AddressesLedger => {
+  if (chainInfo.networkType !== 'bitcoin') {
     return {
-      ['tbtc']: address
+      [ledgerAppType]: address
     };
   }
+  const addressType = getAddressTypeByAddress(address) as AddressBtcType;
   return {
-    [ledgerAppType]: address
+    [typeBtcLedgerByAddress(chainInfo, addressType)]: address
   };
 };
