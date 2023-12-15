@@ -6,7 +6,7 @@ import { Ledger } from './ledger';
 import delay from 'delay';
 
 import { APP_PORT, Env } from '@owallet/router';
-import { BIP44HDPath } from '@owallet/types';
+import { BIP44HDPath, HDPath } from '@owallet/types';
 import { KVStore, LedgerAppType } from '@owallet/common';
 import { InteractionService } from '../interaction';
 import { LedgerOptions } from './options';
@@ -31,16 +31,16 @@ export class LedgerService {
     };
   }
 
-  async getPublicKey(env: Env, bip44HDPath: BIP44HDPath, ledgerType: LedgerAppType): Promise<any> {
+  async getPublicKey(env: Env, hdPath: HDPath, ledgerType: LedgerAppType): Promise<any> {
     return await this.useLedger(env, ledgerType, async (ledger, retryCount) => {
       try {
         // Cosmos App on Ledger doesn't support the coin type other than 118.
         return await ledger.getPublicKey([
-          ledgerType === 'btc' ? 84 : 44,
-          bip44HDPath.coinType,
-          bip44HDPath.account,
-          bip44HDPath.change,
-          bip44HDPath.addressIndex
+          hdPath.keyDerivation ?? 44,
+          hdPath.coinType,
+          hdPath.account,
+          hdPath.change,
+          hdPath.addressIndex
         ]);
       } finally {
         // Notify UI Ledger pubkey derivation succeeded only when Ledger initialization is tried again.
@@ -63,7 +63,6 @@ export class LedgerService {
   ): Promise<Uint8Array | any> {
     return await this.useLedger(env, ledgerType, async (ledger, retryCount: number) => {
       try {
-        
         // Cosmos App on Ledger doesn't support the coin type other than 118.
         const signature = await ledger.sign(path, message);
 

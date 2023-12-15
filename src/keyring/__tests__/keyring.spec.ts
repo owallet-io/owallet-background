@@ -1192,14 +1192,14 @@ describe('keyring', () => {
         expect(() => keyRing['loadKey'](mockCoinType)).not.toThrow('Key Store is empty');
         expect(() => keyRing['loadKey'](mockCoinType)).toThrow('Ledger public key not set');
       });
-      it('test case for ledgerPublicKey is not null', () => {
+      it('test case for ledgerPublicKey is not null', async () => {
         Object.defineProperty(keyRing, 'status', {
           value: KeyRingStatus.UNLOCKED,
           writable: true
         });
         keyRing['keyStore'] = mockKeyStore.ledger.pbkdf2;
         keyRing['ledgerPublicKey'] = mockKeyCosmos.publicKeyHex;
-        const rs = keyRing['loadKey'](mockCoinType);
+        const rs = await keyRing['loadKey'](mockCoinType);
         expect(Buffer.from(rs.pubKey).toString('hex')).toBe(
           '0307e5b99e7849b4c2f6af0ee7e7f094b8859f1109962ad6e94fa3672fc8003a30'
         );
@@ -1209,7 +1209,7 @@ describe('keyring', () => {
       });
     });
     describe('test case for this.keyStore.type !== ledger', () => {
-      it('test for case network type is cosmos', () => {
+      it('test for case network type is cosmos', async () => {
         Object.defineProperty(keyRing, 'status', {
           value: KeyRingStatus.UNLOCKED,
           writable: true
@@ -1217,7 +1217,7 @@ describe('keyring', () => {
         keyRing['keyStore'] = mockKeyStore.mnemonic.pbkdf2;
         keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
         const spyLoadPrivKey = jest.spyOn(keyRing as any, 'loadPrivKey');
-        const rs = keyRing['loadKey'](mockCoinType, mockChainId);
+        const rs = await keyRing['loadKey'](mockCoinType, mockChainId);
         expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinType, 'Oraichain');
         expect(rs.algo).toBe('secp256k1');
         expect(rs.isNanoLedger).toBe(false);
@@ -1226,7 +1226,7 @@ describe('keyring', () => {
         );
         expect(Buffer.from(rs.address).toString('hex')).toBe('cf159c10596b2cc8270da31375d5d741a3c4a949');
       });
-      it('test for case network type is evm', () => {
+      it('test for case network type is evm', async () => {
         Object.defineProperty(keyRing, 'status', {
           value: KeyRingStatus.UNLOCKED,
           writable: true
@@ -1240,7 +1240,7 @@ describe('keyring', () => {
         };
         keyRing['mnemonic'] = mockKeyCosmos.mnemonic;
         const spyLoadPrivKey = jest.spyOn(keyRing as any, 'loadPrivKey');
-        const rs = keyRing['loadKey'](mockCoinTypeEth, mockChainIdEth);
+        const rs = await keyRing['loadKey'](mockCoinTypeEth, mockChainIdEth);
         expect(spyLoadPrivKey).toHaveBeenCalledWith(mockCoinTypeEth, '0x1ae6');
         expect(rs.algo).toBe('ethsecp256k1');
         expect(rs.isNanoLedger).toBe(false);

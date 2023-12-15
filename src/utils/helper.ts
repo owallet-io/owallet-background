@@ -1,8 +1,9 @@
 import { _TypedDataEncoder as TypedDataEncoder } from '@ethersproject/hash';
-import { getBaseDerivationPath } from '@owallet/bitcoin';
-import { getNetworkTypeByChainId } from '@owallet/common';
-import { BIP44HDPath } from '@owallet/types';
+import { getAddressTypeByAddress, getBaseDerivationPath } from '@owallet/bitcoin';
+import { LedgerAppType, getNetworkTypeByChainId, typeBtcLedgerByAddress } from '@owallet/common';
+import { AddressBtcType, AddressesLedger, BIP44HDPath, ChainInfoWithoutEndpoints } from '@owallet/types';
 import Joi from 'joi';
+import { ChainInfoWithEmbed } from 'src/chains';
 export const EIP712DomainTypeValidator = Joi.array()
   .items(
     Joi.object<{
@@ -74,25 +75,7 @@ export function ethSignatureToBytes(signature: { v: number | string; r: string; 
 
   return Buffer.concat([r, s, Buffer.from([v])]);
 }
-export const getHDPath = ({
-  bip44HDPath,
-  chainId,
-  coinType
-}: {
-  bip44HDPath: BIP44HDPath;
-  chainId: string | number;
-  coinType: number;
-}): string => {
-  const networkType = getNetworkTypeByChainId(chainId);
-  if (networkType === 'bitcoin') {
-    return getBaseDerivationPath({
-      selectedCrypto: chainId as string,
-      keyDerivationPath: '84'
-    }) as string;
-  }
-  const path = `m/44'/${coinType}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
-  return path;
-};
+
 export const domainHash = (message: {
   types: Record<string, { name: string; type: string }[]>;
   domain: Record<string, any>;
@@ -159,13 +142,19 @@ export function stringifyPath(paths: number[]): string {
   });
   return stringPaths;
 }
-export const handleAddressLedgerByChainId = (ledgerAppType, address, chainId) => {
-  if (chainId === 'bitcoinTestnet') {
+
+export const handleAddressLedgerByChainId = (
+  ledgerAppType: LedgerAppType,
+  address: string,
+  chainInfo: ChainInfoWithoutEndpoints
+): AddressesLedger => {
+  if (chainInfo.networkType !== 'bitcoin') {
     return {
-      ['tbtc']: address
+      [ledgerAppType]: address
     };
   }
+  const addressType = getAddressTypeByAddress(address) as AddressBtcType;
   return {
-    [ledgerAppType]: address
+    [typeBtcLedgerByAddress(chainInfo, addressType)]: address
   };
 };

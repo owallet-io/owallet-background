@@ -45,7 +45,7 @@ const handleSuggestChainInfoMsg: (service: ChainsService) => InternalHandler<Sug
     }
 
     const chainInfo = msg.chainInfo as Writeable<ChainInfo>;
-    console.log('🚀 ~ file: handler.ts:61 ~ return ~ chainInfo:', chainInfo);
+
     // And, always handle it as beta, if not specific.
     if (chainInfo.beta === undefined) {
       chainInfo.beta = true;

@@ -1,4 +1,10 @@
-import { EmbedChainInfos } from '@owallet/common';
+import {
+  EmbedChainInfos,
+  MIN_FEE_RATE,
+  convertBip44ToHDPath,
+  splitPathStringToHDPath,
+  typeBtcLedgerByAddress
+} from '@owallet/common';
 import * as BytesUtils from '@ethersproject/bytes';
 import { keccak256 } from '@ethersproject/keccak256';
 import { serialize } from '@ethersproject/transactions';
@@ -16,7 +22,7 @@ import {
 import { ChainIdHelper } from '@owallet/cosmos';
 import { Mnemonic, PrivKeySecp256k1, PubKeySecp256k1, RNG, Hash } from '@owallet/crypto';
 import { Env, OWalletError } from '@owallet/router';
-import { ChainInfo } from '@owallet/types';
+import { AddressBtcType, ChainInfo } from '@owallet/types';
 import AES from 'aes-js';
 import { Buffer } from 'buffer';
 import eccrypto from 'eccrypto-js';
@@ -39,11 +45,18 @@ import {
   TypedMessage
 } from './types';
 import { KeyringHelper } from './utils';
-import { createTransaction, wallet, getKeyPairByMnemonic, getKeyPairByPrivateKey } from '@owallet/bitcoin';
-import { isEthermintLike } from '@owallet/common';
-import { isArray, isNumber, isString } from 'util';
+import {
+  createTransaction,
+  wallet,
+  getKeyPairByMnemonic,
+  getKeyPairByPrivateKey,
+  getAddress,
+  getAddressTypeByAddress
+} from '@owallet/bitcoin';
+import { isEthermintLike, getKeyDerivationFromAddressType } from '@owallet/common';
+
 import { BIP44HDPath } from '@owallet/types';
-import { handleAddressLedgerByChainId, getHDPath } from '../utils/helper';
+import { handleAddressLedgerByChainId } from '../utils/helper';
 import { AddressesLedger } from '@owallet/types';
 import { ChainsService } from 'src/chains';
 // inject TronWeb class
@@ -328,7 +341,8 @@ export class KeyRing {
 
     // detect network type here when create ledger
     // Get public key first
-    const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, bip44HDPath, ledgerAppType)) || {};
+    const hdPath = convertBip44ToHDPath(bip44HDPath);
+    const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
 
     this.ledgerPublicKey = publicKey;
 
@@ -580,9 +594,10 @@ export class KeyRing {
       }
       const chainInfo = await this.chainsService.getChainInfo(chainId as string);
       const ledgerAppType = getLedgerAppNameByNetwork(chainInfo.networkType, chainId);
-      const path = splitPath(bip44HDPath);
+      const hdPath = splitPathStringToHDPath(bip44HDPath);
       // Update ledger address here with this function below
-      const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, path, ledgerAppType)) || {};
+      const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
+
       const pubKey = publicKey ? Buffer.from(publicKey).toString('hex') : null;
       const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
         return (
@@ -591,13 +606,10 @@ export class KeyRing {
           KeyRing.getKeyStoreId(this.keyStore!)
         );
       });
-
+      const addressLedger = handleAddressLedgerByChainId(ledgerAppType, address, chainInfo);
       if (keyStoreInMulti) {
         const keyStoreAddresses = { ...keyStoreInMulti.addresses };
-        const returnedAddresses = Object.assign(
-          keyStoreAddresses,
-          handleAddressLedgerByChainId(ledgerAppType, address, chainId)
-        );
+        const returnedAddresses = Object.assign(keyStoreAddresses, addressLedger);
         keyStoreInMulti.addresses = returnedAddresses;
         this.keyStore.addresses = returnedAddresses;
         if (!!publicKey) {
@@ -722,10 +734,9 @@ export class KeyRing {
     if (!this.keyStore) {
       throw new Error('Key Store is empty');
     }
-
+    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
     const isEthermint = await (async () => {
       if (chainId) {
-        const chainInfo = await this.chainsService.getChainInfo(chainId as string);
         const rs = isEthermintLike(chainInfo);
         return rs;
       }
@@ -739,26 +750,25 @@ export class KeyRing {
       }
       return pubKey.getCosmosAddress();
     })();
-    // const keyPair = getKeyPair({
-    //   mnemonic: this.mnemonic,
-    //   selectedCrypto: chainId as string,
-    //   keyDerivationPath: '84'
-    // });
-    // console.log('private key length: ', keyPair.privateKey.length);
-    //this is address type legacyAddress using path m44'/0'/0/0/0 for bitcoin
-    // const legacyAddress = getAddress(keyPair, chainId, 'legacy');
-    // return {
-    //   algo: 'secp256k1',
-    //   pubKey: pubKey.toBytes(),
-    //   address: pubKey.getAddress(),
-    //   legacyAddress: legacyAddress,
-    //   isNanoLedger: false
-    // };
+    const networkType = getNetworkTypeByChainId(chainId);
+    const legacyAddress = (() => {
+      if (networkType === 'bitcoin') {
+        if (this.keyStore.type !== 'ledger') {
+          const keyPair = this.getKeyPairBtc(chainId as string, '44');
+          const address = getAddress(keyPair, chainId, 'legacy');
+          return address;
+        } else {
+          return this.addresses[typeBtcLedgerByAddress(chainInfo, AddressBtcType.Legacy)];
+        }
+      }
+      return null;
+    })();
     return {
       algo: isEthermint ? 'ethsecp256k1' : 'secp256k1',
       pubKey: pubKey.toBytes(),
       address: address,
-      isNanoLedger: this.keyStore.type === 'ledger'
+      isNanoLedger: this.keyStore.type === 'ledger',
+      legacyAddress: legacyAddress
     };
   }
   private loadPrivKey(coinType: number): PrivKeySecp256k1 {
@@ -777,7 +787,9 @@ export class KeyRing {
         return 44;
       })();
       const path = `m/${keyDelivery}'/${coinTypeModified}'/${bip44HDPath.account}'/${bip44HDPath.change}/${bip44HDPath.addressIndex}`;
+
       const cachedKey = this.cached.get(path);
+
       if (cachedKey) {
         return new PrivKeySecp256k1(cachedKey);
       }
@@ -836,13 +848,21 @@ export class KeyRing {
       }
       const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
 
-      const path = [
-        networkType === 'bitcoin' ? 84 : 44,
-        coinType,
-        bip44HDPath.account,
-        bip44HDPath.change,
-        bip44HDPath.addressIndex
-      ];
+      const keyDerivation = (() => {
+        const msgObj = JSON.parse(Buffer.from(message).toString());
+        const addressType = getAddressTypeByAddress(msgObj.address) as AddressBtcType;
+
+        if (networkType === 'bitcoin') {
+          if (addressType === AddressBtcType.Bech32) {
+            return 84;
+          } else if (addressType === AddressBtcType.Legacy) {
+            return 44;
+          }
+        }
+        return 44;
+      })();
+
+      const path = [keyDerivation, coinType, bip44HDPath.account, bip44HDPath.change, bip44HDPath.addressIndex];
 
       const ledgerAppType: LedgerAppType = getLedgerAppNameByNetwork(networkType, chainId);
       // Need to check ledger here and ledger app type by chainId
@@ -922,6 +942,23 @@ export class KeyRing {
       return this.processSignEvm(chainId, coinType, rpc, message);
     }
   }
+  protected getKeyPairBtc(chainId: string, keyDerivation: string = '84') {
+    let keyPair;
+    if (!!this.mnemonic) {
+      keyPair = getKeyPairByMnemonic({
+        mnemonic: this.mnemonic,
+        selectedCrypto: chainId as string,
+        keyDerivationPath: keyDerivation
+      });
+    } else if (!!this.privateKey) {
+      keyPair = getKeyPairByPrivateKey({
+        privateKey: this.privateKey,
+        selectedCrypto: chainId as string
+      });
+    }
+    if (!keyPair) throw Error('Your Mnemonic or Private Key is invalid');
+    return keyPair;
+  }
   public async signAndBroadcastBitcoin(env: Env, chainId: string, message: any): Promise<string> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
@@ -953,34 +990,22 @@ export class KeyRing {
       }
       return txRes?.data;
     } else {
-      let keyPair;
-      if (!!this.mnemonic) {
-        keyPair = getKeyPairByMnemonic({
-          mnemonic: this.mnemonic,
-          selectedCrypto: chainId as string,
-          keyDerivationPath: '84'
-        });
-      } else if (!!this.privateKey) {
-        keyPair = getKeyPairByPrivateKey({
-          privateKey: this.privateKey,
-          selectedCrypto: chainId as string
-        });
-      }
-      if (!keyPair) throw Error('Your Mnemonic or Private Key is invalid');
-      console.log('🚀 ~ file: keyring.ts:962 ~ signAndBroadcastBitcoin ~ keyPair:', keyPair);
+      const addressType = getAddressTypeByAddress(message.msgs.changeAddress) as AddressBtcType;
+      const keyDerivation = getKeyDerivationFromAddressType(addressType);
+      const keyPair = this.getKeyPairBtc(chainId, keyDerivation);
+
       const res = (await createTransaction({
         selectedCrypto: chainId,
         keyPair: keyPair,
         utxos: message.utxos,
-        blacklistedUtxos: message.blacklistedUtxos,
-        address: message.msgs.address,
+        recipient: message.msgs.address,
         amount: message.msgs.amount,
-        confirmedBalance: message.msgs.confirmedBalance,
-        changeAddress: message.msgs.changeAddress,
+        sender: message.msgs.changeAddress,
         message: message.msgs.message ?? '',
-        transactionFee: message.msgs.gasPriceStep ?? 1,
-        addressType: 'bech32'
+        totalFee: message.msgs.totalFee,
+        transactionFee: message.msgs.feeRate ?? MIN_FEE_RATE
       })) as any;
+
       if (res.error) {
         throw Error(res?.data?.message || 'Transaction Failed');
       }
@@ -1498,7 +1523,8 @@ export class KeyRing {
         throw new OWalletError('keyring', 141, 'Key ring is locked or not initialized');
       }
       const ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath);
-      const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, bip44HDPath, ledgerAppType)) || {};
+      const hdPath = convertBip44ToHDPath(bip44HDPath);
+      const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
 
       const keyStore = await KeyRing.CreateLedgerKeyStore(
         this.rng,

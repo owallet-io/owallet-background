@@ -21,7 +21,7 @@ export const schemaRequestSignBitcoin = Joi.object({
     totalFee: Joi.number().required(),
     selectedCrypto: Joi.string().required(),
     confirmedBalance: Joi.number().required(),
-    gasPriceStep: Joi.number().required()
+    feeRate: Joi.number().required()
   }).required(),
   confirmedBalance: Joi.number().required(),
   utxos: Joi.array()
@@ -42,5 +42,5 @@ export const schemaRequestSignBitcoin = Joi.object({
     .empty(),
   blacklistedUtxos: Joi.array().items(Joi.object()).empty(),
   amount: Joi.number().required(),
-  gasPriceStep: Joi.number().required()
+  feeRate: Joi.number().required()
 });

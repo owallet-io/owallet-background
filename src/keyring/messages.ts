@@ -876,6 +876,7 @@ export class RequestSignBitcoinMsg extends Message<{
     if (!this.data) {
       throw new OWalletError('keyring', 231, 'data not set');
     }
+
     const { value, error } = schemaRequestSignBitcoin.validate(this.data);
     if (!!error) {
       throw new OWalletError('keyring', 231, 'data not set');
