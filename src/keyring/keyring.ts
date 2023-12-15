@@ -851,7 +851,7 @@ export class KeyRing {
       const keyDerivation = (() => {
         const msgObj = JSON.parse(Buffer.from(message).toString());
         const addressType = getAddressTypeByAddress(msgObj.address) as AddressBtcType;
-      
+
         if (networkType === 'bitcoin') {
           if (addressType === AddressBtcType.Bech32) {
             return 84;
@@ -1005,7 +1005,7 @@ export class KeyRing {
         totalFee: message.msgs.totalFee,
         transactionFee: message.msgs.feeRate ?? MIN_FEE_RATE
       })) as any;
-   
+
       if (res.error) {
         throw Error(res?.data?.message || 'Transaction Failed');
       }
@@ -1013,7 +1013,6 @@ export class KeyRing {
         rawTx: res.data,
         selectedCrypto: chainId
       });
-     
 
       if (txRes?.error) {
         throw Error(txRes?.data?.message || 'Transaction Failed');
