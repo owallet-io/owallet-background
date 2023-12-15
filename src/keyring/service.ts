@@ -705,6 +705,7 @@ export class KeyRingService {
     chainId: string,
     paths: BIP44[]
   ): Promise<{ readonly path: BIP44; readonly bech32Address: string }[]> {
+    console.log('🚀 ~ file: service.ts:708 ~ KeyRingService ~ paths:', paths);
     if (this.isKeyStoreCoinTypeSet(chainId)) {
       return [];
     }
@@ -812,6 +813,7 @@ export class KeyRingService {
             'transfer(address,uint256)',
             {
               callValue: 0,
+              feeLimit: 200_000_000,
               userFeePercentage: 100,
               shouldPollResponse: false
             },
