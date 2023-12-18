@@ -46,7 +46,14 @@ import {
 } from './types';
 import { KeyringHelper } from './utils';
 import { isEthermintLike, getKeyDerivationFromAddressType } from '@owallet/common';
-import { createTransaction, wallet, getKeyPairByMnemonic, getKeyPairByPrivateKey } from '@owallet/bitcoin';
+import {
+  createTransaction,
+  wallet,
+  getKeyPairByMnemonic,
+  getKeyPairByPrivateKey,
+  getAddress,
+  getAddressTypeByAddress
+} from '@owallet/bitcoin';
 import { BIP44HDPath } from '@owallet/types';
 import { handleAddressLedgerByChainId } from '../utils/helper';
 import { AddressesLedger } from '@owallet/types';
