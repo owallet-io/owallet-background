@@ -45,6 +45,7 @@ import {
   TypedMessage
 } from './types';
 import { KeyringHelper } from './utils';
+import { isEthermintLike, getKeyDerivationFromAddressType } from '@owallet/common';
 import {
   createTransaction,
   wallet,
@@ -53,12 +54,10 @@ import {
   getAddress,
   getAddressTypeByAddress
 } from '@owallet/bitcoin';
-import { isEthermintLike, getKeyDerivationFromAddressType } from '@owallet/common';
-
 import { BIP44HDPath } from '@owallet/types';
 import { handleAddressLedgerByChainId } from '../utils/helper';
 import { AddressesLedger } from '@owallet/types';
-import { ChainsService } from 'src/chains';
+import { ChainsService } from '../chains';
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
 export enum KeyRingStatus {
@@ -570,7 +569,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -599,7 +598,7 @@ export class KeyRing {
       const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
 
       const pubKey = publicKey ? Buffer.from(publicKey).toString('hex') : null;
-      const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+      const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
         return (
           KeyRing.getKeyStoreId(keyStore) ===
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -1118,7 +1117,7 @@ export class KeyRing {
       const privKey = this.loadPrivKey(60);
       const privKeyBuffer = Buffer.from(privKey.toBytes());
       const response = await Promise.all(
-        message[0].map(async (data) => {
+        message[0].map(async data => {
           const encryptedData = {
             ciphertext: Buffer.from(data.ciphertext, 'hex'),
             ephemPublicKey: Buffer.from(data.ephemPublicKey, 'hex'),
@@ -1355,7 +1354,7 @@ export class KeyRing {
         throw new Error('Arrays are unimplemented in encodeData; use V4 extension');
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map((item) => this.encodeField(types, name, parsedType, item, version));
+      const typeValuePairs = value.map(item => this.encodeField(types, name, parsedType, item, version));
       return [
         'bytes32',
         keccak(
