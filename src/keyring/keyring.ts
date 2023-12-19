@@ -1011,7 +1011,8 @@ export class KeyRing {
       }
       const txRes = await wallet.pushtx.default({
         rawTx: res.data,
-        selectedCrypto: chainId
+        selectedCrypto: chainId,
+        service: 'fallback'
       });
 
       if (txRes?.error) {
