@@ -705,7 +705,6 @@ export class KeyRingService {
     chainId: string,
     paths: BIP44[]
   ): Promise<{ readonly path: BIP44; readonly bech32Address: string }[]> {
-    console.log('🚀 ~ file: service.ts:708 ~ KeyRingService ~ paths:', paths);
     if (this.isKeyStoreCoinTypeSet(chainId)) {
       return [];
     }
