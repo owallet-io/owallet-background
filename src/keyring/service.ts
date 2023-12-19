@@ -812,6 +812,7 @@ export class KeyRingService {
             'transfer(address,uint256)',
             {
               callValue: 0,
+              feeLimit: 200_000_000,
               userFeePercentage: 100,
               shouldPollResponse: false
             },
