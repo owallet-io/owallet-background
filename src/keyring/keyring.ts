@@ -55,10 +55,11 @@ import {
   getAddressTypeByAddress
 } from '@owallet/bitcoin';
 import { BIP44HDPath } from '@owallet/types';
-import { handleAddressLedgerByChainId } from '../utils/helper';
+import { getOasisNic, handleAddressLedgerByChainId } from '../utils/helper';
 import { AddressesLedger } from '@owallet/types';
 import { ChainsService } from '../chains';
 import * as oasis from '@oasisprotocol/client';
+import { addressToPublicKey, parseRpcBalance, StringifiedBigInt } from '../utils/oasis-helper';
 
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
@@ -787,6 +788,35 @@ export class KeyRing {
     }
     const signer = await oasis.hdkey.HDKey.getAccountSigner(this.mnemonic, 0);
     return signer.publicKey;
+  }
+
+  public async loadBalanceOasis(
+    address: string,
+    chainId: string
+  ): Promise<{
+    available: StringifiedBigInt;
+    validator: { escrow: StringifiedBigInt; escrow_debonding: StringifiedBigInt };
+  }> {
+    if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
+      throw new Error('Key ring is not unlocked');
+    }
+    if (!this.mnemonic) {
+      throw new Error('Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly');
+    }
+    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
+
+    console.log('chainInfo', chainInfo);
+
+    const nic = await getOasisNic(chainInfo.grpc);
+
+    const publicKey = await addressToPublicKey(address);
+    const account = await nic.stakingAccount({ owner: publicKey, height: 0 });
+    const grpcBalance = parseRpcBalance(account);
+
+    console.log('account', account);
+    console.log('grpcBalance', grpcBalance);
+
+    return grpcBalance;
   }
 
   private loadPrivKey(coinType: number): PrivKeySecp256k1 {

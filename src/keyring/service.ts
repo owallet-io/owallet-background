@@ -904,7 +904,12 @@ export class KeyRingService {
     const signerPublicKey = await this.keyRing.loadPublicKeyOasis();
     const addressUint8Array = await oasis.staking.addressFromPublicKey(signerPublicKey);
     const address = oasis.staking.addressToBech32(addressUint8Array);
-
     return address;
+  }
+
+  async getDefaultOasisBalance(address: string, chainId: string): Promise<string> {
+    const balance = await this.keyRing.loadBalanceOasis(address, chainId);
+
+    return balance.available;
   }
 }

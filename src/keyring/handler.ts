@@ -486,6 +486,7 @@ const handleGetDefaultAddressOasisMsg: (
 ) => InternalHandler<GetDefaultAddressOasisMsg> = service => {
   return async (_, msg) => {
     const address = await service.getDefaultOasisAddress(msg.chainId);
+    const balance = await service.getDefaultOasisBalance(address, msg.chainId);
     const ledgerCheck = service.getKeyRingType();
 
     if (ledgerCheck === 'ledger') {
@@ -493,7 +494,8 @@ const handleGetDefaultAddressOasisMsg: (
     return {
       name: service.getKeyStoreMeta('name'),
       type: Number(ledgerCheck),
-      address: address
+      address: address,
+      balance: balance
     };
   };
 };
