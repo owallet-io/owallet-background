@@ -1433,7 +1433,7 @@ export class RequestSignOasisMsg extends Message<{}> {
 
 export class GetDefaultAddressOasisMsg extends Message<{
   hex?: string;
-  base58?: string;
+  address?: string;
   name?: string;
   type?: number;
 }> {

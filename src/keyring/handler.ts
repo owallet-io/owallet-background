@@ -485,16 +485,15 @@ const handleGetDefaultAddressOasisMsg: (
   service: KeyRingService
 ) => InternalHandler<GetDefaultAddressOasisMsg> = service => {
   return async (_, msg) => {
-    const key = await service.getKey(msg.chainId);
+    const address = await service.getDefaultOasisAddress(msg.chainId);
     const ledgerCheck = service.getKeyRingType();
 
     if (ledgerCheck === 'ledger') {
     }
     return {
       name: service.getKeyStoreMeta('name'),
-      type: Number(key.isNanoLedger),
-      hex: bufferToHex(key.pubKey),
-      base58: ''
+      type: Number(ledgerCheck),
+      address: address
     };
   };
 };

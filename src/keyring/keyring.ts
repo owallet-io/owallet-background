@@ -778,7 +778,7 @@ export class KeyRing {
     };
   }
 
-  private async loadSignerOasis(): Promise<Uint8Array> {
+  public async loadPublicKeyOasis(): Promise<Uint8Array> {
     if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
       throw new Error('Key ring is not unlocked');
     }
@@ -786,9 +786,6 @@ export class KeyRing {
       throw new Error('Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly');
     }
     const signer = await oasis.hdkey.HDKey.getAccountSigner(this.mnemonic, 0);
-    const address = await oasis.staking.addressFromPublicKey(signer.publicKey);
-    console.log('signer.address', oasis.staking.addressToBech32(address));
-
     return signer.publicKey;
   }
 
@@ -1177,10 +1174,8 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    console.log('getPublicKey chainId', chainId);
-
     if (chainId === '0x5afe') {
-      const pubKey = await this.loadSignerOasis();
+      const pubKey = await this.loadPublicKeyOasis();
       return pubKey;
     }
 

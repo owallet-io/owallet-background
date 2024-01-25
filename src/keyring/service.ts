@@ -38,6 +38,8 @@ import { request } from '../tx';
 import { Dec, DecUtils } from '@owallet/unit';
 import { trimAminoSignDoc } from './amino-sign-doc';
 import { KeyringHelper } from './utils';
+import * as oasis from '@oasisprotocol/client';
+
 @singleton()
 export class KeyRingService {
   private readonly keyRing: KeyRing;
@@ -896,5 +898,13 @@ export class KeyRingService {
     } finally {
       this.interactionService.dispatchEvent(APP_PORT, 'request-sign-tron-end', {});
     }
+  }
+
+  async getDefaultOasisAddress(chainId: string): Promise<string> {
+    const signerPublicKey = await this.keyRing.loadPublicKeyOasis();
+    const addressUint8Array = await oasis.staking.addressFromPublicKey(signerPublicKey);
+    const address = oasis.staking.addressToBech32(addressUint8Array);
+
+    return address;
   }
 }
