@@ -843,4 +843,58 @@ export class KeyRingService {
       this.interactionService.dispatchEvent(APP_PORT, 'request-sign-tron-end', {});
     }
   }
+
+  async requestSignOasis(env: Env, chainId: string, data: object): Promise<object> {
+    const newData = (await this.interactionService.waitApprove(env, '/sign-tron', 'request-sign-tron', data)) as any;
+    try {
+      if (newData?.txID) {
+        newData.signature = [Buffer.from(await this.keyRing.sign(env, chainId, 195, newData.txID)).toString('hex')];
+        return newData;
+      }
+
+      const tronWeb = new TronWeb({
+        fullHost: (await this.chainsService.getChainInfo(chainId)).rpc
+      });
+      tronWeb.fullNode.instance.defaults.adapter = fetchAdapter;
+      let transaction: any;
+      if (newData?.tokenTrc20) {
+        const amount = new MyBigInt(Math.trunc(newData?.amount * Math.pow(10, 6)));
+        transaction = (
+          await tronWeb.transactionBuilder.triggerSmartContract(
+            newData.tokenTrc20.contractAddress,
+            'transfer(address,uint256)',
+            {
+              callValue: 0,
+              feeLimit: 200_000_000,
+              userFeePercentage: 100,
+              shouldPollResponse: false
+            },
+            [
+              { type: 'address', value: newData.recipient },
+              { type: 'uint256', value: amount.toString() }
+            ],
+            newData.address
+          )
+        ).transaction;
+      } else {
+        // get address here from keyring and
+        transaction = await tronWeb.transactionBuilder.sendTrx(
+          newData.recipient,
+          new Dec(Number((newData.amount ?? '0').replace(/,/g, '.'))).mul(DecUtils.getTenExponentNInPrecisionRange(6)),
+          newData.address
+        );
+      }
+
+      // const transactionData = Buffer.from(transaction.raw_data_hex, 'hex');
+
+      transaction.signature = [
+        Buffer.from(await this.keyRing.sign(env, chainId, 195, transaction?.txID)).toString('hex')
+      ];
+
+      const receipt = await tronWeb.trx.sendRawTransaction(transaction);
+      return receipt.txid ?? receipt.transaction.raw_data_hex;
+    } finally {
+      this.interactionService.dispatchEvent(APP_PORT, 'request-sign-tron-end', {});
+    }
+  }
 }
