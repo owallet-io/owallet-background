@@ -490,7 +490,7 @@ const handleGetDefaultAddressOasisMsg: (
     const ledgerCheck = service.getKeyRingType();
 
     if (ledgerCheck === 'ledger') {
-      throw new Error('We are currently not support Ledger for Oasis');
+      throw new Error('Ledger is currently not supported for Oasis.');
     }
     return {
       name: service.getKeyStoreMeta('name'),
