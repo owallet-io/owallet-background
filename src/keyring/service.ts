@@ -509,8 +509,7 @@ export class KeyRingService {
 
   async requestPublicKey(env: Env, chainId: string): Promise<string> {
     try {
-      const rawTxHex = await this.keyRing.getPublicKey(chainId);
-
+      const rawTxHex = (await this.keyRing.getPublicKey(chainId)) as string;
       return rawTxHex;
     } catch (e) {
       console.log('e', e.message);
