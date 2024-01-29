@@ -798,7 +798,7 @@ export class KeyRing {
     return signer.publicKey;
   }
 
-  public async txBuilderOasis(chainId: string, data): Promise<any> {
+  public async signOasis(chainId: string, data): Promise<any> {
     if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
       throw new Error('Key ring is not unlocked');
     }
@@ -821,9 +821,7 @@ export class KeyRing {
 
     const tw = await OasisTransaction.buildTransfer(nic, signer, to.replaceAll(' ', ''), bigIntAmount);
 
-    console.log('chainContext', chainContext);
-
-    const signed = await OasisTransaction.sign(chainContext, signer, tw);
+    await OasisTransaction.sign(chainContext, signer, tw);
 
     const payload = await OasisTransaction.submit(nic, tw);
 

@@ -39,8 +39,7 @@ import {
   RequestSignBitcoinMsg,
   TriggerSmartContractMsg,
   RequestSignOasisMsg,
-  GetDefaultAddressOasisMsg,
-  RequestTxBuilderOasisMsg
+  GetDefaultAddressOasisMsg
 } from './messages';
 import { KeyRingService } from './service';
 import { Bech32Address } from '@owallet/cosmos';
@@ -92,8 +91,6 @@ export const getHandler: (service: KeyRingService) => Handler = (service: KeyRin
         return handleRequestSignTronMsg(service)(env, msg as RequestSignTronMsg);
       case RequestSignOasisMsg:
         return handleRequestSignOasisMsg(service)(env, msg as RequestSignOasisMsg);
-      case RequestTxBuilderOasisMsg:
-        return handleRequestTxBuilderOasisMsg(service)(env, msg as RequestTxBuilderOasisMsg);
       case GetDefaultAddressOasisMsg:
         return handleGetDefaultAddressOasisMsg(service)(env, msg as GetDefaultAddressOasisMsg);
       case RequestSignEthereumTypedDataMsg:
@@ -480,13 +477,6 @@ const handleTriggerSmartContractMsg: (
 const handleRequestSignOasisMsg: (service: KeyRingService) => InternalHandler<RequestSignOasisMsg> = service => {
   return async (env, msg) => {
     const response = await service.requestSignOasis(env, msg.chainId, msg.data);
-    return { ...response };
-  };
-};
-
-const handleRequestTxBuilderOasisMsg: (service: KeyRingService) => InternalHandler<RequestSignOasisMsg> = service => {
-  return async (env, msg) => {
-    const response = await service.requestTxBuilderOasis(env, msg.chainId, msg.data);
     return { ...response };
   };
 };

@@ -848,18 +848,10 @@ export class KeyRingService {
 
   async requestSignOasis(env: Env, chainId: string, data: object): Promise<object> {
     try {
-      const res = await Promise.resolve({});
-      return res;
-    } finally {
-      this.interactionService.dispatchEvent(APP_PORT, 'request-sign-oasis-end', {});
-    }
-  }
-
-  async requestTxBuilderOasis(env: Env, chainId: string, data: object): Promise<any> {
-    try {
-      const tx = await this.keyRing.txBuilderOasis(chainId, data);
+      const tx = await this.keyRing.signOasis(chainId, data);
       return tx;
     } finally {
+      this.interactionService.dispatchEvent(APP_PORT, 'request-sign-oasis-end', {});
     }
   }
 
