@@ -36,7 +36,8 @@ import {
   GetDefaultAddressTronMsg,
   GetDefaultAddressOasisMsg,
   TriggerSmartContractMsg,
-  RequestSendRawTransactionMsg
+  RequestSendRawTransactionMsg,
+  RequestTxBuilderOasisMsg
 } from './messages';
 import { ROUTE } from './constants';
 import { getHandler } from './handler';
@@ -72,6 +73,7 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(GetMultiKeyStoreInfoMsg);
   router.registerMessage(GetDefaultAddressTronMsg);
   router.registerMessage(GetDefaultAddressOasisMsg);
+  router.registerMessage(RequestTxBuilderOasisMsg);
   router.registerMessage(RequestSendRawTransactionMsg);
   router.registerMessage(ChangeKeyRingMsg);
   router.registerMessage(GetIsKeyStoreCoinTypeSetMsg);

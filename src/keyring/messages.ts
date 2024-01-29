@@ -1431,6 +1431,38 @@ export class RequestSignOasisMsg extends Message<{}> {
   }
 }
 
+export class RequestTxBuilderOasisMsg extends Message<{}> {
+  public static type() {
+    return 'request-tx-builder-oasis';
+  }
+
+  constructor(public readonly chainId: string, public readonly data: object) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new Error('chain id not set');
+    }
+
+    if (!this.data) {
+      throw new Error('data not set');
+    }
+  }
+
+  approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return 'keyring';
+  }
+
+  type(): string {
+    return RequestTxBuilderOasisMsg.type();
+  }
+}
+
 export class GetDefaultAddressOasisMsg extends Message<{
   hex?: string;
   address?: string;

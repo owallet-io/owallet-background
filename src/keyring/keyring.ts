@@ -59,7 +59,15 @@ import { getOasisNic, handleAddressLedgerByChainId } from '../utils/helper';
 import { AddressesLedger } from '@owallet/types';
 import { ChainsService } from '../chains';
 import * as oasis from '@oasisprotocol/client';
-import { addressToPublicKey, parseRpcBalance, StringifiedBigInt } from '../utils/oasis-helper';
+import {
+  addressToPublicKey,
+  hex2uint,
+  parseRoseStringToBaseUnitString,
+  parseRpcBalance,
+  StringifiedBigInt,
+  uint2hex
+} from '../utils/oasis-helper';
+import { OasisTransaction, signerFromPrivateKey, TW } from '../utils/oasis-tx-builder';
 
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
@@ -790,6 +798,38 @@ export class KeyRing {
     return signer.publicKey;
   }
 
+  public async txBuilderOasis(chainId: string, data): Promise<any> {
+    if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
+      throw new Error('Key ring is not unlocked');
+    }
+    if (!this.mnemonic) {
+      throw new Error('Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly');
+    }
+
+    const { amount, to } = data;
+
+    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
+
+    const nic = await getOasisNic(chainInfo.grpc);
+    const accountSigner = await oasis.hdkey.HDKey.getAccountSigner(this.mnemonic, 0);
+    const privateKey = uint2hex(accountSigner.secretKey);
+    const bytes = hex2uint(privateKey!);
+    const signer = signerFromPrivateKey(bytes);
+    const bigIntAmount = BigInt(amount);
+
+    const chainContext = await nic.consensusGetChainContext();
+
+    const tw = await OasisTransaction.buildTransfer(nic, signer, to.replaceAll(' ', ''), bigIntAmount);
+
+    console.log('chainContext', chainContext);
+
+    const signed = await OasisTransaction.sign(chainContext, signer, tw);
+
+    const payload = await OasisTransaction.submit(nic, tw);
+
+    return payload;
+  }
+
   public async loadBalanceOasis(
     address: string,
     chainId: string
@@ -805,16 +845,11 @@ export class KeyRing {
     }
     const chainInfo = await this.chainsService.getChainInfo(chainId as string);
 
-    console.log('chainInfo', chainInfo);
-
     const nic = await getOasisNic(chainInfo.grpc);
 
     const publicKey = await addressToPublicKey(address);
     const account = await nic.stakingAccount({ owner: publicKey, height: 0 });
     const grpcBalance = parseRpcBalance(account);
-
-    console.log('account', account);
-    console.log('grpcBalance', grpcBalance);
 
     return grpcBalance;
   }
