@@ -7,7 +7,8 @@ import delay from 'delay';
 
 import { APP_PORT, Env } from '@owallet/router';
 import { BIP44HDPath, HDPath } from '@owallet/types';
-import { KVStore, LedgerAppType } from '@owallet/common';
+import { KVStore } from '@owallet/common';
+import { LedgerAppType } from '@owallet/types';
 import { InteractionService } from '../interaction';
 import { LedgerOptions } from './options';
 import { Buffer } from 'buffer';
@@ -54,13 +55,7 @@ export class LedgerService {
     });
   }
 
-  async sign(
-    env: Env,
-    path: number[],
-    expectedPubKey: Uint8Array,
-    message: Uint8Array,
-    ledgerType: LedgerAppType
-  ): Promise<Uint8Array | any> {
+  async sign(env: Env, path: number[], message: Uint8Array, ledgerType: LedgerAppType): Promise<Uint8Array | any> {
     return await this.useLedger(env, ledgerType, async (ledger, retryCount: number) => {
       try {
         // Cosmos App on Ledger doesn't support the coin type other than 118.

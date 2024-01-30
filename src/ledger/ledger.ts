@@ -1,4 +1,4 @@
-import { LedgerAppType } from '@owallet/common';
+import { LedgerAppType } from '@owallet/types';
 import { LedgerInternal } from './ledger-internal';
 
 let callProxy: (method: string, args?: any[]) => Promise<any>;

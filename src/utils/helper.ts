@@ -1,9 +1,11 @@
 import { _TypedDataEncoder as TypedDataEncoder } from '@ethersproject/hash';
 import { getAddressTypeByAddress, getBaseDerivationPath } from '@owallet/bitcoin';
-import { LedgerAppType, getNetworkTypeByChainId, typeBtcLedgerByAddress } from '@owallet/common';
+import { getNetworkTypeByChainId, typeBtcLedgerByAddress } from '@owallet/common';
+import { LedgerAppType } from '@owallet/types';
 import { AddressBtcType, AddressesLedger, BIP44HDPath, ChainInfoWithoutEndpoints } from '@owallet/types';
 import Joi from 'joi';
 import { ChainInfoWithEmbed } from 'src/chains';
+import { KeyStore } from 'src/keyring/crypto';
 export const EIP712DomainTypeValidator = Joi.array()
   .items(
     Joi.object<{
@@ -173,5 +175,18 @@ export const handlePubkeyLedgerByChainId = (
   const addressType = getAddressTypeByAddress(address) as AddressBtcType;
   return {
     [typeBtcLedgerByAddress(chainInfo, addressType)]: pubkeys
+  };
+};
+
+export const handleUpdateAddressAndPubkeys = (
+  keyStore: KeyStore,
+  addressLedger: AddressesLedger,
+  pubkeysLedger: AddressesLedger
+) => {
+  if (!keyStore || !addressLedger || !pubkeysLedger) throw Error('Not found your ledger!');
+  return {
+    ...keyStore,
+    addresses: { ...keyStore.addresses, ...addressLedger },
+    pubkeys: { ...keyStore.pubkeys, ...pubkeysLedger }
   };
 };

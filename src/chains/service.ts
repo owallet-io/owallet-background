@@ -33,7 +33,7 @@ export class ChainsService {
       return this.cachedChainInfos;
     }
 
-    const chainInfos = this.embedChainInfos.map(chainInfo => {
+    const chainInfos = this.embedChainInfos.map((chainInfo) => {
       return {
         ...chainInfo,
         embeded: true
@@ -45,7 +45,7 @@ export class ChainsService {
     }
 
     const savedChainInfos: ChainInfoWithEmbed[] = ((await this.kvStore.get<ChainInfo[]>('chain-infos')) ?? [])
-      .filter(chainInfo => {
+      .filter((chainInfo) => {
         // Filter the overlaped chain info with the embeded chain infos.
         return !embedChainInfoIdentifierMap.get(ChainIdHelper.parse(chainInfo.chainId).identifier);
       })
@@ -60,7 +60,7 @@ export class ChainsService {
 
     // Set the updated property of the chain.
     result = await Promise.all(
-      result.map(async chainInfo => {
+      result.map(async (chainInfo) => {
         const updated: ChainInfo = await this.chainUpdaterKeeper.putUpdatedPropertyToChainInfo(chainInfo);
 
         return {
@@ -87,7 +87,7 @@ export class ChainsService {
   }
 
   async getChainInfosWithoutEndpoints(): Promise<ChainInfoWithoutEndpoints[]> {
-    return (await this.getChainInfos()).map<ChainInfoWithoutEndpoints>(chainInfo => {
+    return (await this.getChainInfos()).map<ChainInfoWithoutEndpoints>((chainInfo) => {
       const chainInfoMutable: Mutable<
         Optional<ChainInfoWithCoreTypes, 'rpc' | 'rest' | 'updateFromRepoDisabled' | 'embeded'>
       > = {
@@ -113,14 +113,14 @@ export class ChainsService {
     if (networkType) {
       if (networkType === 'evm') {
         // need to check if network type is evm, then we will convert chain id to number from hex
-        chainInfo = (await this.getChainInfos()).find(chainInfo => {
+        chainInfo = (await this.getChainInfos()).find((chainInfo) => {
           return (
             ChainIdHelper.parse(Number(chainInfo.chainId)).identifier ===
               ChainIdHelper.parse(Number(chainId)).identifier && chainInfo.networkType === networkType
           );
         });
       } else {
-        chainInfo = (await this.getChainInfos()).find(chainInfo => {
+        chainInfo = (await this.getChainInfos()).find((chainInfo) => {
           return (
             ChainIdHelper.parse(chainInfo.chainId).identifier === ChainIdHelper.parse(chainId).identifier &&
             chainInfo.networkType === networkType
@@ -128,7 +128,7 @@ export class ChainsService {
         });
       }
     } else {
-      chainInfo = (await this.getChainInfos()).find(chainInfo => {
+      chainInfo = (await this.getChainInfos()).find((chainInfo) => {
         return ChainIdHelper.parse(chainInfo.chainId).identifier === ChainIdHelper.parse(chainId).identifier;
       });
     }
@@ -150,7 +150,7 @@ export class ChainsService {
 
   async hasChainInfo(chainId: string): Promise<boolean> {
     return (
-      (await this.getChainInfos()).find(chainInfo => {
+      (await this.getChainInfos()).find((chainInfo) => {
         return ChainIdHelper.parse(chainInfo.chainId).identifier === ChainIdHelper.parse(chainId).identifier;
       }) != null
     );
@@ -210,7 +210,7 @@ export class ChainsService {
 
     const savedChainInfos = (await this.kvStore.get<ChainInfo[]>('chain-infos')) ?? [];
 
-    const resultChainInfo = savedChainInfos.filter(chainInfo => {
+    const resultChainInfo = savedChainInfos.filter((chainInfo) => {
       return ChainIdHelper.parse(chainInfo.chainId).identifier !== ChainIdHelper.parse(chainId).identifier;
     });
 

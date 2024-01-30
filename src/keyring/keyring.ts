@@ -16,14 +16,13 @@ import {
   getNetworkTypeByBip44HDPath,
   getNetworkTypeByChainId,
   KVStore,
-  KVStoreType,
-  splitPath,
-  LedgerAppType
+  KVStoreType
 } from '@owallet/common';
+import { LedgerAppType } from '@owallet/types';
 import { ChainIdHelper } from '@owallet/cosmos';
 import { Mnemonic, PrivKeySecp256k1, PubKeySecp256k1, RNG, Hash } from '@owallet/crypto';
 import { Env, OWalletError } from '@owallet/router';
-import { AddressBtcType, ChainInfo, InfoFromLedger } from '@owallet/types';
+import { AddressBtcType, ChainInfo, HDPath, InfoFromLedger } from '@owallet/types';
 import AES from 'aes-js';
 import { Buffer } from 'buffer';
 import eccrypto from 'eccrypto-js';
@@ -56,7 +55,11 @@ import {
   getAddressTypeByAddress
 } from '@owallet/bitcoin';
 import { BIP44HDPath } from '@owallet/types';
-import { handleAddressLedgerByChainId, handlePubkeyLedgerByChainId } from '../utils/helper';
+import {
+  handleAddressLedgerByChainId,
+  handlePubkeyLedgerByChainId,
+  handleUpdateAddressAndPubkeys
+} from '../utils/helper';
 import { AddressesLedger } from '@owallet/types';
 import { ChainsService } from '../chains';
 // inject TronWeb class
@@ -337,16 +340,10 @@ export class KeyRing {
     // if (this.status !== KeyRingStatus.EMPTY) {
     //   throw new Error('Key ring is not loaded or not empty');
     // }
-    const ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath);
     const ledgerType = getLedgerTypeByHdPath(bip44HDPath);
-
-    // detect network type here when create ledger
-    // Get public key first
-    const hdPath = convertBip44ToHDPath(bip44HDPath);
-    const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
+    const { pubKeyHex, publicKey, address } = await this.getInfoFromLedger(env, bip44HDPath);
 
     this.ledgerPublicKey = publicKey;
-
     const keyStore = await KeyRing.CreateLedgerKeyStore(
       this.rng,
       this.crypto,
@@ -357,6 +354,9 @@ export class KeyRing {
       bip44HDPath,
       {
         [ledgerType]: address
+      },
+      {
+        [ledgerType]: pubKeyHex
       }
     );
 
@@ -593,29 +593,31 @@ export class KeyRing {
       if (!this.keyStore) {
         throw new Error('Empty key store');
       }
-      const { pubKey, address, ledgerAppType, chainInfo } = await this.getInfoFromLedger(env, bip44HDPath, chainId);
-      this.updatePubKeyAndAddressesLedger(ledgerAppType, address, chainInfo, pubKey);
+      const chainInfo = await this.chainsService.getChainInfo(chainId as string);
+      const { pubKeyHex, address, ledgerAppType } = await this.getInfoFromLedger(env, bip44HDPath, true);
+      this.updatePubKeyAndAddressesLedger(ledgerAppType, address, chainInfo, pubKeyHex);
       await this.save();
       return { status: this.status };
     } catch (error) {
       console.log('🚀 ~ file: keyring.ts:595 ~ setKeyStoreLedgerAddress ~ error:', error);
     }
   }
-  protected updatePubKeyAndAddressesLedger(ledgerAppType, address, chainInfo, pubKey) {
+  protected updatePubKeyAndAddressesLedger(
+    ledgerAppType: LedgerAppType,
+    address: string,
+    chainInfo: ChainInfo,
+    pubKey: string
+  ) {
     const addressLedger = handleAddressLedgerByChainId(ledgerAppType, address, chainInfo);
     const pubkeysLedger = handlePubkeyLedgerByChainId(ledgerAppType, address, chainInfo, pubKey);
     const currentIndex = this.getCurrentIndexFromMultiKeyStore();
     if (currentIndex >= 0) {
-      this.multiKeyStore[currentIndex] = {
-        ...this.multiKeyStore[currentIndex],
-        addresses: { ...this.multiKeyStore[currentIndex].addresses, ...addressLedger },
-        pubkeys: { ...this.multiKeyStore[currentIndex].pubkeys, ...pubkeysLedger }
-      };
-      this.keyStore = {
-        ...this.keyStore,
-        addresses: { ...this.keyStore.addresses, ...addressLedger },
-        pubkeys: { ...this.keyStore.pubkeys, ...pubkeysLedger }
-      };
+      this.multiKeyStore[currentIndex] = handleUpdateAddressAndPubkeys(
+        this.multiKeyStore[currentIndex],
+        addressLedger,
+        pubkeysLedger
+      );
+      this.keyStore = handleUpdateAddressAndPubkeys(this.keyStore, addressLedger, pubkeysLedger);
     }
   }
   protected getCurrentIndexFromMultiKeyStore = () => {
@@ -627,18 +629,26 @@ export class KeyRing {
       );
     });
   };
-  protected async getInfoFromLedger(env: Env, bip44HDPath: string, chainId: string | number): Promise<InfoFromLedger> {
-    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
-    const ledgerAppType = getLedgerAppNameByNetwork(chainInfo.networkType, chainId);
-    const hdPath = splitPathStringToHDPath(bip44HDPath);
-    // Update ledger address here with this function below
+  protected async getInfoFromLedger(
+    env: Env,
+    bip44HDPath: string | BIP44HDPath,
+    isSetKeyLedger: boolean = false
+  ): Promise<InfoFromLedger> {
+    var hdPath: HDPath, ledgerAppType: LedgerAppType;
+    if (isSetKeyLedger) {
+      hdPath = splitPathStringToHDPath(bip44HDPath as string);
+      ledgerAppType = getNetworkTypeByBip44HDPath(hdPath);
+    }
+    hdPath = convertBip44ToHDPath(bip44HDPath as BIP44HDPath);
+    ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath as BIP44HDPath);
+    // Update ledger address and pubkeys here with this function below
     const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
     if (!publicKey || !address) return null;
     return {
-      pubKey: Buffer.from(publicKey).toString('hex'),
+      pubKeyHex: Buffer.from(publicKey).toString('hex'),
+      publicKey,
       address,
-      ledgerAppType,
-      chainInfo
+      ledgerAppType
     };
   }
   public async deleteKeyRing(
@@ -860,10 +870,6 @@ export class KeyRing {
 
     // using ledger app
     if (this.keyStore.type === 'ledger') {
-      const pubKey = this.ledgerPublicKey;
-      if (!pubKey) {
-        throw new OWalletError('keyring', 151, 'Ledger public key is not initialized');
-      }
       const bip44HDPath = KeyRing.getKeyStoreBIP44Path(this.keyStore);
 
       const keyDerivation = (() => {
@@ -884,7 +890,7 @@ export class KeyRing {
 
       const ledgerAppType: LedgerAppType = getLedgerAppNameByNetwork(networkType, chainId);
       // Need to check ledger here and ledger app type by chainId
-      return await this.ledgerKeeper.sign(env, path, pubKey, message, ledgerAppType);
+      return await this.ledgerKeeper.sign(env, path, message, ledgerAppType);
     } else {
       // Sign with Evmos/Ethereum
       const privKey = this.loadPrivKey(coinType);
@@ -1541,9 +1547,8 @@ export class KeyRing {
       if (this.password == '') {
         throw new OWalletError('keyring', 141, 'Key ring is locked or not initialized');
       }
-      const ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath);
-      const hdPath = convertBip44ToHDPath(bip44HDPath);
-      const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
+      const ledgerType = getLedgerTypeByHdPath(bip44HDPath);
+      const { pubKeyHex, publicKey, address } = await this.getInfoFromLedger(env, bip44HDPath);
 
       const keyStore = await KeyRing.CreateLedgerKeyStore(
         this.rng,
@@ -1554,7 +1559,10 @@ export class KeyRing {
         await this.assignKeyStoreIdMeta(meta),
         bip44HDPath,
         {
-          [ledgerAppType]: address
+          [ledgerType]: address
+        },
+        {
+          [ledgerType]: pubKeyHex
         }
       );
 
@@ -1718,7 +1726,8 @@ export class KeyRing {
     password: string,
     meta: Record<string, string>,
     bip44HDPath: BIP44HDPath,
-    addresses?: AddressesLedger
+    addresses?: AddressesLedger,
+    pubkeys?: AddressesLedger
   ): Promise<KeyStore> {
     return await Crypto.encrypt(
       rng,
@@ -1729,7 +1738,8 @@ export class KeyRing {
       password,
       meta,
       bip44HDPath,
-      addresses
+      addresses,
+      pubkeys
     );
   }
 
