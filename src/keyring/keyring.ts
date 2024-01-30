@@ -589,12 +589,16 @@ export class KeyRing {
   }
 
   public async setKeyStoreLedgerAddress(env: Env, bip44HDPath: string, chainId: string | number) {
+    console.log('🚀 ~ setKeyStoreLedgerAddress ~ bip44HDPath:', bip44HDPath);
     try {
       if (!this.keyStore) {
         throw new Error('Empty key store');
       }
       const chainInfo = await this.chainsService.getChainInfo(chainId as string);
       const { pubKeyHex, address, ledgerAppType } = await this.getInfoFromLedger(env, bip44HDPath, true);
+      console.log('🚀 ~ setKeyStoreLedgerAddress ~ ledgerAppType:', ledgerAppType);
+      console.log('🚀 ~ setKeyStoreLedgerAddress ~ address:', address);
+      console.log('🚀 ~ setKeyStoreLedgerAddress ~ pubKeyHex:', pubKeyHex);
       this.updatePubKeyAndAddressesLedger(ledgerAppType, address, chainInfo, pubKeyHex);
       await this.save();
       return { status: this.status };
@@ -634,15 +638,26 @@ export class KeyRing {
     bip44HDPath: string | BIP44HDPath,
     isSetKeyLedger: boolean = false
   ): Promise<InfoFromLedger> {
+    console.log('🚀 ~ isSetKeyLedger:', isSetKeyLedger);
+    console.log('🚀 ~ bip44HDPath:', bip44HDPath);
     var hdPath: HDPath, ledgerAppType: LedgerAppType;
     if (isSetKeyLedger) {
       hdPath = splitPathStringToHDPath(bip44HDPath as string);
+      console.log('🚀 ~ hdPath splitPathStringToHDPath:', hdPath);
       ledgerAppType = getNetworkTypeByBip44HDPath(hdPath);
+      console.log('🚀 ~ ledgerAppType: getNetworkTypeByBip44HDPath', ledgerAppType);
+    } else {
+      hdPath = convertBip44ToHDPath(bip44HDPath as BIP44HDPath);
+      ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath as BIP44HDPath);
     }
-    hdPath = convertBip44ToHDPath(bip44HDPath as BIP44HDPath);
-    ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath as BIP44HDPath);
+
+    console.log('🚀 ~ ledgerAppType kaka:', ledgerAppType);
+    console.log('🚀 ~ hdPath: kaka', hdPath);
     // Update ledger address and pubkeys here with this function below
     const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
+    console.log('🚀 ~ address:', address);
+    console.log('🚀 ~ publicKey:', publicKey);
+
     if (!publicKey || !address) return null;
     return {
       pubKeyHex: Buffer.from(publicKey).toString('hex'),
@@ -732,17 +747,18 @@ export class KeyRing {
   private getPubKey(coinType): PubKeySecp256k1 {
     if (this.keyStore.type === 'ledger') {
       const appName = getLedgerTypeByHdPath({ coinType: coinType } as BIP44HDPath);
+      console.log('🚀 ~ getPubKey ~ appName:', appName);
       if (!this.ledgerPublicKey) {
         throw new Error('Ledger public key not set');
       }
-      if (!this.keyStore?.pubkeys[appName]) {
-        throw new Error('Ledger public key not found');
-      }
+      // if (!this.keyStore?.pubkeys[appName]) {
+      //   throw new Error(`Ledger public key not found on app ${appName}`);
+      // }
       if (this.keyStore?.pubkeys && this.keyStore.pubkeys[appName]) {
         const pubKeyConverted = Uint8Array.from(Buffer.from(this.keyStore.pubkeys[appName], 'hex'));
         return new PubKeySecp256k1(pubKeyConverted);
       }
-      return;
+      return new PubKeySecp256k1(this.ledgerPublicKey);
     } else {
       const privKey = this.loadPrivKey(coinType);
       return privKey.getPubKey();

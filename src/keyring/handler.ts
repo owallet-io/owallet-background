@@ -207,35 +207,37 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
     await service.permissionService.checkOrGrantBasicAccessPermission(env, msg.chainId, msg.origin);
 
     const key = await service.getKey(msg.chainId);
-    if (key) {
-      const networkType = getNetworkTypeByChainId(msg.chainId);
+    const networkType = getNetworkTypeByChainId(msg.chainId);
 
-      // hereeee
+    // hereeee
 
-      const isInj = msg.chainId?.startsWith('injective');
-      const pubkeyLedger = service.getKeyRingLedgerPubKey();
-      const bech32Address = new Bech32Address(key.address);
-      const { bech32PrefixAccAddr } = (await service.chainsService.getChainInfo(msg.chainId)).bech32Config;
-      // hereee
-      const bech32Convert =
-        networkType === 'bitcoin'
-          ? bech32Address.toBech32Btc(bech32PrefixAccAddr)
-          : bech32Address.toBech32(bech32PrefixAccAddr);
-      return {
-        name: service.getKeyStoreMeta('name'),
-        algo: 'secp256k1',
-        pubKey: key.pubKey,
-        address: key.address,
-        bech32Address: (() => {
-          if (isInj && key.isNanoLedger) {
-            return pubkeyLedger && pubkeyLedger['eth'] ? bech32Convert : '';
-          }
-          return bech32Convert;
-        })(),
-        legacyAddress: key.legacyAddress ?? '',
-        isNanoLedger: key.isNanoLedger
-      };
-    }
+    const isInj = msg.chainId?.startsWith('injective');
+    const isBtc = msg.chainId?.startsWith('bitcoin');
+    const pubkeyLedger = service.getKeyRingLedgerPubKey();
+    const bech32Address = new Bech32Address(key.address);
+    const { bech32PrefixAccAddr } = (await service.chainsService.getChainInfo(msg.chainId)).bech32Config;
+    // hereee
+    const bech32Convert =
+      networkType === 'bitcoin'
+        ? bech32Address.toBech32Btc(bech32PrefixAccAddr)
+        : bech32Address.toBech32(bech32PrefixAccAddr);
+    return {
+      name: service.getKeyStoreMeta('name'),
+      algo: 'secp256k1',
+      pubKey: key.pubKey,
+      address: key.address,
+      bech32Address: (() => {
+        if (isInj && key.isNanoLedger) {
+          return pubkeyLedger && pubkeyLedger['eth'] ? bech32Convert : '';
+        }
+        // if (isBtc && key.isNanoLedger) {
+        //   return pubkeyLedger && pubkeyLedger['btc84'] ? bech32Convert : '';
+        // }
+        return bech32Convert;
+      })(),
+      legacyAddress: key.legacyAddress ?? '',
+      isNanoLedger: key.isNanoLedger
+    };
   };
 };
 
