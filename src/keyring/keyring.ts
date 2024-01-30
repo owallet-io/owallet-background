@@ -2,6 +2,7 @@ import {
   EmbedChainInfos,
   MIN_FEE_RATE,
   convertBip44ToHDPath,
+  getLedgerTypeByHdPath,
   splitPathStringToHDPath,
   typeBtcLedgerByAddress
 } from '@owallet/common';
@@ -22,7 +23,7 @@ import {
 import { ChainIdHelper } from '@owallet/cosmos';
 import { Mnemonic, PrivKeySecp256k1, PubKeySecp256k1, RNG, Hash } from '@owallet/crypto';
 import { Env, OWalletError } from '@owallet/router';
-import { AddressBtcType, ChainInfo } from '@owallet/types';
+import { AddressBtcType, ChainInfo, InfoFromLedger } from '@owallet/types';
 import AES from 'aes-js';
 import { Buffer } from 'buffer';
 import eccrypto from 'eccrypto-js';
@@ -55,7 +56,7 @@ import {
   getAddressTypeByAddress
 } from '@owallet/bitcoin';
 import { BIP44HDPath } from '@owallet/types';
-import { handleAddressLedgerByChainId } from '../utils/helper';
+import { handleAddressLedgerByChainId, handlePubkeyLedgerByChainId } from '../utils/helper';
 import { AddressesLedger } from '@owallet/types';
 import { ChainsService } from '../chains';
 // inject TronWeb class
@@ -337,6 +338,7 @@ export class KeyRing {
     //   throw new Error('Key ring is not loaded or not empty');
     // }
     const ledgerAppType = getNetworkTypeByBip44HDPath(bip44HDPath);
+    const ledgerType = getLedgerTypeByHdPath(bip44HDPath);
 
     // detect network type here when create ledger
     // Get public key first
@@ -354,7 +356,7 @@ export class KeyRing {
       await this.assignKeyStoreIdMeta(meta),
       bip44HDPath,
       {
-        [ledgerAppType]: address
+        [ledgerType]: address
       }
     );
 
@@ -591,45 +593,54 @@ export class KeyRing {
       if (!this.keyStore) {
         throw new Error('Empty key store');
       }
-      const chainInfo = await this.chainsService.getChainInfo(chainId as string);
-      const ledgerAppType = getLedgerAppNameByNetwork(chainInfo.networkType, chainId);
-      const hdPath = splitPathStringToHDPath(bip44HDPath);
-      // Update ledger address here with this function below
-      const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
-
-      const pubKey = publicKey ? Buffer.from(publicKey).toString('hex') : null;
-      const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
-        return (
-          KeyRing.getKeyStoreId(keyStore) ===
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          KeyRing.getKeyStoreId(this.keyStore!)
-        );
-      });
-      const addressLedger = handleAddressLedgerByChainId(ledgerAppType, address, chainInfo);
-      if (keyStoreInMulti) {
-        const keyStoreAddresses = { ...keyStoreInMulti.addresses };
-        const returnedAddresses = Object.assign(keyStoreAddresses, addressLedger);
-        keyStoreInMulti.addresses = returnedAddresses;
-        this.keyStore.addresses = returnedAddresses;
-        if (!!publicKey) {
-          const returnedPubkey = Object.assign(
-            { ...keyStoreInMulti.pubkeys },
-            {
-              [ledgerAppType]: pubKey
-            }
-          );
-          keyStoreInMulti.pubkeys = returnedPubkey;
-          this.keyStore.pubkeys = returnedPubkey;
-        }
-      }
-
+      const { pubKey, address, ledgerAppType, chainInfo } = await this.getInfoFromLedger(env, bip44HDPath, chainId);
+      this.updatePubKeyAndAddressesLedger(ledgerAppType, address, chainInfo, pubKey);
       await this.save();
       return { status: this.status };
     } catch (error) {
       console.log('🚀 ~ file: keyring.ts:595 ~ setKeyStoreLedgerAddress ~ error:', error);
     }
   }
-
+  protected updatePubKeyAndAddressesLedger(ledgerAppType, address, chainInfo, pubKey) {
+    const addressLedger = handleAddressLedgerByChainId(ledgerAppType, address, chainInfo);
+    const pubkeysLedger = handlePubkeyLedgerByChainId(ledgerAppType, address, chainInfo, pubKey);
+    const currentIndex = this.getCurrentIndexFromMultiKeyStore();
+    if (currentIndex >= 0) {
+      this.multiKeyStore[currentIndex] = {
+        ...this.multiKeyStore[currentIndex],
+        addresses: { ...this.multiKeyStore[currentIndex].addresses, ...addressLedger },
+        pubkeys: { ...this.multiKeyStore[currentIndex].pubkeys, ...pubkeysLedger }
+      };
+      this.keyStore = {
+        ...this.keyStore,
+        addresses: { ...this.keyStore.addresses, ...addressLedger },
+        pubkeys: { ...this.keyStore.pubkeys, ...pubkeysLedger }
+      };
+    }
+  }
+  protected getCurrentIndexFromMultiKeyStore = () => {
+    return this.multiKeyStore.findIndex((keyStore) => {
+      return (
+        KeyRing.getKeyStoreId(keyStore) ===
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        KeyRing.getKeyStoreId(this.keyStore!)
+      );
+    });
+  };
+  protected async getInfoFromLedger(env: Env, bip44HDPath: string, chainId: string | number): Promise<InfoFromLedger> {
+    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
+    const ledgerAppType = getLedgerAppNameByNetwork(chainInfo.networkType, chainId);
+    const hdPath = splitPathStringToHDPath(bip44HDPath);
+    // Update ledger address here with this function below
+    const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
+    if (!publicKey || !address) return null;
+    return {
+      pubKey: Buffer.from(publicKey).toString('hex'),
+      address,
+      ledgerAppType,
+      chainInfo
+    };
+  }
   public async deleteKeyRing(
     index: number,
     password: string
@@ -710,16 +721,18 @@ export class KeyRing {
   }
   private getPubKey(coinType): PubKeySecp256k1 {
     if (this.keyStore.type === 'ledger') {
-      const appName = getNetworkTypeByBip44HDPath({ coinType: coinType } as BIP44HDPath);
+      const appName = getLedgerTypeByHdPath({ coinType: coinType } as BIP44HDPath);
       if (!this.ledgerPublicKey) {
         throw new Error('Ledger public key not set');
+      }
+      if (!this.keyStore?.pubkeys[appName]) {
+        throw new Error('Ledger public key not found');
       }
       if (this.keyStore?.pubkeys && this.keyStore.pubkeys[appName]) {
         const pubKeyConverted = Uint8Array.from(Buffer.from(this.keyStore.pubkeys[appName], 'hex'));
         return new PubKeySecp256k1(pubKeyConverted);
-        // this.ledgerPublicKey = this.keyStore.pubkeys[appName];
       }
-      return new PubKeySecp256k1(this.ledgerPublicKey);
+      return;
     } else {
       const privKey = this.loadPrivKey(coinType);
       return privKey.getPubKey();
@@ -744,6 +757,7 @@ export class KeyRing {
     })();
 
     const pubKey = this.getPubKey(coinType);
+
     const address = (() => {
       if (isEthermint) {
         return pubKey.getEthAddress();

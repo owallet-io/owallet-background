@@ -158,3 +158,20 @@ export const handleAddressLedgerByChainId = (
     [typeBtcLedgerByAddress(chainInfo, addressType)]: address
   };
 };
+
+export const handlePubkeyLedgerByChainId = (
+  ledgerAppType: LedgerAppType,
+  address: string,
+  chainInfo: ChainInfoWithoutEndpoints,
+  pubkeys: string
+): AddressesLedger => {
+  if (chainInfo.networkType !== 'bitcoin') {
+    return {
+      [ledgerAppType]: pubkeys
+    };
+  }
+  const addressType = getAddressTypeByAddress(address) as AddressBtcType;
+  return {
+    [typeBtcLedgerByAddress(chainInfo, addressType)]: pubkeys
+  };
+};
