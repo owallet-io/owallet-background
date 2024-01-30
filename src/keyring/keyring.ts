@@ -62,12 +62,12 @@ import * as oasis from '@oasisprotocol/client';
 import {
   addressToPublicKey,
   hex2uint,
-  parseRoseStringToBaseUnitString,
+  parseRoseStringToBigNumber,
   parseRpcBalance,
   StringifiedBigInt,
   uint2hex
 } from '../utils/oasis-helper';
-import { OasisTransaction, signerFromPrivateKey, TW } from '../utils/oasis-tx-builder';
+import { OasisTransaction, signerFromPrivateKey } from '../utils/oasis-tx-builder';
 
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
@@ -815,8 +815,8 @@ export class KeyRing {
     const privateKey = uint2hex(accountSigner.secretKey);
     const bytes = hex2uint(privateKey!);
     const signer = signerFromPrivateKey(bytes);
-    const bigIntAmount = BigInt(amount);
-
+    const bigIntAmount = BigInt(parseRoseStringToBigNumber(amount).toString());
+    console.log('bigIntAmount', bigIntAmount);
     const chainContext = await nic.consensusGetChainContext();
 
     const tw = await OasisTransaction.buildTransfer(nic, signer, to.replaceAll(' ', ''), bigIntAmount);
