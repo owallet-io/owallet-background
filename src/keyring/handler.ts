@@ -230,9 +230,9 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
         if (isInj && key.isNanoLedger) {
           return pubkeyLedger && pubkeyLedger['eth'] ? bech32Convert : '';
         }
-        // if (isBtc && key.isNanoLedger) {
-        //   return pubkeyLedger && pubkeyLedger['btc84'] ? bech32Convert : '';
-        // }
+        if (isBtc && key.isNanoLedger) {
+          return pubkeyLedger && pubkeyLedger['btc84'] ? bech32Convert : '';
+        }
         return bech32Convert;
       })(),
       legacyAddress: key.legacyAddress ?? '',
