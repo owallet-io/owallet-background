@@ -754,6 +754,7 @@ export class KeyRing {
       }
       return coinType === 60;
     })();
+    console.log('🚀 ~ isEthermint ~ isEthermint:', isEthermint);
     if (coinType === 474) {
       const signerPublicKey = await this.loadPublicKeyOasis();
       const addressUint8Array = await oasis.staking.addressFromPublicKey(signerPublicKey);
