@@ -69,9 +69,11 @@ import {
   uint2hex
 } from '../utils/oasis-helper';
 import { OasisTransaction, signerFromPrivateKey } from '../utils/oasis-tx-builder';
+import { CoinPretty, Int } from '@owallet/unit';
 
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
+
 export enum KeyRingStatus {
   NOTLOADED,
   EMPTY,
@@ -822,13 +824,15 @@ export class KeyRing {
 
     const chainInfo = await this.chainsService.getChainInfo(chainId as string);
 
-    const nic = await getOasisNic(chainInfo.grpc);
     const accountSigner = await oasis.hdkey.HDKey.getAccountSigner(this.mnemonic, 0);
+    console.log('🚀 ~ signOasis ~ accountSigner:', accountSigner);
     const privateKey = uint2hex(accountSigner.secretKey);
+    console.log('🚀 ~ signOasis ~ privateKey:', privateKey);
     const bytes = hex2uint(privateKey!);
     const signer = signerFromPrivateKey(bytes);
     const bigIntAmount = BigInt(parseRoseStringToBigNumber(amount).toString());
     console.log('bigIntAmount', bigIntAmount);
+    const nic = getOasisNic(chainInfo.grpc);
     const chainContext = await nic.consensusGetChainContext();
 
     const tw = await OasisTransaction.buildTransfer(nic, signer, to.replaceAll(' ', ''), bigIntAmount);
@@ -1031,6 +1035,22 @@ export class KeyRing {
     if (this.keyStore.type === 'ledger') {
       return this.processSignLedgerEvm(env, chainId, rpc, message);
     } else {
+      if (chainId === ChainIdEnum.OasisNative) {
+        console.log('🚀 ~ message:', message);
+        const data = message as any;
+        console.log('🚀 ~ data.value:', data.value);
+
+        console.log('🚀 ~ Number(data.value):', Number(data.value));
+        const chainInfo = await this.chainsService.getChainInfo(chainId as string);
+        console.log('🚀 ~ chainInfo.feeCurrencies:', chainInfo.feeCurrencies);
+        const amount = new CoinPretty(chainInfo.feeCurrencies[0], new Int(Number(data.value))).toDec().toString();
+
+        console.log('🚀 ~ amount:', amount);
+        const res = await this.signOasis(chainId, { amount: amount, to: (data as any).to });
+        console.log('🚀 ~ res:', res);
+        return;
+      }
+
       return this.processSignEvm(chainId, coinType, rpc, message);
     }
   }

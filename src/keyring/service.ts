@@ -443,8 +443,6 @@ export class KeyRingService {
         signed: newSignDoc,
         signature: encodeSecp256k1Signature(key.pubKey, signature)
       };
-    } catch (e) {
-      console.log('e', e.message);
     } finally {
       this.interactionService.dispatchEvent(APP_PORT, 'request-sign-end', {});
     }
@@ -454,16 +452,13 @@ export class KeyRingService {
     const coinType = await this.chainsService.getChainCoinType(chainId);
     const rpc = await this.chainsService.getChainInfo(chainId);
     const rpcCustom = EVMOS_NETWORKS.includes(chainId) ? rpc.evmRpc : rpc.rest;
-    // TODO: add UI here so users can change gas, memo & fee
-    const newData = await this.estimateFeeAndWaitApprove(env, chainId, rpcCustom, data);
 
     // Need to check ledger here and ledger app type by chainId
     try {
+      // TODO: add UI here so users can change gas, memo & fee
+      const newData = await this.estimateFeeAndWaitApprove(env, chainId, rpcCustom, data);
       const rawTxHex = await this.keyRing.signAndBroadcastEthereum(env, chainId, coinType, rpcCustom, newData);
-
       return rawTxHex;
-    } catch (error) {
-      console.log({ error });
     } finally {
       this.interactionService.dispatchEvent(APP_PORT, 'request-sign-ethereum-end', {});
     }

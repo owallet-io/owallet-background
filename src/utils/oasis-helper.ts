@@ -12,6 +12,7 @@ export enum RuntimeTypes {
   Evm = 'evm',
   Oasis = 'oasis'
 }
+//TODO: need handle duplicate
 export type ParaTimeConfig = {
   mainnet: ParaTimeNetwork;
   testnet: ParaTimeNetwork;
