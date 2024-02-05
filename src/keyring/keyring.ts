@@ -822,26 +822,18 @@ export class KeyRing {
 
     const { amount, to } = data;
 
-    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
+    // const chainInfo = await this.chainsService.getChainInfo(chainId as string);
 
     const accountSigner = await oasis.hdkey.HDKey.getAccountSigner(this.mnemonic, 0);
-    console.log('🚀 ~ signOasis ~ accountSigner:', accountSigner);
     const privateKey = uint2hex(accountSigner.secretKey);
-    console.log('🚀 ~ signOasis ~ privateKey:', privateKey);
+
     const bytes = hex2uint(privateKey!);
-    const signer = signerFromPrivateKey(bytes);
-    const bigIntAmount = BigInt(parseRoseStringToBigNumber(amount).toString());
-    console.log('bigIntAmount', bigIntAmount);
-    const nic = getOasisNic(chainInfo.grpc);
-    const chainContext = await nic.consensusGetChainContext();
-
-    const tw = await OasisTransaction.buildTransfer(nic, signer, to.replaceAll(' ', ''), bigIntAmount);
-
-    await OasisTransaction.sign(chainContext, signer, tw);
-
-    const payload = await OasisTransaction.submit(nic, tw);
-
-    return payload;
+    const txres = {
+      bytes,
+      amount,
+      to: to.replaceAll(' ', '')
+    };
+    return txres;
   }
 
   public async loadBalanceOasis(
@@ -1048,7 +1040,7 @@ export class KeyRing {
         console.log('🚀 ~ amount:', amount);
         const res = await this.signOasis(chainId, { amount: amount, to: (data as any).to });
         console.log('🚀 ~ res:', res);
-        return;
+        return res;
       }
 
       return this.processSignEvm(chainId, coinType, rpc, message);
