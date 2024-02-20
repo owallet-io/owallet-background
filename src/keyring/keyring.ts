@@ -1028,18 +1028,14 @@ export class KeyRing {
       return this.processSignLedgerEvm(env, chainId, rpc, message);
     } else {
       if (chainId === ChainIdEnum.OasisNative) {
-        console.log('🚀 ~ message:', message);
         const data = message as any;
-        console.log('🚀 ~ data.value:', data.value);
 
-        console.log('🚀 ~ Number(data.value):', Number(data.value));
         const chainInfo = await this.chainsService.getChainInfo(chainId as string);
-        console.log('🚀 ~ chainInfo.feeCurrencies:', chainInfo.feeCurrencies);
+
         const amount = new CoinPretty(chainInfo.feeCurrencies[0], new Int(Number(data.value))).toDec().toString();
 
-        console.log('🚀 ~ amount:', amount);
         const res = await this.signOasis(chainId, { amount: amount, to: (data as any).to });
-        console.log('🚀 ~ res:', res);
+
         return res;
       }
 
