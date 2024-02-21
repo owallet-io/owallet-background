@@ -55,9 +55,20 @@ import {
   getAddressTypeByAddress
 } from '@owallet/bitcoin';
 import { BIP44HDPath } from '@owallet/types';
-import { handleAddressLedgerByChainId } from '../utils/helper';
+import { getOasisNic, handleAddressLedgerByChainId } from '../utils/helper';
 import { AddressesLedger } from '@owallet/types';
 import { ChainsService } from '../chains';
+import * as oasis from '@oasisprotocol/client';
+import {
+  addressToPublicKey,
+  hex2uint,
+  parseRoseStringToBigNumber,
+  parseRpcBalance,
+  StringifiedBigInt,
+  uint2hex
+} from '../utils/oasis-helper';
+import { OasisTransaction, signerFromPrivateKey } from '../utils/oasis-tx-builder';
+
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
 export enum KeyRingStatus {
@@ -569,7 +580,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -598,7 +609,7 @@ export class KeyRing {
       const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
 
       const pubKey = publicKey ? Buffer.from(publicKey).toString('hex') : null;
-      const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
+      const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
         return (
           KeyRing.getKeyStoreId(keyStore) ===
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -775,6 +786,72 @@ export class KeyRing {
       legacyAddress: legacyAddress
     };
   }
+
+  public async loadPublicKeyOasis(): Promise<Uint8Array> {
+    if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
+      throw new Error('Key ring is not unlocked');
+    }
+    if (!this.mnemonic) {
+      throw new Error('Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly');
+    }
+    const signer = await oasis.hdkey.HDKey.getAccountSigner(this.mnemonic, 0);
+    return signer.publicKey;
+  }
+
+  public async signOasis(chainId: string, data): Promise<any> {
+    if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
+      throw new Error('Key ring is not unlocked');
+    }
+    if (!this.mnemonic) {
+      throw new Error('Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly');
+    }
+
+    const { amount, to } = data;
+
+    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
+
+    const nic = await getOasisNic(chainInfo.grpc);
+    const accountSigner = await oasis.hdkey.HDKey.getAccountSigner(this.mnemonic, 0);
+    const privateKey = uint2hex(accountSigner.secretKey);
+    const bytes = hex2uint(privateKey!);
+    const signer = signerFromPrivateKey(bytes);
+    const bigIntAmount = BigInt(parseRoseStringToBigNumber(amount).toString());
+    console.log('bigIntAmount', bigIntAmount);
+    const chainContext = await nic.consensusGetChainContext();
+
+    const tw = await OasisTransaction.buildTransfer(nic, signer, to.replaceAll(' ', ''), bigIntAmount);
+
+    await OasisTransaction.sign(chainContext, signer, tw);
+
+    const payload = await OasisTransaction.submit(nic, tw);
+
+    return payload;
+  }
+
+  public async loadBalanceOasis(
+    address: string,
+    chainId: string
+  ): Promise<{
+    available: StringifiedBigInt;
+    validator: { escrow: StringifiedBigInt; escrow_debonding: StringifiedBigInt };
+  }> {
+    if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
+      throw new Error('Key ring is not unlocked');
+    }
+    if (!this.mnemonic) {
+      throw new Error('Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly');
+    }
+    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
+
+    const nic = await getOasisNic(chainInfo.grpc);
+
+    const publicKey = await addressToPublicKey(address);
+    const account = await nic.stakingAccount({ owner: publicKey, height: 0 });
+    const grpcBalance = parseRpcBalance(account);
+
+    return grpcBalance;
+  }
+
   private loadPrivKey(coinType: number): PrivKeySecp256k1 {
     if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
       throw new Error('Key ring is not unlocked');
@@ -801,7 +878,6 @@ export class KeyRing {
       if (!this.mnemonic) {
         throw new Error('Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly');
       }
-      // could use it here
       const privKey = Mnemonic.generateWalletFromMnemonic(this.mnemonic, path);
       this.cached.set(path, privKey);
       return new PrivKeySecp256k1(privKey);
@@ -1122,7 +1198,7 @@ export class KeyRing {
       const privKey = this.loadPrivKey(60);
       const privKeyBuffer = Buffer.from(privKey.toBytes());
       const response = await Promise.all(
-        message[0].map(async (data) => {
+        message[0].map(async data => {
           const encryptedData = {
             ciphertext: Buffer.from(data.ciphertext, 'hex'),
             ephemPublicKey: Buffer.from(data.ephemPublicKey, 'hex'),
@@ -1152,7 +1228,7 @@ export class KeyRing {
     }
   }
 
-  public async getPublicKey(chainId: string): Promise<string> {
+  public async getPublicKey(chainId: string): Promise<string | Uint8Array> {
     if (this.status !== KeyRingStatus.UNLOCKED) {
       throw new Error('Key ring is not unlocked');
     }
@@ -1161,7 +1237,14 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
+    if (chainId === '0x5afe') {
+      const pubKey = await this.loadPublicKeyOasis();
+      return pubKey;
+    }
+
     const privKey = this.loadPrivKey(getCoinTypeByChainId(chainId));
+
+    // And Oasis here
     const pubKeyHex = '04' + privateToPublic(Buffer.from(privKey.toBytes())).toString('hex');
 
     return pubKeyHex;
@@ -1359,7 +1442,7 @@ export class KeyRing {
         throw new Error('Arrays are unimplemented in encodeData; use V4 extension');
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map((item) => this.encodeField(types, name, parsedType, item, version));
+      const typeValuePairs = value.map(item => this.encodeField(types, name, parsedType, item, version));
       return [
         'bytes32',
         keccak(

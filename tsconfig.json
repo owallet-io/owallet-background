@@ -5,7 +5,8 @@
     "outDir": "build",
     "declaration": true,
     "rootDir": "src",
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "target": "es2020",
   },
   "include": ["src/**/*"]
 }

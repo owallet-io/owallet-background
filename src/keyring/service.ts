@@ -38,6 +38,8 @@ import { request } from '../tx';
 import { Dec, DecUtils } from '@owallet/unit';
 import { trimAminoSignDoc } from './amino-sign-doc';
 import { KeyringHelper } from './utils';
+import * as oasis from '@oasisprotocol/client';
+
 @singleton()
 export class KeyRingService {
   private readonly keyRing: KeyRing;
@@ -513,8 +515,7 @@ export class KeyRingService {
 
   async requestPublicKey(env: Env, chainId: string): Promise<string> {
     try {
-      const rawTxHex = await this.keyRing.getPublicKey(chainId);
-
+      const rawTxHex = (await this.keyRing.getPublicKey(chainId)) as string;
       return rawTxHex;
     } catch (e) {
       console.log('e', e.message);
@@ -847,5 +848,26 @@ export class KeyRingService {
     } finally {
       this.interactionService.dispatchEvent(APP_PORT, 'request-sign-tron-end', {});
     }
+  }
+
+  async requestSignOasis(env: Env, chainId: string, data: object): Promise<object> {
+    try {
+      const tx = await this.keyRing.signOasis(chainId, data);
+      return tx;
+    } finally {
+      this.interactionService.dispatchEvent(APP_PORT, 'request-sign-oasis-end', {});
+    }
+  }
+
+  async getDefaultOasisAddress(chainId: string): Promise<string> {
+    const signerPublicKey = await this.keyRing.loadPublicKeyOasis();
+    const addressUint8Array = await oasis.staking.addressFromPublicKey(signerPublicKey);
+    const address = oasis.staking.addressToBech32(addressUint8Array);
+    return address;
+  }
+
+  async getDefaultOasisBalance(address: string, chainId: string): Promise<string> {
+    const balance = await this.keyRing.loadBalanceOasis(address, chainId);
+    return balance.available;
   }
 }

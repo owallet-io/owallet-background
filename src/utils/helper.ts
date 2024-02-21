@@ -4,6 +4,8 @@ import { LedgerAppType, getNetworkTypeByChainId, typeBtcLedgerByAddress } from '
 import { AddressBtcType, AddressesLedger, BIP44HDPath, ChainInfoWithoutEndpoints } from '@owallet/types';
 import Joi from 'joi';
 import { ChainInfoWithEmbed } from 'src/chains';
+import * as oasis from '@oasisprotocol/client';
+
 export const EIP712DomainTypeValidator = Joi.array()
   .items(
     Joi.object<{
@@ -48,7 +50,7 @@ export const EIP712DomainTypeValidator = Joi.array()
   )
   .unique()
   .min(1)
-  .custom((value) => {
+  .custom(value => {
     // Sort by name
     const domainFieldNames: Array<string> = ['name', 'version', 'chainId', 'verifyingContract', 'salt'];
 
@@ -157,4 +159,13 @@ export const handleAddressLedgerByChainId = (
   return {
     [typeBtcLedgerByAddress(chainInfo, addressType)]: address
   };
+};
+
+/**
+ * Return a nic client for the specified network,
+ * or by default, for the currently selected network
+ */
+export const getOasisNic = async url => {
+  const nic = await new oasis.client.NodeInternal(url);
+  return nic;
 };
