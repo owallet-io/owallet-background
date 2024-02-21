@@ -67,8 +67,7 @@ import {
   parseRpcBalance,
   StringifiedBigInt,
   uint2hex
-} from '../utils/oasis-helper';
-import { OasisTransaction, signerFromPrivateKey } from '../utils/oasis-tx-builder';
+} from '@owallet/common';
 import { CoinPretty, Int } from '@owallet/unit';
 
 // inject TronWeb class
@@ -828,6 +827,7 @@ export class KeyRing {
     const privateKey = uint2hex(accountSigner.secretKey);
 
     const bytes = hex2uint(privateKey!);
+
     const txres = {
       bytes,
       amount,
