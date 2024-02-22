@@ -92,8 +92,8 @@ export const getHandler: (service: KeyRingService) => Handler = (service: KeyRin
         return handleRequestSignTronMsg(service)(env, msg as RequestSignTronMsg);
       case RequestSignOasisMsg:
         return handleRequestSignOasisMsg(service)(env, msg as RequestSignOasisMsg);
-      case GetDefaultAddressOasisMsg:
-        return handleGetDefaultAddressOasisMsg(service)(env, msg as GetDefaultAddressOasisMsg);
+      // case GetDefaultAddressOasisMsg:
+      //   return handleGetDefaultAddressOasisMsg(service)(env, msg as GetDefaultAddressOasisMsg);
       case RequestSignEthereumTypedDataMsg:
         return handleRequestSignEthereumTypedData(service)(env, msg as RequestSignEthereumTypedDataMsg);
       case RequestPublicKeyMsg:
@@ -501,22 +501,22 @@ const handleRequestSignOasisMsg: (service: KeyRingService) => InternalHandler<Re
   };
 };
 
-const handleGetDefaultAddressOasisMsg: (service: KeyRingService) => InternalHandler<GetDefaultAddressOasisMsg> = (
-  service
-) => {
-  return async (_, msg) => {
-    const address = await service.getDefaultOasisAddress(msg.chainId);
-    const balance = await service.getDefaultOasisBalance(address, msg.chainId);
-    const ledgerCheck = service.getKeyRingType();
+// const handleGetDefaultAddressOasisMsg: (service: KeyRingService) => InternalHandler<GetDefaultAddressOasisMsg> = (
+//   service
+// ) => {
+//   return async (_, msg) => {
+//     const address = await service.getDefaultOasisAddress(msg.chainId);
+//     const balance = await service.getDefaultOasisBalance(address, msg.chainId);
+//     const ledgerCheck = service.getKeyRingType();
 
-    if (ledgerCheck === 'ledger') {
-      throw new Error('Ledger is currently not supported for Oasis.');
-    }
-    return {
-      name: service.getKeyStoreMeta('name'),
-      type: Number(ledgerCheck),
-      address: address,
-      balance: balance
-    };
-  };
-};
+//     if (ledgerCheck === 'ledger') {
+//       throw new Error('Ledger is currently not supported for Oasis.');
+//     }
+//     return {
+//       name: service.getKeyStoreMeta('name'),
+//       type: Number(ledgerCheck),
+//       address: address,
+//       balance: balance
+//     };
+//   };
+// };
