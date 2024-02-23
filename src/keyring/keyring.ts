@@ -2,7 +2,9 @@ import {
   ChainIdEnum,
   EmbedChainInfos,
   MIN_FEE_RATE,
+  OasisTransaction,
   convertBip44ToHDPath,
+  signerFromPrivateKey,
   splitPathStringToHDPath,
   typeBtcLedgerByAddress
 } from '@owallet/common';
@@ -821,19 +823,32 @@ export class KeyRing {
 
     const { amount, to } = data;
 
-    // const chainInfo = await this.chainsService.getChainInfo(chainId as string);
-
     const accountSigner = await oasis.hdkey.HDKey.getAccountSigner(this.mnemonic, 0);
     const privateKey = uint2hex(accountSigner.secretKey);
 
     const bytes = hex2uint(privateKey!);
 
-    const txres = {
-      bytes,
-      amount,
-      to: to.replaceAll(' ', '')
-    };
-    return txres;
+    if (this.kvStore.type() !== KVStoreType.mobile) {
+      return {
+        bytes,
+        amount,
+        to: to.replaceAll(' ', '')
+      };
+    }
+    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
+    const nic = await getOasisNic(chainInfo.grpc);
+    const signer = signerFromPrivateKey(bytes);
+    const bigIntAmount = BigInt(parseRoseStringToBigNumber(amount).toString());
+    console.log('bigIntAmount', bigIntAmount);
+    const chainContext = await nic.consensusGetChainContext();
+
+    const tw = await OasisTransaction.buildTransfer(nic, signer, to.replaceAll(' ', ''), bigIntAmount);
+
+    await OasisTransaction.sign(chainContext, signer, tw);
+
+    const payload = await OasisTransaction.submit(nic, tw);
+
+    return payload;
   }
 
   // public async loadBalanceOasis(

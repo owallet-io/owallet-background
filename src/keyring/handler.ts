@@ -232,15 +232,6 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
         ? bech32Address.toBech32Btc(bech32PrefixAccAddr)
         : bech32Address.toBech32(bech32PrefixAccAddr);
 
-    // if (msg.chainId === '0x5afe') {
-    //   // const signerPublicKey = await service.load
-    //   // const addressUint8Array = await oasis.staking.addressFromPublicKey(key.pubKey);
-    //   const address = oasis.staking.addressToBech32(key.address);
-    //   const bech32Convert = bech32Address.toBech32(Bech32Address.defaultBech32Config('oasis').bech32PrefixAccAddr);
-    //   console.log('🚀 ~ return ~ bech32Convert:', bech32Convert);
-    //   console.log('🚀 ~ return ~ address:', address);
-    // }
-
     return {
       name: service.getKeyStoreMeta('name'),
       algo: 'secp256k1',
