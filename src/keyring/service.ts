@@ -86,8 +86,12 @@ export class KeyRingService {
     }
 
     if (this.keyRing.status === KeyRingStatus.LOCKED) {
-      await this.interactionService.waitApprove(env, '/unlock', 'unlock', {});
-      return this.keyRing.status;
+      try {
+        await this.interactionService.waitApprove(env, '/unlock', 'unlock', {});
+        return this.keyRing.status;
+      } catch (error) {
+        throw Error(error);
+      }
     }
 
     return this.keyRing.status;
