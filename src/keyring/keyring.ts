@@ -1042,7 +1042,7 @@ export class KeyRing {
     if (this.keyStore.type === 'ledger') {
       return this.processSignLedgerEvm(env, chainId, rpc, message);
     } else {
-      if (chainId === ChainIdEnum.OasisNative) {
+      if (chainId === ChainIdEnum.Oasis) {
         const data = message as any;
 
         const chainInfo = await this.chainsService.getChainInfo(chainId as string);
