@@ -491,23 +491,3 @@ const handleRequestSignOasisMsg: (service: KeyRingService) => InternalHandler<Re
     return { ...response };
   };
 };
-
-// const handleGetDefaultAddressOasisMsg: (service: KeyRingService) => InternalHandler<GetDefaultAddressOasisMsg> = (
-//   service
-// ) => {
-//   return async (_, msg) => {
-//     const address = await service.getDefaultOasisAddress(msg.chainId);
-//     const balance = await service.getDefaultOasisBalance(address, msg.chainId);
-//     const ledgerCheck = service.getKeyRingType();
-
-//     if (ledgerCheck === 'ledger') {
-//       throw new Error('Ledger is currently not supported for Oasis.');
-//     }
-//     return {
-//       name: service.getKeyStoreMeta('name'),
-//       type: Number(ledgerCheck),
-//       address: address,
-//       balance: balance
-//     };
-//   };
-// };
