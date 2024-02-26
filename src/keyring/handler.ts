@@ -92,8 +92,6 @@ export const getHandler: (service: KeyRingService) => Handler = (service: KeyRin
         return handleRequestSignTronMsg(service)(env, msg as RequestSignTronMsg);
       case RequestSignOasisMsg:
         return handleRequestSignOasisMsg(service)(env, msg as RequestSignOasisMsg);
-      // case GetDefaultAddressOasisMsg:
-      //   return handleGetDefaultAddressOasisMsg(service)(env, msg as GetDefaultAddressOasisMsg);
       case RequestSignEthereumTypedDataMsg:
         return handleRequestSignEthereumTypedData(service)(env, msg as RequestSignEthereumTypedDataMsg);
       case RequestPublicKeyMsg:
@@ -214,8 +212,6 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
     await service.permissionService.checkOrGrantBasicAccessPermission(env, msg.chainId, msg.origin);
 
     const key = await service.getKey(msg.chainId);
-    console.log('🚀 ~ return ~ msg.chainId:', msg.chainId);
-    console.log('🚀 ~ return ~ key:', key);
 
     const networkType = getNetworkTypeByChainId(msg.chainId);
 
@@ -224,7 +220,7 @@ const handleGetKeyMsg: (service: KeyRingService) => InternalHandler<GetKeyMsg> =
     const isInj = msg.chainId?.startsWith('injective');
     const pubkeyLedger = service.getKeyRingLedgerPubKey();
     const bech32Address = new Bech32Address(key.address);
-    // console.log('🚀 ~ return ~ bech32Address:', bech32Address);
+
     const { bech32PrefixAccAddr } = (await service.chainsService.getChainInfo(msg.chainId)).bech32Config;
     // hereee
     const bech32Convert =

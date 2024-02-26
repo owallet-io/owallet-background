@@ -757,7 +757,7 @@ export class KeyRing {
       }
       return coinType === 60;
     })();
-    console.log('🚀 ~ isEthermint ~ isEthermint:', isEthermint);
+
     if (coinType === 474) {
       const signerPublicKey = await this.loadPublicKeyOasis();
       const addressUint8Array = await oasis.staking.addressFromPublicKey(signerPublicKey);
@@ -850,30 +850,6 @@ export class KeyRing {
 
     return payload;
   }
-
-  // public async loadBalanceOasis(
-  //   address: string,
-  //   chainId: string
-  // ): Promise<{
-  //   available: StringifiedBigInt;
-  //   validator: { escrow: StringifiedBigInt; escrow_debonding: StringifiedBigInt };
-  // }> {
-  //   if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
-  //     throw new Error('Key ring is not unlocked');
-  //   }
-  //   if (!this.mnemonic) {
-  //     throw new Error('Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly');
-  //   }
-  //   const chainInfo = await this.chainsService.getChainInfo(chainId as string);
-
-  //   const nic = await getOasisNic(chainInfo.grpc);
-
-  //   const publicKey = await addressToPublicKey(address);
-  //   const account = await nic.stakingAccount({ owner: publicKey, height: 0 });
-  //   const grpcBalance = parseRpcBalance(account);
-
-  //   return grpcBalance;
-  // }
 
   private loadPrivKey(coinType: number): PrivKeySecp256k1 {
     if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
@@ -1033,7 +1009,6 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    // const cType = this.computeKeyStoreCoinType(chainId, coinType);
     const networkType = getNetworkTypeByChainId(chainId);
     if (networkType !== 'evm') {
       throw new Error('Invalid coin type passed in to Ethereum signing (expected 60)');
