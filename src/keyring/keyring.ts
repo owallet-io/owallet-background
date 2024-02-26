@@ -1,7 +1,10 @@
 import {
+  ChainIdEnum,
   EmbedChainInfos,
   MIN_FEE_RATE,
+  OasisTransaction,
   convertBip44ToHDPath,
+  signerFromPrivateKey,
   splitPathStringToHDPath,
   typeBtcLedgerByAddress
 } from '@owallet/common';
@@ -66,11 +69,12 @@ import {
   parseRpcBalance,
   StringifiedBigInt,
   uint2hex
-} from '../utils/oasis-helper';
-import { OasisTransaction, signerFromPrivateKey } from '../utils/oasis-tx-builder';
+} from '@owallet/common';
+import { CoinPretty, Int } from '@owallet/unit';
 
 // inject TronWeb class
 (globalThis as any).TronWeb = require('tronweb');
+
 export enum KeyRingStatus {
   NOTLOADED,
   EMPTY,
@@ -580,7 +584,7 @@ export class KeyRing {
       [ChainIdHelper.parse(chainId).identifier]: coinType
     };
 
-    const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+    const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
       return (
         KeyRing.getKeyStoreId(keyStore) ===
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -609,7 +613,7 @@ export class KeyRing {
       const { publicKey, address } = (await this.ledgerKeeper.getPublicKey(env, hdPath, ledgerAppType)) || {};
 
       const pubKey = publicKey ? Buffer.from(publicKey).toString('hex') : null;
-      const keyStoreInMulti = this.multiKeyStore.find(keyStore => {
+      const keyStoreInMulti = this.multiKeyStore.find((keyStore) => {
         return (
           KeyRing.getKeyStoreId(keyStore) ===
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -754,7 +758,18 @@ export class KeyRing {
       return coinType === 60;
     })();
 
+    if (coinType === 474) {
+      const signerPublicKey = await this.loadPublicKeyOasis();
+      const addressUint8Array = await oasis.staking.addressFromPublicKey(signerPublicKey);
+      return {
+        algo: 'ethsecp256k1',
+        pubKey: signerPublicKey,
+        address: addressUint8Array,
+        isNanoLedger: this.keyStore.type === 'ledger'
+      };
+    }
     const pubKey = this.getPubKey(coinType);
+
     const address = (() => {
       if (isEthermint) {
         return pubKey.getEthAddress();
@@ -808,12 +823,20 @@ export class KeyRing {
 
     const { amount, to } = data;
 
-    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
-
-    const nic = await getOasisNic(chainInfo.grpc);
     const accountSigner = await oasis.hdkey.HDKey.getAccountSigner(this.mnemonic, 0);
     const privateKey = uint2hex(accountSigner.secretKey);
+
     const bytes = hex2uint(privateKey!);
+
+    if (this.kvStore.type() !== KVStoreType.mobile) {
+      return {
+        bytes,
+        amount,
+        to: to.replaceAll(' ', '')
+      };
+    }
+    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
+    const nic = await getOasisNic(chainInfo.grpc);
     const signer = signerFromPrivateKey(bytes);
     const bigIntAmount = BigInt(parseRoseStringToBigNumber(amount).toString());
     console.log('bigIntAmount', bigIntAmount);
@@ -826,30 +849,6 @@ export class KeyRing {
     const payload = await OasisTransaction.submit(nic, tw);
 
     return payload;
-  }
-
-  public async loadBalanceOasis(
-    address: string,
-    chainId: string
-  ): Promise<{
-    available: StringifiedBigInt;
-    validator: { escrow: StringifiedBigInt; escrow_debonding: StringifiedBigInt };
-  }> {
-    if (this.status !== KeyRingStatus.UNLOCKED || this.type === 'none' || !this.keyStore) {
-      throw new Error('Key ring is not unlocked');
-    }
-    if (!this.mnemonic) {
-      throw new Error('Key store type is mnemonic and it is unlocked. But, mnemonic is not loaded unexpectedly');
-    }
-    const chainInfo = await this.chainsService.getChainInfo(chainId as string);
-
-    const nic = await getOasisNic(chainInfo.grpc);
-
-    const publicKey = await addressToPublicKey(address);
-    const account = await nic.stakingAccount({ owner: publicKey, height: 0 });
-    const grpcBalance = parseRpcBalance(account);
-
-    return grpcBalance;
   }
 
   private loadPrivKey(coinType: number): PrivKeySecp256k1 {
@@ -1010,7 +1009,6 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    // const cType = this.computeKeyStoreCoinType(chainId, coinType);
     const networkType = getNetworkTypeByChainId(chainId);
     if (networkType !== 'evm') {
       throw new Error('Invalid coin type passed in to Ethereum signing (expected 60)');
@@ -1019,6 +1017,18 @@ export class KeyRing {
     if (this.keyStore.type === 'ledger') {
       return this.processSignLedgerEvm(env, chainId, rpc, message);
     } else {
+      if (chainId === ChainIdEnum.Oasis) {
+        const data = message as any;
+
+        const chainInfo = await this.chainsService.getChainInfo(chainId as string);
+
+        const amount = new CoinPretty(chainInfo.feeCurrencies[0], new Int(Number(data.value))).toDec().toString();
+
+        const res = await this.signOasis(chainId, { amount: amount, to: (data as any).to });
+
+        return res;
+      }
+
       return this.processSignEvm(chainId, coinType, rpc, message);
     }
   }
@@ -1198,7 +1208,7 @@ export class KeyRing {
       const privKey = this.loadPrivKey(60);
       const privKeyBuffer = Buffer.from(privKey.toBytes());
       const response = await Promise.all(
-        message[0].map(async data => {
+        message[0].map(async (data) => {
           const encryptedData = {
             ciphertext: Buffer.from(data.ciphertext, 'hex'),
             ephemPublicKey: Buffer.from(data.ephemPublicKey, 'hex'),
@@ -1237,7 +1247,7 @@ export class KeyRing {
       throw new Error('Key Store is empty');
     }
 
-    if (chainId === '0x5afe') {
+    if (chainId === ChainIdEnum.Oasis) {
       const pubKey = await this.loadPublicKeyOasis();
       return pubKey;
     }
@@ -1442,7 +1452,7 @@ export class KeyRing {
         throw new Error('Arrays are unimplemented in encodeData; use V4 extension');
       }
       const parsedType = type.slice(0, type.lastIndexOf('['));
-      const typeValuePairs = value.map(item => this.encodeField(types, name, parsedType, item, version));
+      const typeValuePairs = value.map((item) => this.encodeField(types, name, parsedType, item, version));
       return [
         'bytes32',
         keccak(

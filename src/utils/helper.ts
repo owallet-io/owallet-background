@@ -50,7 +50,7 @@ export const EIP712DomainTypeValidator = Joi.array()
   )
   .unique()
   .min(1)
-  .custom(value => {
+  .custom((value) => {
     // Sort by name
     const domainFieldNames: Array<string> = ['name', 'version', 'chainId', 'verifyingContract', 'salt'];
 
@@ -165,7 +165,8 @@ export const handleAddressLedgerByChainId = (
  * Return a nic client for the specified network,
  * or by default, for the currently selected network
  */
-export const getOasisNic = async url => {
-  const nic = await new oasis.client.NodeInternal(url);
+//TODO: need handle duplicate from common
+export const getOasisNic = (url) => {
+  const nic = new oasis.client.NodeInternal(url);
   return nic;
 };
